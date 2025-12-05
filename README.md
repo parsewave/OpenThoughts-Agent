@@ -118,7 +118,7 @@ Datagen jobs are launched via the generic HPC launcher and use `--job_type datag
 2. Activate your environment and source the dotenv:
    ```bash
    source hpc/dotenv/<your-cluster>.env
-   $DCFT_ACTIVATE_ENV
+   eval "$DCFT_ACTIVATE_ENV"
    cd "$DCFT"
    ```
    The dotenvs now export `PYTHONPATH="${DCFT_PRIVATE:-$DCFT}:$PYTHONPATH"` so `python -m hpc.launch` resolves even on clusters that strip the working directory from `sys.path`. If you maintain a custom dotenv, mirror this line to keep the launcher importable.
@@ -203,7 +203,7 @@ Adding a new cluster involves defining its resources, sbatch templates, and a do
 5. **Test with a dry run**:
    ```bash
    source hpc/dotenv/<your-cluster>.env
-   $DCFT_ACTIVATE_ENV
+eval "$DCFT_ACTIVATE_ENV"
    cd "$DCFT"
    python -m hpc.launch \
      --job_type datagen \

@@ -64,7 +64,7 @@ To start a session:
 ```bash
 source /path/to/OpenThoughts-Agent/hpc/dotenv/tacc.env
 cd "$DCFT"
-$DCFT_ACTIVATE_ENV
+eval "$DCFT_ACTIVATE_ENV"
 ```
 
 ## Launcher Overview
