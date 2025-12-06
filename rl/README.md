@@ -2,10 +2,16 @@
 
 This is the respository of running RL experiments on clusters. Currently we only support TACC, with JSC coming soon.
 
-If you want to re-create the OpenThoughts-Agent experiment, but you're not on a cluster, you can checkout the README here:
-https://github.com/mlfoundations/SkyRL
+## Reproducing OpenThinker-Agent-v1
+If you want to re-create the OpenThoughts-Agent experiment, but you're not on a cluster, you can check out the README here: https://github.com/mlfoundations/SkyRL
 
-While this is a fork for now, we will soon merge changes needed to main branch of SkyRL.
+You can follow the steps to:
+- Use [open-thoughts/OpenThinker-Agent-v1-SFT](https://huggingface.co/open-thoughts/OpenThinker-Agent-v1-SFT) as base
+- GRPO with the data [open-thoughts/OpenThoughts-Agent-v1-RL](https://huggingface.co/datasets/open-thoughts/OpenThoughts-Agent-v1-RL), while
+- Evaluate with [open-thoughts/OpenThoughts-TB-dev](https://huggingface.co/datasets/open-thoughts/OpenThoughts-TB-dev), and 
+- Get the final [open-thoughts/OpenThinker-Agent-v1](https://huggingface.co/open-thoughts/OpenThinker-Agent-v1)
+
+While we are using a fork for now, we will soon merge changes needed to main branch of SkyRL.
 
 ## On TACC:
 
