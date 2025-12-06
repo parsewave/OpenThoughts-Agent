@@ -12,7 +12,7 @@ Welcome to OpenThoughts-Agent (OT-Agent for short), a large-scale research proje
 
 [Leaderboard](https://ot-agent-leaderboard.replit.app/)
 
-[Trace Viewer](https://dcagents-trace-viewer.replit.app/)
+[Trace Viewer](https://ot-agents-trace-viewer.replit.app/)
 
 ## Warning!
 
