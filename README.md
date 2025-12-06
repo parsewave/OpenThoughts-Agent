@@ -40,8 +40,6 @@ Optional extras:
   `pip install .[datagen]`
 * **SweSmith-specific datagen helpers** (extends the above with bespoke tools):
   `pip install .[datagen,datagen-swesmith]` (or `pip install .[datagen-swesmith]` if you already pulled the base datagen extra)
-* **RL training stack** (installs the latest SkyRL straight from GitHub):
-  `pip install .[rl]`
 
 * **SFT stack**:  
   * Ensure the git submodule is initialized:  
@@ -177,20 +175,7 @@ The launcher will construct a per-run YAML in `"$experiments_dir/configs"`, gene
 
 #### How to Launch an RL Job
 
-RL training currently uses cluster-specific scripts under `rl/` rather than the generic `hpc.launch` entry point.
-
-1. Make sure you have access to the shared RL environment and Ray/vLLM backend described in the TACC docs and comments inside `rl/tacc/tacc_train_rl_tbench.sh`.
-2. Log into the target cluster (e.g., TACC Vista) and load the required modules (CUDA, Apptainer, GCC) as shown in the script.
-3. Edit `rl/tacc/tacc_train_rl_tbench.sh` to point to your:
-   - data directories
-   - checkpoint/output paths
-   - base model ID (e.g. `Qwen/Qwen2.5-7B-Instruct`)
-   - sandboxes / trace storage locations
-4. From a login node, submit the job:
-   ```bash
-   sbatch rl/tacc/tacc_train_rl_tbench.sh
-   ```
-5. Monitor logs under the `experiments/logs` directory configured in the script and resume/tune hyperparameters via the `skyrl_train.entrypoints.main_base` arguments inside the sbatch file.
+Please check `rl/READM.md`.
 
 #### How to add your cluster to OT-Agent
 

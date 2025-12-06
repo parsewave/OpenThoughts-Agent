@@ -1,6 +1,11 @@
-# OT-Agent HPC Training System
+# OT-Agent HPC Training System for RL
 
 This is the respository of running RL experiments on clusters. Currently we only support TACC, with JSC coming soon.
+
+If you want to re-create the OpenThoughts-Agent experiment, but you're not on a cluster, you can checkout the README here:
+https://github.com/mlfoundations/SkyRL
+
+While this is a fork for now, we will soon merge changes needed to main branch of SkyRL.
 
 ## On TACC:
 
