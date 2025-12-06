@@ -8,11 +8,13 @@ Welcome to OpenThoughts-Agent (OT-Agent for short), a large-scale research proje
 
 ## Links
 
-[Project Website](http://openthoughts.ai/agent)
+[Project Website](https://www.openthoughts.ai/)
 
 [Leaderboard](https://ot-agent-leaderboard.replit.app/)
 
 [Trace Viewer](https://dcagents-trace-viewer.replit.app/)
+
+[Notebook](/notebook/datagen_sft_tutorial.ipynb)
 
 ## Warning!
 
@@ -233,9 +235,11 @@ OT-Agent relies on [Harbor](https://github.com/laude-institute/harbor) to launch
 
 Once the Harbor YAML points at the right backend and credentials, OT-Agent’s launch scripts will provision containers, stream logs, and tear everything down automatically.
 
-### Who to contact if you get stuck
+### About Us
 
-Please reach out to someone on the [terminal-bench Discord](https://discord.gg/6xWPKhGDbA) if you need help.
+We are a collaboration led by researchers and engineers from Stanford, UC Berkeley, UT Austin, NYU, University of Washington, UCSD, ASU, CMU, UCLA, UNC Chapel Hill, TUM, LAION, and other partners focused on building the best datasets (and therefore the best models). See our previous work at <a href="https://www.datacomp.ai/">datacomp.ai</a> and <a href="https://github.com/mlfoundations">mlfoundations</a>.
+
+We currently organize via the [terminal-bench Discord](https://discord.gg/6xWPKhGDbA); go there if you need help.
 
 * For RL: Please contact Charlie Ruan
 * For SFT: Please contact Benjamin Feuer

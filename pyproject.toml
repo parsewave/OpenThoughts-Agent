@@ -23,6 +23,7 @@ dependencies = [
     "h5py",
     "certifi",
     "rapidfuzz",
+    "huggingface_hub",
 ]
 
 [project.optional-dependencies]
