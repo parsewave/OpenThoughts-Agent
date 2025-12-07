@@ -70,7 +70,7 @@ agents:
         input_cost_per_token: 0
         output_cost_per_token: 0
 
-      trajectory_configs:
+      trajectory_config:
         raw_content: true
         linear_history: true
 datasets:

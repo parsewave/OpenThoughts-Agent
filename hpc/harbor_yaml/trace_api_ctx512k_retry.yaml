@@ -67,7 +67,7 @@ agents:
         max_input_tokens: 512000
         max_output_tokens: 16000
 
-      trajectory_configs:
+      trajectory_config:
         raw_content: true
         linear_history: true
 datasets:
