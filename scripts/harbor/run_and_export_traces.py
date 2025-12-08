@@ -15,6 +15,7 @@ import shutil
 import tempfile
 from pathlib import Path
 from typing import Any, Optional
+import re
 import importlib
 import inspect
 import os
@@ -681,9 +682,43 @@ def _sanitize_bash_warnings(dataset):
 def _finalize_trace_dataset(dataset):
     """Apply final cleanup/formatting before returning a dataset."""
     dataset = _sanitize_bash_warnings(dataset)
+    dataset = _sanitize_surrogates(dataset)
     dataset = _ensure_sharegpt_conversations(dataset)
     return dataset
 
+
+_SURROGATE_PATTERN = re.compile(r"[\ud800-\udfff]")
+
+
+def _sanitize_surrogates(dataset):
+    """Replace Unicode surrogate code points with spaces to keep PyArrow happy."""
+    try:
+        from datasets import Dataset, DatasetDict
+    except Exception:
+        return dataset
+
+    def _replace_surrogates(text: str) -> str:
+        if _SURROGATE_PATTERN.search(text):
+            return _SURROGATE_PATTERN.sub(" ", text)
+        return text
+
+    def _clean_value(value):
+        if isinstance(value, str):
+            return _replace_surrogates(value)
+        if isinstance(value, list):
+            return [_clean_value(item) for item in value]
+        if isinstance(value, dict):
+            return {key: _clean_value(val) for key, val in value.items()}
+        return value
+
+    def _map_record(record):
+        return {key: _clean_value(val) for key, val in record.items()}
+
+    if isinstance(dataset, DatasetDict):
+        return DatasetDict({k: v.map(_map_record, load_from_cache_file=False) for k, v in dataset.items()})
+    if isinstance(dataset, Dataset):
+        return dataset.map(_map_record, load_from_cache_file=False)
+    return dataset
 
 def _ensure_sharegpt_conversations(dataset):
     """Guarantee conversation columns conform to ShareGPT expectations."""
