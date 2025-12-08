@@ -220,6 +220,8 @@ nodes_array=($nodes)
 head_node=${nodes_array[0]}
 NUM_NODES=${SLURM_JOB_NUM_NODES:-1}
 CPUS_PER_NODE=${SLURM_CPUS_PER_TASK:-32}
+# Allow overriding the per-step memory cap (0 => inherit the parent job allocation).
+SRUN_MEM_PER_STEP="${SRUN_MEM_PER_STEP:-0}"
 
 # Get head node IP
 head_node_ip=$(srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --mem="$SRUN_MEM_PER_STEP" --overlap -w "$head_node" hostname --ip-address 2>/dev/null | head -1)
@@ -266,8 +268,6 @@ mkdir -p "$RAY_TMPDIR"
 # Make sure all subsequent srun invocations inherit the tmpdir override
 SRUN_EXPORT_ENV="$SRUN_EXPORT_ENV,RAY_TMPDIR=$RAY_TMPDIR"
 export SRUN_EXPORT_ENV
-# Allow overriding the per-step memory cap (0 => inherit the parent job allocation).
-SRUN_MEM_PER_STEP="${SRUN_MEM_PER_STEP:-0}"
 echo ">>> Ray session directory: $RAY_TMPDIR"
 
 # Calculate object store memory (conservative for large models)
