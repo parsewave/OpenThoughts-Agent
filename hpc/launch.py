@@ -362,7 +362,31 @@ def fill_template(file_path, exp_args, new_file_path):
 
 
 def _escape_template_braces(text: str) -> str:
-    return text.replace("{", "{{").replace("}", "}}")
+    """
+    Escape braces for str.format() except when part of bash-style ${var} blocks.
+    """
+    result: list[str] = []
+    i = 0
+    length = len(text)
+    while i < length:
+        char = text[i]
+        if char == "$" and i + 1 < length and text[i + 1] == "{":
+            # Preserve bash variable references (${VAR}) exactly.
+            j = i + 2
+            while j < length and text[j] != "}":
+                j += 1
+            if j < length:
+                result.append(text[i : j + 1])
+                i = j + 1
+                continue
+        if char == "{":
+            result.append("{{")
+        elif char == "}":
+            result.append("}}")
+        else:
+            result.append(char)
+        i += 1
+    return "".join(result)
 
 
 def _normalize_strategy_value(value):
