@@ -1,13 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=kimi-k2-tracegen
 #SBATCH --account=torch_pr_40_tandon_advanced
-#SBATCH --partition=h200
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --constraint="h200"
 #SBATCH --gres=gpu:8
 #SBATCH --exclusive
-#SBATCH --mem=2052808M
+#SBATCH --mem=1024G
 #SBATCH --time=47:59:00
 #SBATCH --comment="preemption=yes;requeue=false"
 
