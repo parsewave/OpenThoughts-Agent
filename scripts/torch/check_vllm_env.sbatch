@@ -63,8 +63,11 @@ def report(module_name, attr=None):
     except Exception as exc:  # pragma: no cover - diagnostic script
         print(f"{module_name}{'.' + attr if attr else ''}: FAILED -> {exc}")
 
-report("vllm.attention.backends.flash_attn", "_flash_attn_mha")
-report("vllm.attention.backends.flash_attn_triton", "_flash_attn_triton")
+report("vllm.v1.attention.backends.flash_attn", "FlashAttentionBackend")
+report("vllm.v1.attention.backends.mla.flashattn_mla", "FlashAttnMLAImpl")
+report("vllm.vllm_flash_attn", "flash_attn_varlen_func")
+report("vllm.vllm_flash_attn._vllm_fa2_C")
+report("vllm.vllm_flash_attn._vllm_fa3_C")
 report("vllm", "_C")
 PY
 
@@ -81,5 +84,22 @@ else:
     idx = device.index or 0
     print("Device name:", torch.cuda.get_device_name(idx))
     print("Device capability:", torch.cuda.get_device_capability(idx))
-    print("Current BLAS handle:", torch.backends.cuda.matmul.get_blas_batch_limit())
+print("Preferred BLAS backend:", getattr(torch._C, "_get_blas_preferred_backend", lambda: "<unavailable>")())
+matmul = getattr(getattr(torch.backends, "cuda", None), "matmul", None)
+if matmul is None:
+    print("torch.backends.cuda.matmul: <unavailable>")
+else:
+    print("Matmul allow_tf32:", matmul.allow_tf32)
+    if hasattr(matmul, "allow_bf16_reduced_precision_reduction"):
+        print(
+            "Matmul allow_bf16_reduced_precision_reduction:",
+            matmul.allow_bf16_reduced_precision_reduction,
+        )
+    if hasattr(matmul, "allow_fp16_reduced_precision_reduction"):
+        print(
+            "Matmul allow_fp16_reduced_precision_reduction:",
+            matmul.allow_fp16_reduced_precision_reduction,
+        )
+    if hasattr(matmul, "allow_fp16_accumulation"):
+        print("Matmul allow_fp16_accumulation:", matmul.allow_fp16_accumulation)
 PY
