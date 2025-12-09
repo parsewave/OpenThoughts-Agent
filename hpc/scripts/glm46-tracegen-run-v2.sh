@@ -213,6 +213,7 @@ DP_SIZE="${VLLM_DATA_PARALLEL_SIZE:-1}"
 # Ray cluster setup - using srun like vista_datagen
 # =============================================================================
 echo ">>> Setting up Ray cluster with srun"
+set -x
 
 # Get node info
 nodes=$(scontrol show hostnames "$SLURM_JOB_NODELIST")
@@ -227,9 +228,15 @@ if [[ -z "${SRUN_MEM_PER_STEP:-}" || "$SRUN_MEM_PER_STEP" == "0" ]]; then
     SRUN_MEM_PER_STEP="${node_mem:-0}"
 fi
 SRUN_MEM_PER_STEP="${SRUN_MEM_PER_STEP:-0}"
+echo "Using SRUN_MEM_PER_STEP=${SRUN_MEM_PER_STEP} MB"
 
 # Get head node IP
-head_node_ip=$(srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --mem="$SRUN_MEM_PER_STEP" --overlap -w "$head_node" hostname --ip-address 2>/dev/null | head -1)
+if head_node_ip=$(srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --mem="$SRUN_MEM_PER_STEP" --overlap -w "$head_node" hostname --ip-address 2>/dev/null | head -1); then
+    :
+else
+    echo "ERROR: Failed to resolve head node IP via srun"
+    exit 1
+fi
 head_node_ip=${head_node_ip%% *}
 
 if [[ -z "$head_node_ip" || "$head_node_ip" == "127.0.0.1" ]]; then
@@ -320,6 +327,7 @@ python3 scripts/ray/wait_for_cluster.py \
     --poll-interval 10
 
 echo ">>> Ray cluster ready!"
+set +x
 
 # =============================================================================
 # Start vLLM controller via srun
