@@ -231,7 +231,7 @@ if [[ -z "${SRUN_MEM_PER_STEP:-}" || "$SRUN_MEM_PER_STEP" == "0" ]]; then
     job_mem=${job_mem//[^0-9]/}
     node_mem=${node_mem:-0}
     job_mem=${job_mem:-0}
-    if [[ "$job_mem" -gt 0 ]]; then
+    if [[ "$job_mem" -gt "$HEADROOM_MB" ]]; then
         if [[ "$node_mem" -gt 0 && "$node_mem" -lt "$job_mem" ]]; then
             SRUN_MEM_PER_STEP="$node_mem"
         else
