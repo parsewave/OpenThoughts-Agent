@@ -220,7 +220,12 @@ nodes_array=($nodes)
 head_node=${nodes_array[0]}
 NUM_NODES=${SLURM_JOB_NUM_NODES:-1}
 CPUS_PER_NODE=${SLURM_CPUS_PER_TASK:-32}
-# Allow overriding per-step memory (0 => inherit job allocation)
+# Allow overriding per-step memory; if unset/zero, default to head node RealMemory.
+if [[ -z "${SRUN_MEM_PER_STEP:-}" || "$SRUN_MEM_PER_STEP" == "0" ]]; then
+    node_info=$(scontrol show node "$head_node" 2>/dev/null || true)
+    node_mem=$(echo "$node_info" | awk -F= '/RealMemory/ {print $2}' | awk '{print $1}')
+    SRUN_MEM_PER_STEP="${node_mem:-0}"
+fi
 SRUN_MEM_PER_STEP="${SRUN_MEM_PER_STEP:-0}"
 
 # Get head node IP
