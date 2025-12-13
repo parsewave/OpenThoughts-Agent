@@ -1,6 +1,6 @@
 engine:
   type: vllm_local
-  model: mistralai/Mistral-Large-3-675B-Instruct-2512-Eagle
+  model: mistralai/Mistral-Large-3-675B-Instruct-2512
   max_output_tokens: 16384
   healthcheck_interval: 300
   vllm_local: {}
@@ -12,7 +12,7 @@ backend:
   healthcheck_max_attempts: 200
   healthcheck_retry_delay: 30
 vllm_server:
-  model_path: mistralai/Mistral-Large-3-675B-Instruct-2512-Eagle
+  model_path: mistralai/Mistral-Large-3-675B-Instruct-2512
   num_replicas: 1
   tensor_parallel_size: 8
   pipeline_parallel_size: 1
@@ -37,7 +37,3 @@ vllm_server:
   - --enable-prefix-caching
   - --max-num-batched-tokens
   - '8192'
-  - --limit-mm-per-prompt
-  - '{"image": 10}'
-  - --speculative_config
-  - '{"model": "mistralai/Mistral-Large-3-675B-Instruct-2512-Eagle", "num_speculative_tokens": 3, "method": "eagle", "max_model_len": 16384}'
