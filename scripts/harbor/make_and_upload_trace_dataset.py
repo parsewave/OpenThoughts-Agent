@@ -411,7 +411,6 @@ def main() -> None:
         push=False,
         verbose=True,
         success_filter=success_filter,
-        include_reasoning=bool(args.include_reasoning),
         export_subagents=False,
     )
     try:
