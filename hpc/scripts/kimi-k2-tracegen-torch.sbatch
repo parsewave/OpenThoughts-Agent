@@ -8,7 +8,7 @@
 #SBATCH --exclusive
 #SBATCH --mem=1536G
 #SBATCH --time=47:59:00
-#SBATCH --comment="preemption=yes;requeue=false"
+#SBATCH --comment="preemption=yes;requeue=true"
 
 set -euo pipefail
 

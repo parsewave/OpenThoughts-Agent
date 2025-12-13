@@ -75,6 +75,28 @@ class LlamaFactoryArgs:
     dataset_dir: Optional[str] = field(
         default=None, metadata={"help": "Directory containing dataset files"}
     )
+    prompt_column: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Override the instruction/prompt column for Alpaca-style datasets (use '' or 'none' to disable)."
+        },
+    )
+    query_column: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Override the optional input/query column for Alpaca-style datasets (use '' or 'none' to disable)."
+        },
+    )
+    response_column: Optional[str] = field(
+        default=None,
+        metadata={"help": "Override the completion/response column for Alpaca-style datasets."},
+    )
+    history_column: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Override the history column for Alpaca-style datasets (use '' or 'none' to disable)."
+        },
+    )
     formatting: Optional[str] = field(
         default="sharegpt",
         metadata={"help": "Dataset formatting to align (e.g., 'sharegpt' or 'alpaca')"},
