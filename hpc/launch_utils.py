@@ -6,8 +6,10 @@ from __future__ import annotations
 
 import os
 import re
+import shlex
 import socket
 import shutil
+import subprocess
 from collections import defaultdict
 from typing import Any, Mapping, Optional
 
@@ -15,7 +17,6 @@ from hpc.hpc import detect_hpc
 
 from .job_name_ignore_list import JOB_NAME_IGNORE_KEYS
 from .arguments import JobType
-from .datagen_launch_utils import derive_datagen_job_name
 from .sft_launch_utils import build_accelerate_config_block
 
 
@@ -34,6 +35,30 @@ def sanitize_repo_component(value: Optional[str]) -> Optional[str]:
         return None
     match = re.search(r"traces-([A-Za-z0-9._\-]+)", value)
     return match.group(1) if match else None
+
+
+def derive_datagen_job_name(cli_args: Mapping[str, Any]) -> str:
+    """Construct a fallback job name for datagen/trace launches."""
+
+    def _sanitize_component(value: str) -> str:
+        value = value.strip().rstrip("/")
+        if "/" in value:
+            value = value.split("/")[-1]
+        return re.sub(r"[^A-Za-z0-9._-]+", "-", value).strip("-_") or "repo"
+
+    parts: list[str] = ["datagen"]
+    engine = cli_args.get("datagen_engine") or cli_args.get("trace_engine") or "engine"
+    parts.append(str(engine or "engine"))
+
+    repo_candidate = cli_args.get("datagen_target_repo") or cli_args.get("trace_target_repo")
+    model_candidate = cli_args.get("datagen_model") or cli_args.get("trace_model")
+    if model_candidate:
+        parts.append(_sanitize_component(str(model_candidate)))
+    elif repo_candidate:
+        parts.append(_sanitize_component(str(repo_candidate)))
+
+    job_name = "_".join(filter(None, parts))
+    return job_name or "datagen_job"
 
 
 def get_job_name(cli_args: Mapping[str, Any]) -> str:
@@ -111,6 +136,145 @@ def get_job_name(cli_args: Mapping[str, Any]) -> str:
             )
 
     return job_name
+
+
+def _parse_optional_int(value: Any, label: str) -> Optional[int]:
+    if value in (None, "", "None"):
+        return None
+    if isinstance(value, bool):
+        raise ValueError(f"{label} must be an integer, got boolean {value!r}")
+    if isinstance(value, (int, float)):
+        return int(value)
+    try:
+        return int(str(value))
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{label} must be an integer, got {value!r}") from exc
+
+
+def _inject_env_block(text: str, env_map: dict) -> str:
+    exports = []
+    for k, v in env_map.items():
+        if v in (None, ""):
+            continue
+        quoted = shlex.quote(str(v))
+        exports.append(f"export {k}={quoted}")
+    if not exports:
+        return text
+    lines = text.splitlines(True)
+    idx = 0
+    if lines and lines[0].startswith("#!"):
+        idx = 1
+    while idx < len(lines) and (
+        lines[idx].startswith("#SBATCH")
+        or lines[idx].strip() == ""
+        or lines[idx].startswith("#")
+    ):
+        idx += 1
+    return "".join(lines[:idx] + ["\n".join(exports) + "\n"] + lines[idx:])
+
+
+def _ensure_dependency_directive(text: str, dependency: Optional[str]) -> str:
+    if not dependency:
+        return text
+
+    directive_prefix = "#SBATCH --dependency"
+    lines = text.splitlines()
+    for line in lines:
+        if directive_prefix in line:
+            return text
+
+    insert_idx = 0
+    for idx, line in enumerate(lines):
+        if idx == 0 and line.startswith("#!"):
+            insert_idx = 1
+            continue
+        stripped = line.strip()
+        if stripped.startswith("#SBATCH"):
+            insert_idx = idx + 1
+            continue
+        if not stripped:
+            insert_idx = idx + 1
+            continue
+        break
+
+    dependency_line = f"#SBATCH --dependency={dependency}"
+    lines.insert(insert_idx, dependency_line)
+    new_text = "\n".join(lines)
+    if text.endswith("\n"):
+        new_text += "\n"
+    return new_text
+
+
+def _merge_dependencies(*deps: Optional[str]) -> Optional[str]:
+    merged: list[str] = []
+    for dep in deps:
+        if not dep:
+            continue
+        dep_str = str(dep).strip()
+        if not dep_str:
+            continue
+        merged.append(dep_str)
+    if not merged:
+        return None
+    return ",".join(merged)
+
+
+def launch_sbatch(sbatch_script_path, dependency=None, array: str | None = None) -> str:
+    extra_args: list[str] = []
+    if dependency is not None:
+        extra_args.append(f"--dependency={dependency}")
+    if array:
+        extra_args.append(f"--array={array}")
+    extra_flags = " ".join(extra_args)
+    sbatch_cmd = f"sbatch {extra_flags} {sbatch_script_path}".strip()
+
+    result = subprocess.run(
+        sbatch_cmd,
+        shell=True,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        msg = result.stdout.strip()
+        err = result.stderr.strip()
+        combined = "\n".join(filter(None, [msg, err]))
+        raise RuntimeError(
+            f"sbatch command failed (code {result.returncode}): {sbatch_cmd}\n{combined}"
+        )
+
+    raw_output = (result.stdout or "").strip()
+    job_id = raw_output.split()[::-1][0]
+    print(
+        f"Job {job_id} submitted"
+        f"{f' with dependency {dependency}' if dependency else ''}"
+        f"{f' and array {array}' if array else ''}."
+    )
+    return job_id
+
+
+def update_exp_args(exp_args, args, *, explicit_keys: Optional[set[str]] = None):
+    explicit_keys = set(explicit_keys or [])
+    for key, value in args.items():
+        if key.startswith("_"):
+            continue
+
+        has_existing = key in exp_args
+        existing_value = exp_args.get(key)
+        is_explicit = not explicit_keys or key in explicit_keys
+
+        if value is None:
+            if has_existing and is_explicit:
+                del exp_args[key]
+                print(f"Removed {key} from experiment arguments")
+            continue
+
+        if has_existing:
+            if not is_explicit and value != existing_value:
+                continue
+            if value != existing_value:
+                print(f"Overwrote {key} from {existing_value} to {value}")
+        exp_args[key] = value
+    return exp_args
 
 
 def check_exists(local_path: str | os.PathLike[str]) -> bool:
@@ -228,6 +392,13 @@ def construct_sbatch_script(exp_args: dict) -> str:
 
 
 __all__ = [
+    "derive_datagen_job_name",
+    "_parse_optional_int",
+    "_inject_env_block",
+    "_ensure_dependency_directive",
+    "_merge_dependencies",
+    "launch_sbatch",
+    "update_exp_args",
     "check_exists",
     "construct_sbatch_script",
     "extract_template_keys",

@@ -11,6 +11,7 @@
 #SBATCH --job-name={job_name}
 #SBATCH --mail-type=END,TIME_LIMIT,FAIL
 #SBATCH --mail-user=bf996@nyu.edu
+#SBATCH --exclude=c66,c68
 
 set -euo pipefail
 
