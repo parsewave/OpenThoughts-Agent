@@ -468,9 +468,6 @@ def pre_validation(exp_args, cli_args):
     if "train_config_path" in cli_args and os.path.exists(
         cli_args["train_config_path"]
     ):
-        # with open(cli_args["train_config_path"], "r") as f:
-        #     config = yaml.safe_load(f)
-        #     exp_args = update_exp_args(exp_args, config)
         pass
     elif "train_config_path" in cli_args:
         raise FileNotFoundError(
@@ -496,12 +493,6 @@ def pre_validation(exp_args, cli_args):
         raise FileNotFoundError(
             f"Train sbatch file {exp_args['train_sbatch_path']} does not exist."
         )
-
-
-
-
-
-
 
 def main():
     load_supabase_keys()
