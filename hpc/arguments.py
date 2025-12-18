@@ -425,6 +425,7 @@ class LaunchArgs:
         },
     )
 
+
 @dataclass
 class DataGenArgs:
     """Arguments for data generation jobs"""
