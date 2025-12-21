@@ -375,19 +375,6 @@ class LaunchArgs:
         metadata={"help": "SLURM dependency expression to include with submissions (e.g., 'afterany:12345')"},
     )
 
-    consolidate_input: Optional[str] = field(
-        default=None,
-        metadata={"help": "Input path or Hugging Face repo ID for consolidation jobs"},
-    )
-    consolidate_base_repo: Optional[str] = field(
-        default=None,
-        metadata={"help": "Base Hugging Face model repo to copy ancillary files (config, tokenizer, chat template) from"},
-    )
-    consolidate_output_repo: Optional[str] = field(
-        default=None,
-        metadata={"help": "Destination Hugging Face repo to upload merged weights"},
-    )
-
     # Pretokenize
     pretokenize: bool = field(
         default=False, metadata={"help": "Whether to pretokenize", "store_true": True}
@@ -598,18 +585,6 @@ class DataGenArgs:
     trace_verifier_timeout_sec: Optional[float] = field(
         default=None,
         metadata={"help": "Override Harbor verifier timeout (seconds) for trace generation"}
-    )
-    consolidate_input: Optional[str] = field(
-        default=None,
-        metadata={"help": "Input for consolidation: either a local directory with ZeRO shards or a Hugging Face repo ID"}
-    )
-    consolidate_base_repo: Optional[str] = field(
-        default=None,
-        metadata={"help": "Base Hugging Face model repo to copy ancillary files (config, tokenizer, chat template) from"}
-    )
-    consolidate_output_repo: Optional[str] = field(
-        default=None,
-        metadata={"help": "Destination Hugging Face repo to upload merged weights to (required for local inputs)"}
     )
     consolidate_workdir: Optional[str] = field(
         default=None,
