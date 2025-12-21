@@ -337,10 +337,10 @@ def _configure_output_and_logging(base_config: dict, exp_args: dict, checkpoints
 def _configure_reporting(base_config: dict, exp_args: dict, model_path: str) -> dict:
     if exp_args["internet_node"]:
         base_config["report_to"] = "wandb"
-        base_config["push_to_hub"] = True
+        base_config["push_to_hub"] = exp_args.get("push_to_hub", True)
     else:
         base_config.pop("report_to", None)
-        base_config["push_to_hub"] = False
+        base_config["push_to_hub"] = bool(exp_args.get("push_to_hub", False))
         base_config["model_name_or_path"] = model_path
         base_config["datasets_cache_dir"] = os.environ["HF_HUB_CACHE"]
     return base_config

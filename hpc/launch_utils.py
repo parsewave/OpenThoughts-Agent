@@ -61,23 +61,25 @@ def derive_datagen_job_name(cli_args: Mapping[str, Any]) -> str:
     return job_name or "datagen_job"
 
 
-def get_job_name(cli_args: Mapping[str, Any]) -> str:
-    """Derive a stable job name from user-provided CLI arguments."""
+def derive_consolidate_job_name(cli_args: Mapping[str, Any]) -> str:
+    """Construct a consolidate-specific job name with a fixed suffix."""
 
-    job_type = str(cli_args.get("job_type", JobType.default_value()) or JobType.default_value()).lower()
-    if job_type == JobType.CONSOLIDATE.value:
-        identifier = (
-            cli_args.get("consolidate_input")
-            or cli_args.get("consolidate_output_repo")
-            or cli_args.get("consolidate_base_repo")
-            or "consolidate"
-        )
-        job_name = f"{sanitize_repo_for_job(str(identifier))}_consolidate"
-        if len(job_name) > 96:
-            job_name = job_name[:96]
-        return job_name
-    if job_type == JobType.DATAGEN.value:
-        return derive_datagen_job_name(cli_args)
+    identifier_raw = (
+        cli_args.get("consolidate_input")
+        or cli_args.get("consolidate_output_repo")
+        or cli_args.get("consolidate_base_repo")
+        or "consolidate"
+    )
+    identifier = sanitize_repo_for_job(str(identifier_raw))
+    suffix = "_consolidate"
+    max_prefix_len = max(1, 96 - len(suffix))
+    if len(identifier) > max_prefix_len:
+        identifier = identifier[:max_prefix_len]
+    return f"{identifier}{suffix}"
+
+
+def derive_default_job_name(cli_args: Mapping[str, Any]) -> str:
+    """Construct job names for non-datagen, non-consolidate workloads."""
 
     job_name_components: list[str] = []
     job_name_suffix: Optional[str] = None
@@ -136,7 +138,19 @@ def get_job_name(cli_args: Mapping[str, Any]) -> str:
                 "Try renaming the dataset or providing a shorter YAML config."
             )
 
-    return job_name
+    return job_name or "ot_agent_job"
+
+
+def get_job_name(cli_args: Mapping[str, Any]) -> str:
+    """Derive a stable job name from user-provided CLI arguments."""
+
+    job_type = str(cli_args.get("job_type", JobType.default_value()) or JobType.default_value()).lower()
+    if job_type == JobType.CONSOLIDATE.value:
+        return derive_consolidate_job_name(cli_args)
+    if job_type == JobType.DATAGEN.value:
+        return derive_datagen_job_name(cli_args)
+    return derive_default_job_name(cli_args)
+
 def _parse_optional_int(value: Any, label: str) -> Optional[int]:
     if value in (None, "", "None"):
         return None

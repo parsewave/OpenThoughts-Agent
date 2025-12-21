@@ -123,6 +123,7 @@ JOB_NAME_IGNORE_KEYS: list[str] = [
     "trace_env",
     "trace_eval_only",
     "trace_export_subagents",
+    "push_to_hub",
     # Timeout toggles
     "trace_agent_timeout_sec",
     "trace_verifier_timeout_sec",
