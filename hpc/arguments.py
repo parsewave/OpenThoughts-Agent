@@ -586,6 +586,19 @@ class DataGenArgs:
         default=None,
         metadata={"help": "Override Harbor verifier timeout (seconds) for trace generation"}
     )
+class ConsolidateArgs:
+    consolidate_input: Optional[str] = field(
+        default=None,
+        metadata={"help": "Input for consolidation: either a local directory with ZeRO shards or a Hugging Face repo ID"}
+    )
+    consolidate_base_repo: Optional[str] = field(
+        default=None,
+        metadata={"help": "Base Hugging Face model repo to copy ancillary files (config, tokenizer, chat template) from"}
+    )
+    consolidate_output_repo: Optional[str] = field(
+        default=None,
+        metadata={"help": "Destination Hugging Face repo to upload merged weights"}
+    )
     consolidate_workdir: Optional[str] = field(
         default=None,
         metadata={"help": "Working directory on the cluster filesystem for consolidation artifacts"}
@@ -682,12 +695,14 @@ def parse_args():
     hpc_group = parser.add_argument_group("HPC Arguments")
     train_group = parser.add_argument_group("Training Arguments")
     datagen_group = parser.add_argument_group("Data Generation Arguments")
+    consolidate_group = parser.add_argument_group("Consolidation Arguments")
 
     # Add LaunchArgs arguments
     _add_dataclass_arguments(launch_group, LaunchArgs)
 
     # Add DataGenArgs arguments
     _add_dataclass_arguments(datagen_group, DataGenArgs)
+    _add_dataclass_arguments(consolidate_group, ConsolidateArgs)
 
     # Add HPC arguments
     # Note: HPC is a Pydantic model, not a dataclass, so we need to handle it differently
