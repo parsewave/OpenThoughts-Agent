@@ -670,6 +670,12 @@ class BaseDataGenerator(ABC):
         metadata = request.metadata or {}
         engine = context.engine
         disable_verification = bool(getattr(args, "disable_verification", False))
+        trace_backend_raw = metadata.get("trace_backend") or getattr(args, "trace_backend", None)
+        trace_backend = (
+            str(trace_backend_raw).strip().lower()
+            if trace_backend_raw not in (None, "")
+            else None
+        )
 
         tasks_input = request.tasks_input or getattr(args, "tasks_input", None)
         if not tasks_input:
@@ -1090,7 +1096,7 @@ class BaseDataGenerator(ABC):
                     and old_metrics.rstrip("/") != desired_metrics.rstrip("/")
                 )
                 if mismatch_api or mismatch_metrics:
-                    raise InputValidationError(
+                    message = (
                         "Existing trace job config at "
                         f"{existing_config_path} still references Pinggy URL "
                         f"{old_api or '<unset>'} (metrics {old_metrics or '<unset>'}) "
@@ -1099,6 +1105,9 @@ class BaseDataGenerator(ABC):
                         "trace_jobs directory or pick a fresh --experiments_dir/--job_name "
                         "to avoid reusing mismatched Harbor configs."
                     )
+                    if trace_backend == "vllm":
+                        raise InputValidationError(message)
+                    self.logger.warning("[traces] %s", message)
 
         base_artifacts = {
             "trace_jobs_dir": str(trace_jobs_dir),
