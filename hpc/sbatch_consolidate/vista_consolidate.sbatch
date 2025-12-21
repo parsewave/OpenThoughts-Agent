@@ -21,13 +21,17 @@ source $DCFT/hpc/dotenv/tacc.env
 export NCCL_TIMEOUT=1800  # 30 minutes
 export NCCL_IB_TIMEOUT=23  # InfiniBand timeout
 
-export CONSOLIDATE_REPO_ID="{consolidate_repo_id}"
+export CONSOLIDATE_INPUT="{consolidate_input}"
+export CONSOLIDATE_INPUT_KIND="{consolidate_input_kind}"
+export CONSOLIDATE_OUTPUT_REPO="{consolidate_output_repo}"
 export CONSOLIDATE_BASE_REPO="{consolidate_base_repo}"
 export CONSOLIDATE_WORKDIR="{consolidate_workdir}"
 export CONSOLIDATE_COMMIT_MESSAGE="{consolidate_commit_message}"
 
 python3 {python_script} \
-  --target-repo "${{CONSOLIDATE_REPO_ID}}" \
+  --input "${{CONSOLIDATE_INPUT}}" \
+  --input-kind "${{CONSOLIDATE_INPUT_KIND}}" \
+  --output-repo "${{CONSOLIDATE_OUTPUT_REPO}}" \
   --base-repo "${{CONSOLIDATE_BASE_REPO}}" \
   --workdir "${{CONSOLIDATE_WORKDIR}}" \
   --commit-message "${{CONSOLIDATE_COMMIT_MESSAGE}}" \

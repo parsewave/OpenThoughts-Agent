@@ -53,19 +53,45 @@ def launch_consolidate_job(
 
     print("\n=== CONSOLIDATE MODE ===")
 
-    repo_id = exp_args.get("consolidate_repo_id")
+    input_value = exp_args.get("consolidate_input")
     workdir = exp_args.get("consolidate_workdir")
-    if not repo_id:
-        raise ValueError("--consolidate_repo_id is required for consolidate jobs")
+    if not input_value:
+        raise ValueError("--consolidate_input is required for consolidate jobs")
     if not workdir:
         raise ValueError("--consolidate_workdir is required for consolidate jobs")
 
     base_repo = exp_args.get("consolidate_base_repo")
+    output_repo = exp_args.get("consolidate_output_repo")
     commit_message = exp_args.get("consolidate_commit_message") or "Merge ZeRO shards into safetensors"
+
+    expanded_input = Path(str(input_value)).expanduser()
+    input_is_local = False
+    if str(input_value).startswith(("/", "./", "../", "~")) or expanded_input.exists():
+        input_is_local = True
+        if not expanded_input.exists():
+            print(
+                f"Warning: --consolidate_input={input_value} was treated as a local path but does not currently exist.",
+                "The job may fail if the path is unavailable on compute nodes.",
+            )
+    if input_is_local:
+        if not output_repo:
+            raise ValueError("--consolidate_output_repo is required when --consolidate_input points to a local path")
+    else:
+        if not output_repo:
+            raise ValueError(
+                "--consolidate_output_repo is required when --consolidate_input references a Hugging Face repo so the merged weights upload to a new repo."
+            )
+        if output_repo.strip() == str(input_value).strip():
+            raise ValueError(
+                "When --consolidate_input and --consolidate_output_repo both reference Hugging Face repos, they must differ."
+            )
+    effective_output_repo = output_repo
+    input_kind = "local" if input_is_local else "repo"
 
     job_name = exp_args.get("job_name")
     if not job_name:
-        job_name = f"{sanitize_repo_for_job(repo_id)}_consolidate"
+        identifier = sanitize_repo_for_job(str(input_value))
+        job_name = f"{identifier}_consolidate"
         if len(job_name) > 96:
             job_name = job_name[:96]
         exp_args = update_exp_args_fn(exp_args, {"job_name": job_name})
@@ -89,9 +115,9 @@ def launch_consolidate_job(
 
     output_path = os.path.join(logs_dir, f"{job_name}_%j.out")
     hpc_name = getattr(hpc, "name", "").lower()
-    gpu_directive = ""
-    if hpc_name not in {"vista", "lonestar"}:
-        gpu_directive = "#SBATCH --gpus-per-node=1"
+    gpu_directive = "#SBATCH --gpus-per-node=1"
+    if hpc_name in {"vista", "lonestar"}:
+        gpu_directive = ""
 
     template_dir = os.path.join(os.path.dirname(__file__), "sbatch_consolidate")
     cluster_template = os.path.join(template_dir, f"{hpc_name}_consolidate.sbatch")
@@ -118,10 +144,12 @@ def launch_consolidate_job(
         "job_name": job_name,
         "output_path": output_path,
         "environment_preamble": environment_preamble,
-        "consolidate_repo_id": repo_id,
+        "consolidate_input": input_value,
+        "consolidate_input_kind": input_kind,
         "consolidate_base_repo": base_repo or "",
         "consolidate_workdir": workdir,
         "consolidate_commit_message": commit_message,
+        "consolidate_output_repo": effective_output_repo,
         "project_root": PROJECT_ROOT,
         "python_script": python_script_path,
     }

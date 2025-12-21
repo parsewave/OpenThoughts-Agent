@@ -96,8 +96,10 @@ def _zero_to_fp32_script(project_root: Path) -> Path:
 
 
 def consolidate(
-    target_repo: str,
+    input_spec: str,
+    input_kind: str,
     base_repo: Optional[str],
+    output_repo: str,
     workdir: Path,
     commit_message: str,
     project_root: Path,
@@ -109,26 +111,40 @@ def consolidate(
     if not os.environ.get("DCFT"):
         os.environ["DCFT"] = str(project_root)
 
-    target_dir = workdir / "target_repo"
+    staged_input_dir = workdir / "input_stage"
     base_dir = workdir / "base_repo"
     merged_dir = workdir / "merged_weights"
     final_dir = workdir / "final_repo"
 
     print(f"Working directory: {workdir}")
     _reset_dir(workdir)
-    _reset_dir(target_dir)
+    _reset_dir(staged_input_dir)
     _reset_dir(base_dir)
     _reset_dir(merged_dir)
     _reset_dir(final_dir)
 
-    print(f"Downloading target repo: {target_repo}")
-    snapshot_download(
-        repo_id=target_repo,
-        repo_type="model",
-        local_dir=target_dir,
-        local_dir_use_symlinks=False,
-        token=token,
-    )
+    normalized_kind = (input_kind or "").strip().lower()
+    if normalized_kind not in {"repo", "local"}:
+        guessed_path = Path(input_spec).expanduser()
+        normalized_kind = "local" if guessed_path.exists() else "repo"
+
+    if normalized_kind == "repo":
+        print(f"Downloading input repo: {input_spec}")
+        snapshot_download(
+            repo_id=input_spec,
+            repo_type="model",
+            local_dir=staged_input_dir,
+            local_dir_use_symlinks=False,
+            token=token,
+        )
+    else:
+        source_path = Path(input_spec).expanduser()
+        if not source_path.exists():
+            raise FileNotFoundError(
+                f"Local consolidation input path not found: {source_path}"
+            )
+        print(f"Staging local input from {source_path}")
+        shutil.copytree(source_path, staged_input_dir, dirs_exist_ok=True)
 
     if base_repo:
         print(f"Downloading base repo: {base_repo}")
@@ -146,14 +162,14 @@ def consolidate(
         [
             sys.executable,
             str(zero_to_fp32),
-            str(target_dir),
+            str(staged_input_dir),
             str(merged_dir),
             "--safe_serialization",
         ]
     )
 
     print("Collecting ancillary files...")
-    _copy_repo_files(target_dir, final_dir)
+    _copy_repo_files(staged_input_dir, final_dir)
     if base_repo:
         _copy_repo_files(
             base_dir,
@@ -175,15 +191,15 @@ def consolidate(
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(item, destination, follow_symlinks=False)
 
-    detected_model_type = _infer_model_type([final_dir, base_dir, target_dir])
+    detected_model_type = _infer_model_type([final_dir, base_dir, staged_input_dir])
     if detected_model_type:
         print(f"Detected model type: {detected_model_type}")
     else:
         print("Warning: unable to infer model type from configuration.", file=sys.stderr)
 
-    print("Uploading consolidated checkpoint to Hugging Face...")
+    print(f"Uploading consolidated checkpoint to Hugging Face repo {output_repo}...")
     api = HfApi()
-    existing_paths = api.list_repo_files(repo_id=target_repo, repo_type="model", token=token)
+    existing_paths = api.list_repo_files(repo_id=output_repo, repo_type="model", token=token)
     operations = [CommitOperationDelete(path_in_repo=path) for path in existing_paths]
 
     for item in final_dir.rglob("*"):
@@ -192,23 +208,25 @@ def consolidate(
             operations.append(CommitOperationAdd(path_in_repo=relative, path_or_fileobj=str(item)))
 
     api.create_commit(
-        repo_id=target_repo,
+        repo_id=output_repo,
         repo_type="model",
         operations=operations,
         commit_message=commit_message,
         token=token,
     )
-    print(f"✓ Uploaded consolidated checkpoint to {target_repo}")
+    print(f"✓ Uploaded consolidated checkpoint to {output_repo}")
 
     print("Cleaning up temporary directories...")
-    shutil.rmtree(target_dir, ignore_errors=True)
+    shutil.rmtree(staged_input_dir, ignore_errors=True)
     shutil.rmtree(base_dir, ignore_errors=True)
     shutil.rmtree(merged_dir, ignore_errors=True)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Consolidate ZeRO sharded checkpoints into safetensors and upload.")
-    parser.add_argument("--target-repo", required=True, help="Hugging Face repository containing ZeRO shards.")
+    parser.add_argument("--input", required=True, help="Input source: either a local directory or a Hugging Face repo ID.")
+    parser.add_argument("--input-kind", choices=["local", "repo"], default="repo", help="Explicit input type to avoid re-detection confusion.")
+    parser.add_argument("--output-repo", required=True, help="Destination Hugging Face repo to upload the consolidated checkpoint.")
     parser.add_argument("--base-repo", default="", help="Base repo to copy ancillary files from.")
     parser.add_argument("--workdir", required=True, help="Working directory for consolidation artifacts.")
     parser.add_argument("--commit-message", required=True, help="Commit message for the upload.")
@@ -216,8 +234,10 @@ def main() -> None:
     args = parser.parse_args()
 
     consolidate(
-        target_repo=args.target_repo,
+        input_spec=args.input,
+        input_kind=args.input_kind,
         base_repo=args.base_repo or None,
+        output_repo=args.output_repo,
         workdir=Path(args.workdir).expanduser().resolve(),
         commit_message=args.commit_message,
         project_root=Path(args.project_root).expanduser().resolve(),

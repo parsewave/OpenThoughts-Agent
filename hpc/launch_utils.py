@@ -66,12 +66,13 @@ def get_job_name(cli_args: Mapping[str, Any]) -> str:
 
     job_type = str(cli_args.get("job_type", JobType.default_value()) or JobType.default_value()).lower()
     if job_type == JobType.CONSOLIDATE.value:
-        repo_id = (
-            cli_args.get("consolidate_repo_id")
+        identifier = (
+            cli_args.get("consolidate_input")
+            or cli_args.get("consolidate_output_repo")
             or cli_args.get("consolidate_base_repo")
             or "consolidate"
         )
-        job_name = f"{sanitize_repo_for_job(str(repo_id))}_consolidate"
+        job_name = f"{sanitize_repo_for_job(str(identifier))}_consolidate"
         if len(job_name) > 96:
             job_name = job_name[:96]
         return job_name

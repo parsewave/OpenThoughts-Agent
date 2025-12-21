@@ -126,7 +126,8 @@ JOB_NAME_IGNORE_KEYS: list[str] = [
     # Timeout toggles
     "trace_agent_timeout_sec",
     "trace_verifier_timeout_sec",
-    "consolidate_repo_id",
+    "consolidate_input",
+    "consolidate_output_repo",
     "consolidate_base_repo",
     "consolidate_workdir",
     "consolidate_commit_message",
