@@ -27,6 +27,14 @@ if [ -n "${DCFT:-}" ] && [ -f "$DCFT/hpc/dotenv/frontier.env" ]; then
   source "$DCFT/hpc/dotenv/frontier.env"
 fi
 
+# Frontier jobs should always hit NVMe-backed caches when available.
+if [ -n "${FRONTIER_NVME_HF_HOME:-}" ]; then
+  export HF_HOME="$FRONTIER_NVME_HF_HOME"
+fi
+if [ -n "${FRONTIER_NVME_HF_HUB_CACHE:-}" ]; then
+  export HF_HUB_CACHE="$FRONTIER_NVME_HF_HUB_CACHE"
+fi
+
 # Activate requested environment; fall back to manual setup if unset.
 if [ -n "${DCFT_ACTIVATE_ENV:-}" ]; then
   set +u

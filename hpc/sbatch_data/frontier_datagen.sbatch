@@ -23,6 +23,14 @@ elif [ -n "${DC_AGENT:-}" ] && [ -f "$DC_AGENT/hpc/dotenv/frontier.env" ]; then
   source "$DC_AGENT/hpc/dotenv/frontier.env"
 fi
 
+# Frontier jobs should always use the NVMe-backed cache paths.
+if [ -n "${FRONTIER_NVME_HF_HOME:-}" ]; then
+  export HF_HOME="$FRONTIER_NVME_HF_HOME"
+fi
+if [ -n "${FRONTIER_NVME_HF_HUB_CACHE:-}" ]; then
+  export HF_HUB_CACHE="$FRONTIER_NVME_HF_HUB_CACHE"
+fi
+
 module load PrgEnv-amd
 module load rocm/6.0.0
 module load craype-accel-amd-gfx90a
