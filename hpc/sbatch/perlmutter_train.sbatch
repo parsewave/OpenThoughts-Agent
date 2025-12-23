@@ -1,7 +1,7 @@
 #!/bin/bash
 # Perlmutter training template for HPC launch.
 #SBATCH --account={account}
-#SBATCH --qos=premium         # Other options: debug, shared
+#SBATCH --qos={qos}         # Other options: debug, shared
 #SBATCH --constraint="gpu&hbm80g"
 #SBATCH --exclusive
 #SBATCH --nodes={num_nodes}
