@@ -32,6 +32,7 @@ if [ -n "${FRONTIER_NVME_HF_HUB_CACHE:-}" ]; then
 fi
 
 module load PrgEnv-amd
+module load amd/6.4.0
 module load rocm/6.4.0
 module load craype-accel-amd-gfx90a
 module load cray-mpich
