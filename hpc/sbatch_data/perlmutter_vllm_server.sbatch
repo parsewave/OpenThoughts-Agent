@@ -177,7 +177,7 @@ raw = os.environ.get("SLURM_MEM_PER_NODE", "262144")
 m = re.match(r"([0-9]+)", raw)
 print(m.group(1) if m else "262144")
 PY
-)
+    )
 fi
 HEADROOM_MB="${PERLMUTTER_SRUN_HEADROOM_MB:-8192}"
 if [ "$MEM_PER_NODE_MB" -le "$HEADROOM_MB" ]; then
@@ -185,9 +185,17 @@ if [ "$MEM_PER_NODE_MB" -le "$HEADROOM_MB" ]; then
 else
     SRUN_MEM_PER_STEP=$((MEM_PER_NODE_MB - HEADROOM_MB))
 fi
-echo "srun memory per step: ${SRUN_MEM_PER_STEP} MB (headroom ${HEADROOM_MB} MB, per-node ${MEM_PER_NODE_MB} MB)"
 
-head_node_ip=$(srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --mem="$SRUN_MEM_PER_STEP" --overlap -w "$head_node" hostname --ip-address)
+SRUN_MEM_ARGS=()
+if [ -n "${PERLMUTTER_SRUN_MEM_MB:-}" ] || [ "${PERLMUTTER_SRUN_ENFORCE_MEM:-0}" = "1" ]; then
+    SRUN_MEM_ARGS=(--mem="$SRUN_MEM_PER_STEP")
+    echo "srun memory per step (enforced): ${SRUN_MEM_PER_STEP} MB (headroom ${HEADROOM_MB} MB, per-node ${MEM_PER_NODE_MB} MB)"
+else
+    echo "srun memory per step target (not enforced by srun): ${SRUN_MEM_PER_STEP} MB (headroom ${HEADROOM_MB} MB, per-node ${MEM_PER_NODE_MB} MB)"
+    echo "  Set PERLMUTTER_SRUN_ENFORCE_MEM=1 to make srun reserve this memory."
+fi
+
+head_node_ip=$(srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 "${SRUN_MEM_ARGS[@]}" --overlap -w "$head_node" hostname --ip-address)
 head_node_ip=${head_node_ip%% *}
 
 ip_head="${head_node_ip}:${RAY_PORT}"
@@ -198,7 +206,7 @@ ray_pids=()
 start_ray_node() {
     local node_name=$1
     local start_cmd=$2
-    srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --mem="$SRUN_MEM_PER_STEP" --overlap -w "$node_name" bash -c "env $RAY_ENV_VARS $start_cmd" &
+    srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 "${SRUN_MEM_ARGS[@]}" --overlap -w "$node_name" bash -c "env $RAY_ENV_VARS $start_cmd" &
     ray_pids+=($!)
 }
 
@@ -221,7 +229,7 @@ cleanup() {
         wait "$VLLM_PID" >/dev/null 2>&1 || true
     fi
     for node in "${nodes_array[@]}"; do
-        srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --mem="$SRUN_MEM_PER_STEP" --overlap -w "$node" ray stop --force >/dev/null 2>&1 || true
+        srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 "${SRUN_MEM_ARGS[@]}" --overlap -w "$node" ray stop --force >/dev/null 2>&1 || true
     done
     for pid in "${ray_pids[@]}"; do
         wait "$pid" >/dev/null 2>&1 || true
@@ -233,7 +241,7 @@ persist_ray_sessions() {
     mkdir -p "$RAY_SESSION_ARCHIVE"
     for node in "${nodes_array[@]}"; do
         local node_dest="$RAY_SESSION_ARCHIVE/$node"
-        srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --mem="$SRUN_MEM_PER_STEP" --overlap -w "$node" bash -c '
+        srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 "${SRUN_MEM_ARGS[@]}" --overlap -w "$node" bash -c '
             if [ -d "${RAY_TMPDIR:-}" ]; then
                 dest="'"$node_dest"'"
                 mkdir -p "$dest"
