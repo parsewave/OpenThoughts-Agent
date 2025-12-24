@@ -42,6 +42,48 @@ if [ -n "${DCFT_ACTIVATE_ENV:-}" ]; then
   set -u
 fi
 
+# Ensure Triton build variables are set (used by vLLM/vLLM workers)
+if [ -z "${TRITON_LIBCUDA_PATH:-}" ]; then
+  for candidate in \
+    "/usr/lib/x86_64-linux-gnu/libcuda.so.1" \
+    "/usr/lib64/libcuda.so.1" \
+    "/usr/local/cuda/lib64/stubs/libcuda.so" \
+    "/usr/local/cuda/compat/libcuda.so.1"; do
+    if [ -f "$candidate" ]; then
+      export TRITON_LIBCUDA_PATH="$candidate"
+      echo "Found libcuda at: $candidate"
+      break
+    fi
+  done
+fi
+if [ -z "${TRITON_LIBCUDA_PATH:-}" ]; then
+  ldconfig_path=$(ldconfig -p 2>/dev/null | awk '/libcuda\.so/ {print $NF; exit}')
+  if [ -n "$ldconfig_path" ] && [ -f "$ldconfig_path" ]; then
+    export TRITON_LIBCUDA_PATH="$ldconfig_path"
+    echo "Detected libcuda via ldconfig: $TRITON_LIBCUDA_PATH"
+  else
+    fallback_lib="/usr/lib64/libcuda.so.1"
+    if [ -f "$fallback_lib" ]; then
+      export TRITON_LIBCUDA_PATH="$fallback_lib"
+      echo "WARNING: Falling back to $fallback_lib for TRITON_LIBCUDA_PATH"
+    else
+      echo "WARNING: Unable to locate libcuda.so; Triton may fail to compile kernels." >&2
+      export TRITON_LIBCUDA_PATH=""
+    fi
+  fi
+fi
+
+if command -v gcc >/dev/null 2>&1; then
+  export TRITON_CC="$(command -v gcc)"
+elif [ -x "/usr/bin/gcc" ]; then
+  export TRITON_CC="/usr/bin/gcc"
+else
+  echo "WARNING: gcc not found in PATH; TRITON_CC will be empty." >&2
+  export TRITON_CC=""
+fi
+echo "TRITON_CC: ${TRITON_CC:-<unset>}"
+echo "TRITON_LIBCUDA_PATH: ${TRITON_LIBCUDA_PATH:-<unset>}"
+
 SECRET_FILE="${DC_AGENT_SECRET_ENV:-${KEYS:-}}"
 if [[ -n "${SECRET_FILE}" ]]; then
     if [[ -f "${SECRET_FILE}" ]]; then
@@ -87,7 +129,7 @@ export PYTHONPATH="$PWD:${PYTHONPATH:-}"
 export RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES="${RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES:-1}"
 export RAY_NOSET_CUDA_VISIBLE_DEVICES="${RAY_NOSET_CUDA_VISIBLE_DEVICES:-1}"
 
-SRUN_EXPORT_ENV="ALL,PATH=$PATH,LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-},PYTHONPATH=$PYTHONPATH,HF_HOME=$HF_HOME,RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES=$RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES,RAY_NOSET_CUDA_VISIBLE_DEVICES=$RAY_NOSET_CUDA_VISIBLE_DEVICES"
+SRUN_EXPORT_ENV="ALL,PATH=$PATH,LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-},PYTHONPATH=$PYTHONPATH,HF_HOME=$HF_HOME,RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES=$RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES,RAY_NOSET_CUDA_VISIBLE_DEVICES=$RAY_NOSET_CUDA_VISIBLE_DEVICES,TRITON_CC=${TRITON_CC:-},TRITON_LIBCUDA_PATH=${TRITON_LIBCUDA_PATH:-}"
 RAY_ENV_VARS="PATH=$PATH LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-} PYTHONPATH=$PYTHONPATH HF_HOME=$HF_HOME RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES=$RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES RAY_NOSET_CUDA_VISIBLE_DEVICES=$RAY_NOSET_CUDA_VISIBLE_DEVICES"
 
 # Keep Ray sockets short by using /tmp on compute nodes but archive sessions to SCRATCH.
@@ -101,9 +143,24 @@ export RAY_SESSION_ARCHIVE
 export TMPDIR="$RAY_TMPDIR"
 export TEMP="$RAY_TMPDIR"
 export TMP="$RAY_TMPDIR"
-SRUN_EXPORT_ENV="$SRUN_EXPORT_ENV,RAY_TMPDIR=$RAY_TMPDIR,RAY_SESSION_TMPDIR=$RAY_TMPDIR,TMPDIR=$RAY_TMPDIR,TEMP=$RAY_TMPDIR,TMP=$RAY_TMPDIR"
-RAY_ENV_VARS="$RAY_ENV_VARS RAY_TMPDIR=$RAY_TMPDIR RAY_SESSION_TMPDIR=$RAY_TMPDIR TMPDIR=$RAY_TMPDIR TEMP=$RAY_TMPDIR TMP=$RAY_TMPDIR"
+
+RAY_MEMORY_GB="${PERLMUTTER_RAY_MEMORY_GB:-200}"
+RAY_OBJECT_STORE_GB="${PERLMUTTER_RAY_OBJECT_STORE_GB:-60}"
+RAY_MEMORY_BYTES=$(python3 - <<PY
+mem_gb = float("${RAY_MEMORY_GB}")
+print(int(mem_gb * 1024**3))
+PY
+)
+RAY_OBJECT_STORE_BYTES=$(python3 - <<PY
+store_gb = float("${RAY_OBJECT_STORE_GB}")
+print(int(store_gb * 1024**3))
+PY
+)
+
+SRUN_EXPORT_ENV="$SRUN_EXPORT_ENV,RAY_TMPDIR=$RAY_TMPDIR,RAY_SESSION_TMPDIR=$RAY_TMPDIR,TMPDIR=$RAY_TMPDIR,TEMP=$RAY_TMPDIR,TMP=$RAY_TMPDIR,RAY_MEMORY_BYTES=$RAY_MEMORY_BYTES,RAY_OBJECT_STORE_BYTES=$RAY_OBJECT_STORE_BYTES"
+RAY_ENV_VARS="$RAY_ENV_VARS RAY_TMPDIR=$RAY_TMPDIR RAY_SESSION_TMPDIR=$RAY_TMPDIR TMPDIR=$RAY_TMPDIR TEMP=$RAY_TMPDIR TMP=$RAY_TMPDIR RAY_MEMORY_BYTES=$RAY_MEMORY_BYTES RAY_OBJECT_STORE_BYTES=$RAY_OBJECT_STORE_BYTES"
 echo "Ray session directory: $RAY_TMPDIR (archive: $RAY_SESSION_ARCHIVE)"
+echo "Ray memory limits: total=${RAY_MEMORY_GB}GiB (${RAY_MEMORY_BYTES} bytes), object store=${RAY_OBJECT_STORE_GB}GiB (${RAY_OBJECT_STORE_BYTES} bytes)"
 
 TRACE_BACKEND="${TRACE_BACKEND:-vllm}"
 
@@ -305,7 +362,26 @@ else
     nodes_array=($nodes)
     head_node=${nodes_array[0]}
 
-    head_node_ip=$(srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --overlap -w "$head_node" hostname --ip-address)
+    if [ -n "${PERLMUTTER_SRUN_MEM_MB:-}" ]; then
+        MEM_PER_NODE_MB="$PERLMUTTER_SRUN_MEM_MB"
+    else
+        MEM_PER_NODE_MB=$(python3 - <<'PY'
+import os,re
+raw = os.environ.get("SLURM_MEM_PER_NODE", "1572864")
+m = re.match(r"([0-9]+)", raw)
+print(m.group(1) if m else "1572864")
+PY
+)
+    fi
+    HEADROOM_MB="${PERLMUTTER_SRUN_HEADROOM_MB:-8192}"
+    if [ "$MEM_PER_NODE_MB" -le "$HEADROOM_MB" ]; then
+        SRUN_MEM_PER_STEP="$MEM_PER_NODE_MB"
+    else
+        SRUN_MEM_PER_STEP=$((MEM_PER_NODE_MB - HEADROOM_MB))
+    fi
+    echo "srun memory per step: ${SRUN_MEM_PER_STEP} MB (headroom ${HEADROOM_MB} MB, per-node ${MEM_PER_NODE_MB} MB)"
+
+    head_node_ip=$(srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --mem="$SRUN_MEM_PER_STEP" --overlap -w "$head_node" hostname --ip-address)
     head_node_ip=${head_node_ip%% *}
 
     RAY_PORT="${TRACE_RAY_PORT:-6379}"
@@ -330,17 +406,17 @@ PY
     start_ray_node() {
         local node_name=$1
         local start_cmd=$2
-        srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --overlap -w "$node_name" bash -c "env $RAY_ENV_VARS $start_cmd" &
+        srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --mem="$SRUN_MEM_PER_STEP" --overlap -w "$node_name" bash -c "env $RAY_ENV_VARS $start_cmd" &
         ray_pids+=($!)
     }
 
-    head_cmd="ray start --head --node-ip-address=${head_node_ip} --port=${RAY_PORT} --num-gpus=${GPUS_PER_NODE} --num-cpus={cpus_per_node} --temp-dir=${RAY_TMPDIR} --block"
+    head_cmd="ray start --head --node-ip-address=${head_node_ip} --port=${RAY_PORT} --num-gpus=${GPUS_PER_NODE} --num-cpus={cpus_per_node} --temp-dir=${RAY_TMPDIR} --memory=${RAY_MEMORY_BYTES} --object-store-memory=${RAY_OBJECT_STORE_BYTES} --block"
     echo "Starting Ray head on ${head_node} (${head_node_ip})"
     start_ray_node "$head_node" "$head_cmd"
 
     for ((i = 1; i < NUM_NODES; i++)); do
         node_i=${nodes_array[$i]}
-        worker_cmd="ray start --address ${ip_head} --num-gpus=${GPUS_PER_NODE} --num-cpus={cpus_per_node} --temp-dir=${RAY_TMPDIR} --block"
+        worker_cmd="ray start --address ${ip_head} --num-gpus=${GPUS_PER_NODE} --num-cpus={cpus_per_node} --temp-dir=${RAY_TMPDIR} --memory=${RAY_MEMORY_BYTES} --object-store-memory=${RAY_OBJECT_STORE_BYTES} --block"
         echo "Starting Ray worker on ${node_i}"
         start_ray_node "$node_i" "$worker_cmd"
         sleep 3
@@ -353,7 +429,7 @@ PY
             wait "$VLLM_PID" >/dev/null 2>&1 || true
         fi
         for node in "${nodes_array[@]}"; do
-            srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --overlap -w "$node" ray stop --force >/dev/null 2>&1 || true
+            srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --mem="$SRUN_MEM_PER_STEP" --overlap -w "$node" ray stop --force >/dev/null 2>&1 || true
         done
         for pid in "${ray_pids[@]}"; do
             wait "$pid" >/dev/null 2>&1 || true
@@ -365,7 +441,7 @@ PY
         mkdir -p "$RAY_SESSION_ARCHIVE"
         for node in "${nodes_array[@]}"; do
             local node_dest="$RAY_SESSION_ARCHIVE/$node"
-            srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --overlap -w "$node" bash -c '
+            srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --mem="$SRUN_MEM_PER_STEP" --overlap -w "$node" bash -c '
                 if [ -d "${RAY_TMPDIR:-}" ]; then
                     dest="'"$node_dest"'"
                     mkdir -p "$dest"
@@ -389,7 +465,7 @@ PY
     controller_log="{experiments_dir}/logs/{job_name}_vllm.log"
     CONTROLLER_ENV_CMD="env PATH=$PATH LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-} HF_HOME=$HF_HOME PYTHONPATH=$PYTHONPATH"
 
-    srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --overlap -w "$head_node" \
+    srun --export="$SRUN_EXPORT_ENV" --nodes=1 --ntasks=1 --mem="$SRUN_MEM_PER_STEP" --overlap -w "$head_node" \
         $CONTROLLER_ENV_CMD \
         python3 scripts/vllm/start_vllm_ray_controller.py \
             --ray-address "$ip_head" \
