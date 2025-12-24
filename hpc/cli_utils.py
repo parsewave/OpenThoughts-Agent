@@ -20,14 +20,17 @@ def parse_bool_flag(value: Any) -> bool:
 def coerce_str_bool_none(
     args_dict: dict[str, Any],
     literal_none_keys: set[str],
+    bool_keys: set[str] | None = None,
 ) -> dict[str, Any]:
     """Normalize string CLI values representing booleans or None tokens."""
+
+    bool_keys = set(bool_keys or [])
 
     for key, value in list(args_dict.items()):
         if not isinstance(value, str):
             continue
         lowered = value.strip().lower()
-        if lowered in {"true", "false", "1", "0", "yes", "no", "y", "n", "on", "off"}:
+        if key in bool_keys and lowered in {"true", "false", "1", "0", "yes", "no", "y", "n", "on", "off"}:
             args_dict[key] = parse_bool_flag(lowered)
         elif lowered == "none":
             args_dict[key] = lowered if key in literal_none_keys else None

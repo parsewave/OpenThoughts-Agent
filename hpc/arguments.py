@@ -618,7 +618,7 @@ def _option_strings(field_name: str) -> list[str]:
     return [primary, dashed]
 
 
-def _add_dataclass_arguments(arg_group, dataclass_type, exclude_fields=None):
+def _add_dataclass_arguments(arg_group, dataclass_type, exclude_fields=None, *, bool_fields: set[str] | None = None):
     """
     Helper function to add arguments from a dataclass to an argument group.
 
@@ -646,6 +646,8 @@ def _add_dataclass_arguments(arg_group, dataclass_type, exclude_fields=None):
                 help=help_text,
                 default=field.default,
             )
+            if bool_fields is not None:
+                bool_fields.add(field.name)
         elif isinstance(field.default, bool):
             kwargs = {
                 "dest": field.name,
@@ -658,6 +660,8 @@ def _add_dataclass_arguments(arg_group, dataclass_type, exclude_fields=None):
             if required:
                 kwargs["required"] = True
             arg_group.add_argument(*option_strings, **kwargs)
+            if bool_fields is not None:
+                bool_fields.add(field.name)
         else:
             arg_type = type(field.default) if field.default is not None else str
             kwargs = {
@@ -674,6 +678,8 @@ def _add_dataclass_arguments(arg_group, dataclass_type, exclude_fields=None):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Launch HPC jobs for dcft experiment")
+
+    bool_keys: set[str] = set()
 
     raw_argv = sys.argv[1:]
     explicit_cli_keys = set()
@@ -699,11 +705,11 @@ def parse_args():
     consolidate_group = parser.add_argument_group("Consolidation Arguments")
 
     # Add LaunchArgs arguments
-    _add_dataclass_arguments(launch_group, LaunchArgs)
+    _add_dataclass_arguments(launch_group, LaunchArgs, bool_fields=bool_keys)
 
     # Add DataGenArgs arguments
-    _add_dataclass_arguments(datagen_group, DataGenArgs)
-    _add_dataclass_arguments(consolidate_group, ConsolidateArgs)
+    _add_dataclass_arguments(datagen_group, DataGenArgs, bool_fields=bool_keys)
+    _add_dataclass_arguments(consolidate_group, ConsolidateArgs, bool_fields=bool_keys)
 
     # Add HPC arguments
     # Note: HPC is a Pydantic model, not a dataclass, so we need to handle it differently
@@ -734,12 +740,12 @@ def parse_args():
         )
 
     # Add LlamaFactoryArgs arguments
-    _add_dataclass_arguments(train_group, LlamaFactoryArgs)
+    _add_dataclass_arguments(train_group, LlamaFactoryArgs, bool_fields=bool_keys)
 
     args = parser.parse_args()
     args_dict = {k: v for k, v in vars(args).items() if v is not None}
     args_dict["_explicit_cli_keys"] = explicit_cli_keys
     literal_none_keys = {"datagen_engine", "trace_engine", "datagen_backend", "trace_backend"}
-    args_dict = coerce_str_bool_none(args_dict, literal_none_keys)
+    args_dict = coerce_str_bool_none(args_dict, literal_none_keys, bool_keys)
     args_dict = coerce_numeric_cli_values(args_dict)
     return args_dict
