@@ -54,5 +54,5 @@ while IFS= read -r model_id; do
     continue
   fi
   echo "Resetting Hugging Face model repo: ${model_id}"
-  python scripts/database/reset_hf_repo.py "${model_id}" --repo-type model
+  python scripts/huggingface/reset_hf_repo.py "${model_id}" --repo-type model
 done < "${MODEL_LIST_FILE}"
