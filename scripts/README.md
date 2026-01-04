@@ -93,7 +93,7 @@ Utility entrypoints that support data generation, trace analysis, Harbor uploads
   ```bash
   python scripts/database/manual_db_push.py
   ```
-- `database/list_public_models.py` and `database/reset_hf_repo.py` provide quick HF org utilities (list models, wipe repo contents).
+- `huggingface/list_public_models.py` and `huggingface/reset_hf_repo.py` provide quick HF org utilities (list models, wipe repo contents).
 
 ### Ray / vLLM / Terminal Bench
 - `docker_ray/start_ray_cluster.py` – spin up a Ray Serve deployment backed by vLLM directly from your workstation (handy for local testing).  
