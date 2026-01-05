@@ -145,12 +145,16 @@ def _timestamp() -> str:
 
 def _default_job_name(dataset_label: str, model_label: str) -> str:
     sanitized_dataset = dataset_label.replace("/", "-").replace(" ", "_")
-    return f"eval-{sanitized_dataset}-{model_label}-{_timestamp()}"
+    sanitized_model = model_label.replace("/", "-").replace(" ", "_")
+    return f"eval-{sanitized_dataset}-{sanitized_model}-{_timestamp()}"
 
 
-def _hosted_vllm_model_name() -> str:
-    unique_suffix = str(time.time()).replace(".", "")
-    return f"hosted_vllm/{unique_suffix}"
+def _generate_served_model_id() -> str:
+    return str(int(time.time() * 1_000_000))
+
+
+def _hosted_vllm_alias(served_id: str) -> str:
+    return f"hosted_vllm/{served_id}"
 
 
 def _deep_copy(value: Any) -> Any:
@@ -326,8 +330,8 @@ def _start_vllm_controller(
         }
     )
     env.update(getattr(args, "_vllm_env_overrides", {}))
-    if getattr(args, "_served_model_name", None):
-        env["VLLM_CUSTOM_MODEL_NAME"] = args._served_model_name
+    if getattr(args, "_served_model_id", None):
+        env["VLLM_CUSTOM_MODEL_NAME"] = args._served_model_id
     extra_cli = getattr(args, "_vllm_extra_args", None)
     if extra_cli:
         env["VLLM_SERVER_EXTRA_ARGS_JSON"] = json.dumps(extra_cli)
@@ -412,7 +416,8 @@ def _build_harbor_command(
     endpoint_meta: dict,
 ) -> List[str]:
     harbor_model = getattr(args, "_harbor_model_name", args.model)
-    job_name = args.job_name or _default_job_name(dataset_label, harbor_model)
+    job_model_label = args.model or harbor_model or "model"
+    job_name = args.job_name or _default_job_name(dataset_label, job_model_label)
     base_agent_kwargs = _deep_copy(getattr(args, "_base_agent_kwargs", {}) or {})
     if endpoint_meta.get("metrics_endpoint"):
         base_agent_kwargs["metrics_endpoint"] = endpoint_meta["metrics_endpoint"]
@@ -520,8 +525,9 @@ def main() -> None:
         args.data_parallel_size = 1
     if args.model is None:
         raise ValueError("Provide --model or supply a datagen config with vllm_server.model_path.")
-    args._harbor_model_name = _hosted_vllm_model_name()
-    args._served_model_name = args._harbor_model_name
+    served_model_id = _generate_served_model_id()
+    args._served_model_id = served_model_id
+    args._harbor_model_name = _hosted_vllm_alias(served_model_id)
     if args.ray_port is None:
         args.ray_port = 6379
     if args.api_port is None:
