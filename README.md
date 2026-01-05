@@ -26,20 +26,24 @@ If you are new to the project, start here to get up and running.
 
 ### Installation
 
-Start by creating a clean Python 3.12 virtual environment using your favorite environment manager (we use `conda + mamba`).
+1. Create a clean Python 3.12 virtual environment using your preferred manager (conda, venv, pixi, etc.).
+2. Install [uv](https://github.com/astral-sh/uv) if you don’t already have it:
+   ```bash
+   pip install --upgrade uv
+   ```
+3. From the repo root, install the base OT-Agent stack:
+   ```bash
+   uv pip install -e .
+   ```
 
-From the root directory, you can then install the core HPC + data infrastructure dependencies with:
-
-`pip install .`
-
-As this project contains many dependencies, we recommend the use of a package and project management tool such as `uv` within your virtual environment.
-
-Optional extras:
+Optional extras (append the extra names to the command above, e.g. `uv pip install -e ".[datagen]"`):
 
 * **HPC datagen runtime** (Ray clusters + vLLM serving):
-  `pip install .[datagen]`
+  `.[datagen]` pulls CUDA-heavy wheels on Linux/Windows and automatically falls back to CPU-friendly packages on macOS.
 * **SweSmith-specific datagen helpers** (extends the above with bespoke tools):
-  `pip install .[datagen,datagen-swesmith]` (or `pip install .[datagen-swesmith]` if you already pulled the base datagen extra)
+  `.[datagen,datagen-swesmith]` (or `.[datagen-swesmith]` if you already pulled the base datagen extra)
+* **Cloud orchestration helpers** (SkyPilot, Docker tooling):
+  `.[cloud]`
 
 * **SFT stack**:  
   * Ensure the git submodule is initialized:  
@@ -117,6 +121,45 @@ OT-Agent's job launchers are designed to work with HPC (high-performance computi
 #### How to Launch a Datagen Job
 
 Datagen jobs are launched via the generic HPC launcher and use `--job_type datagen` plus a generator script.
+
+### Local Eval Runner (`eval/local/run_eval.py`)
+
+Need to verify a Harbor eval locally before burning queue time? `eval/local/run_eval.py` spins up a single-node Ray cluster, launches a vLLM controller, and executes a Harbor job against the newly created endpoint.
+
+Prereqs:
+
+* Python environment with the base install plus the `datagen` extra (Ray + vLLM).
+* CUDA GPUs (or Apple Silicon if you just need a dry run) and the expected driver stack.
+* Harbor/Daytona/ Supabase credentials exposed via the usual `DC_AGENT_SECRET_ENV`.
+
+Example:
+
+```bash
+python eval/local/run_eval.py \
+  --datagen-config hpc/datagen_yaml/qwen3_coder_30b_a3b_vllm_serve_131k_1xH200.yaml \
+  --harbor-config hpc/harbor_yaml/trace_16concurrency_eval_ctx131k.yaml \
+  --dataset terminal-bench@2.0 \
+  --model Qwen/Qwen3-Coder-30B-A3B-Instruct \
+  --agent terminus-2 \
+  --gpus 1 \
+  --eval-benchmark-repo DCAgent2/Qwen3Coder30B-terminus2-terminal-bench-2.0-test-lambda
+```
+
+What happens:
+
+1. Datagen defaults (tensor parallelism, vLLM overrides, etc.) are pulled from `--datagen-config`.
+2. Ray and vLLM are booted locally; endpoint metadata lands in `eval_runs/vllm_endpoint.json`.
+3. The script builds the Harbor command, injects required agent kwargs, and runs it while streaming output to `eval_runs/logs/harbor.log`.
+4. Traces, logs, and Harbor artifacts accumulate under `eval_runs/` (change via `--experiments-dir`).
+
+Handy flags:
+
+* `--agent-kwarg foo=bar` (repeatable) to forward Harbor agent settings.
+* `--harbor-extra-arg ...` for advanced Harbor CLI knobs (e.g., filtering datasets).
+* `--harbor-log /tmp/harbor.log` to redirect the live Harbor TUI.
+* `--dry-run` to validate configs without launching Ray/Harbor.
+
+Once your eval behaves locally, promote the same Harbor YAML/datagen config to your HPC launcher or the forthcoming cloud wrappers (documented separately once they graduate from alpha).
 
 1. Ensure your cluster environment is set up (dotenv, conda env, etc.). For TACC/Vista-style machines, follow the checklist in `hpc/README.md` and use `hpc/dotenv/tacc.env` as a starting point for your environment variables.
 2. Activate your environment and source the dotenv:
