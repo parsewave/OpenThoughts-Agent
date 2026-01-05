@@ -19,9 +19,36 @@ import time
 from pathlib import Path
 from typing import Iterable, List, Optional
 
+import yaml
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_EXPERIMENTS_DIR = REPO_ROOT / "eval_runs"
 DEFAULT_ENDPOINT = "vllm_endpoint.json"
+
+VALUE_ENV_FIELDS = {
+    "max_model_len": "VLLM_MAX_MODEL_LEN",
+    "max_num_seqs": "VLLM_MAX_NUM_SEQS",
+    "gpu_memory_utilization": "VLLM_GPU_MEMORY_UTILIZATION",
+    "swap_space": "VLLM_SWAP_SPACE",
+    "max_seq_len_to_capture": "VLLM_MAX_SEQ_LEN_TO_CAPTURE",
+    "custom_model_name": "VLLM_CUSTOM_MODEL_NAME",
+    "tool_call_parser": "VLLM_TOOL_CALL_PARSER",
+    "reasoning_parser": "VLLM_REASONING_PARSER",
+    "hf_overrides": "VLLM_HF_OVERRIDES",
+    "cpu_offload_gb": "VLLM_CPU_OFFLOAD_GB",
+    "kv_offloading_size": "VLLM_KV_OFFLOADING_SIZE",
+    "kv_offloading_backend": "VLLM_KV_OFFLOADING_BACKEND",
+    "max_output_tokens": "VLLM_MAX_OUTPUT_TOKENS",
+    "logging_level": "VLLM_LOGGING_LEVEL",
+}
+
+BOOL_ENV_FIELDS = {
+    "use_deep_gemm": "VLLM_USE_DEEP_GEMM",
+    "enable_expert_parallel": "VLLM_ENABLE_EXPERT_PARALLEL",
+    "enable_auto_tool_choice": "VLLM_ENABLE_AUTO_TOOL_CHOICE",
+    "trust_remote_code": "VLLM_TRUST_REMOTE_CODE",
+    "disable_log_requests": "VLLM_DISABLE_LOG_REQUESTS",
+}
 
 
 def _parse_args() -> argparse.Namespace:
@@ -35,8 +62,8 @@ def _parse_args() -> argparse.Namespace:
         "--dataset-path",
         help="Path to a Harbor task directory. Mutually exclusive with --dataset.",
     )
-    parser.add_argument("--model", required=True, help="Trace model identifier (used for Harbor + vLLM).")
-    parser.add_argument("--agent", default="terminus-2", help="Harbor agent name to run.")
+    parser.add_argument("--model", help="Trace model identifier (used for Harbor + vLLM).")
+    parser.add_argument("--agent", help="Harbor agent name to run (default terminus-2).")
     parser.add_argument("--eval-env", default="daytona", help="Harbor environment name.")
     parser.add_argument("--n-concurrent", type=int, default=16, help="Concurrent eval trials.")
     parser.add_argument("--n-attempts", type=int, default=3, help="Retries (Harbor --k-attempts).")
@@ -55,11 +82,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--host", default="127.0.0.1", help="Host/IP for Ray + vLLM.")
     parser.add_argument("--ray-port", type=int, default=6379, help="Ray head port.")
     parser.add_argument("--api-port", type=int, default=8000, help="vLLM OpenAI server port.")
-    parser.add_argument("--gpus", type=int, default=1, help="GPUs to expose to Ray.")
-    parser.add_argument("--cpus", type=int, default=os.cpu_count() or 16, help="CPUs to expose to Ray.")
-    parser.add_argument("--tensor-parallel-size", type=int, default=1)
-    parser.add_argument("--pipeline-parallel-size", type=int, default=1)
-    parser.add_argument("--data-parallel-size", type=int, default=1)
+    parser.add_argument("--gpus", type=int, help="GPUs to expose to Ray.")
+    parser.add_argument("--cpus", type=int, help="CPUs to expose to Ray.")
+    parser.add_argument("--tensor-parallel-size", type=int)
+    parser.add_argument("--pipeline-parallel-size", type=int)
+    parser.add_argument("--data-parallel-size", type=int)
     parser.add_argument("--health-max-attempts", type=int, default=20)
     parser.add_argument("--health-retry-delay", type=int, default=30)
     parser.add_argument("--harbor-binary", default="harbor", help="Harbor CLI executable.")
@@ -86,6 +113,10 @@ def _parse_args() -> argparse.Namespace:
         action="append",
         default=[],
         help="Additional passthrough args for `harbor jobs start`.",
+    )
+    parser.add_argument(
+        "--datagen-config",
+        help="Optional datagen YAML whose vLLM settings will seed defaults for this script.",
     )
     parser.add_argument(
         "--dry-run",
@@ -127,6 +158,77 @@ class ManagedProcess:
             self.proc.kill()
 
 
+def _maybe_int(value: object) -> Optional[int]:
+    if value in (None, "", "None"):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _prepare_vllm_env_from_datagen(cfg: dict) -> dict[str, str]:
+    env: dict[str, str] = {}
+    for field, env_key in VALUE_ENV_FIELDS.items():
+        value = cfg.get(field)
+        if value in (None, "", "None"):
+            continue
+        env[env_key] = str(value)
+    for field, env_key in BOOL_ENV_FIELDS.items():
+        flag = cfg.get(field)
+        if isinstance(flag, bool) and flag:
+            env[env_key] = "1"
+    return env
+
+
+def _apply_datagen_defaults(args: argparse.Namespace) -> None:
+    args._vllm_env_overrides = {}
+    args._vllm_extra_args: List[str] = []
+    if not args.datagen_config:
+        return
+
+    cfg_path = Path(args.datagen_config).expanduser().resolve()
+    if not cfg_path.exists():
+        raise FileNotFoundError(f"Datagen config not found: {cfg_path}")
+    with cfg_path.open("r", encoding="utf-8") as handle:
+        datagen_cfg = yaml.safe_load(handle) or {}
+    args.datagen_config = str(cfg_path)
+
+    engine_cfg = datagen_cfg.get("engine") or {}
+    backend_cfg = datagen_cfg.get("backend") or {}
+    vllm_cfg = datagen_cfg.get("vllm_server") or {}
+
+    if args.model is None:
+        args.model = vllm_cfg.get("model_path") or engine_cfg.get("model")
+
+    tp_default = _maybe_int(vllm_cfg.get("tensor_parallel_size")) or _maybe_int(
+        backend_cfg.get("tensor_parallel_size")
+    )
+    pp_default = _maybe_int(vllm_cfg.get("pipeline_parallel_size")) or _maybe_int(
+        backend_cfg.get("pipeline_parallel_size")
+    )
+    dp_default = _maybe_int(vllm_cfg.get("data_parallel_size")) or _maybe_int(
+        backend_cfg.get("data_parallel_size")
+    )
+
+    if args.tensor_parallel_size is None and tp_default:
+        args.tensor_parallel_size = tp_default
+    if args.pipeline_parallel_size is None and pp_default:
+        args.pipeline_parallel_size = pp_default
+    if args.data_parallel_size is None and dp_default:
+        args.data_parallel_size = dp_default
+
+    if args.ray_port is None:
+        args.ray_port = _maybe_int(backend_cfg.get("ray_port")) or args.ray_port
+    if args.api_port is None:
+        args.api_port = _maybe_int(backend_cfg.get("api_port")) or args.api_port
+
+    env_overrides = _prepare_vllm_env_from_datagen({**engine_cfg, **vllm_cfg})
+    args._vllm_env_overrides = env_overrides
+
+    extra_args = vllm_cfg.get("extra_args")
+    if isinstance(extra_args, list) and extra_args:
+        args._vllm_extra_args = [str(item) for item in extra_args]
 def _start_ray(args: argparse.Namespace, log_path: Path | None) -> ManagedProcess:
     cmd = [
         "ray",
@@ -168,6 +270,10 @@ def _start_vllm_controller(
             "VLLM_ENDPOINT_JSON_PATH": str(endpoint_path),
         }
     )
+    env.update(getattr(args, "_vllm_env_overrides", {}))
+    extra_cli = getattr(args, "_vllm_extra_args", None)
+    if extra_cli:
+        env["VLLM_SERVER_EXTRA_ARGS_JSON"] = json.dumps(extra_cli)
     cmd = [
         sys.executable,
         str(REPO_ROOT / "scripts" / "vllm" / "start_vllm_ray_controller.py"),
@@ -300,6 +406,29 @@ def _terminate(processes: Iterable[ManagedProcess]) -> None:
 
 def main() -> None:
     args = _parse_args()
+    _apply_datagen_defaults(args)
+
+    if args.agent is None:
+        args.agent = "terminus-2"
+    if args.tensor_parallel_size is None:
+        args.tensor_parallel_size = 1
+    if args.pipeline_parallel_size is None:
+        args.pipeline_parallel_size = 1
+    if args.data_parallel_size is None:
+        args.data_parallel_size = 1
+    if args.model is None:
+        raise ValueError("Provide --model or supply a datagen config with vllm_server.model_path.")
+    if args.ray_port is None:
+        args.ray_port = 6379
+    if args.api_port is None:
+        args.api_port = 8000
+    if args.gpus is None:
+        args.gpus = max(
+            1,
+            args.tensor_parallel_size * args.pipeline_parallel_size * args.data_parallel_size,
+        )
+    if args.cpus is None:
+        args.cpus = os.cpu_count() or 16
     args.harbor_config = str(Path(args.harbor_config).expanduser().resolve())
     if args.dataset_path:
         args.dataset_path = str(Path(args.dataset_path).expanduser().resolve())

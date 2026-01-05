@@ -25,6 +25,7 @@ dependencies = [
     "certifi",
     "rapidfuzz",
     "huggingface_hub",
+    "torch==2.9.0+cu128",
 ]
 
 [project.optional-dependencies]
@@ -73,3 +74,6 @@ exclude = [
     "wheels*",
     "tmp*",
 ]
+
+[tool.uv.pip]
+extra-index-url = ["https://download.pytorch.org/whl/cu128"]
