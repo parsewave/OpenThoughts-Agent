@@ -1,0 +1,354 @@
+#!/usr/bin/env python3
+"""
+Local eval runner.
+
+Starts a single-node Ray cluster + vLLM controller and then launches a Harbor eval
+job that targets the freshly booted endpoint. Designed for non-SLURM Linux hosts
+where we have exclusive access to the box.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import signal
+import subprocess
+import sys
+import time
+from pathlib import Path
+from typing import Iterable, List, Optional
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_EXPERIMENTS_DIR = REPO_ROOT / "eval_runs"
+DEFAULT_ENDPOINT = "vllm_endpoint.json"
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run Harbor evals against a local Ray/vLLM server.")
+    parser.add_argument("--harbor-config", required=True, help="Path to Harbor eval YAML.")
+    parser.add_argument(
+        "--dataset",
+        help="Harbor dataset slug (e.g., terminal-bench@2.0). Mutually exclusive with --dataset-path.",
+    )
+    parser.add_argument(
+        "--dataset-path",
+        help="Path to a Harbor task directory. Mutually exclusive with --dataset.",
+    )
+    parser.add_argument("--model", required=True, help="Trace model identifier (used for Harbor + vLLM).")
+    parser.add_argument("--agent", default="terminus-2", help="Harbor agent name to run.")
+    parser.add_argument("--eval-env", default="daytona", help="Harbor environment name.")
+    parser.add_argument("--n-concurrent", type=int, default=16, help="Concurrent eval trials.")
+    parser.add_argument("--n-attempts", type=int, default=3, help="Retries (Harbor --k-attempts).")
+    parser.add_argument(
+        "--expected-trials",
+        type=int,
+        help="Optional expected trial count (for bookkeeping only).",
+    )
+    parser.add_argument("--eval-benchmark-repo", required=True, help="Supabase benchmark repo id.")
+    parser.add_argument(
+        "--experiments-dir",
+        default=str(DEFAULT_EXPERIMENTS_DIR),
+        help="Directory for logs + endpoint JSON.",
+    )
+    parser.add_argument("--job-name", help="Optional Harbor job name override.")
+    parser.add_argument("--host", default="127.0.0.1", help="Host/IP for Ray + vLLM.")
+    parser.add_argument("--ray-port", type=int, default=6379, help="Ray head port.")
+    parser.add_argument("--api-port", type=int, default=8000, help="vLLM OpenAI server port.")
+    parser.add_argument("--gpus", type=int, default=1, help="GPUs to expose to Ray.")
+    parser.add_argument("--cpus", type=int, default=os.cpu_count() or 16, help="CPUs to expose to Ray.")
+    parser.add_argument("--tensor-parallel-size", type=int, default=1)
+    parser.add_argument("--pipeline-parallel-size", type=int, default=1)
+    parser.add_argument("--data-parallel-size", type=int, default=1)
+    parser.add_argument("--health-max-attempts", type=int, default=20)
+    parser.add_argument("--health-retry-delay", type=int, default=30)
+    parser.add_argument("--harbor-binary", default="harbor", help="Harbor CLI executable.")
+    parser.add_argument(
+        "--agent-kwarg",
+        action="append",
+        default=[],
+        help="Additional --agent-kwarg entries (key=value).",
+    )
+    parser.add_argument(
+        "--controller-log",
+        help="Optional path for vLLM controller stdout/stderr.",
+    )
+    parser.add_argument(
+        "--ray-log",
+        help="Optional path for Ray stdout/stderr.",
+    )
+    parser.add_argument(
+        "--endpoint-json",
+        help="Optional endpoint JSON path. Defaults to <experiments_dir>/vllm_endpoint.json",
+    )
+    parser.add_argument(
+        "--harbor-extra-arg",
+        action="append",
+        default=[],
+        help="Additional passthrough args for `harbor jobs start`.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print commands without executing Harbor.",
+    )
+    return parser.parse_args()
+
+
+def _ensure_mutually_exclusive(dataset: Optional[str], dataset_path: Optional[str]) -> None:
+    if dataset and dataset_path:
+        raise ValueError("Specify either --dataset or --dataset-path (not both).")
+    if not dataset and not dataset_path:
+        raise ValueError("Must provide --dataset or --dataset-path.")
+
+
+def _timestamp() -> str:
+    return time.strftime("%Y%m%d_%H%M%S", time.localtime())
+
+
+def _default_job_name(dataset_label: str, model: str) -> str:
+    sanitized_dataset = dataset_label.replace("/", "-").replace(" ", "_")
+    sanitized_model = model.replace("/", "-")
+    return f"eval-{sanitized_dataset}-{sanitized_model}-{_timestamp()}"
+
+
+class ManagedProcess:
+    def __init__(self, name: str, popen: subprocess.Popen):
+        self.name = name
+        self.proc = popen
+
+    def stop(self, timeout: float = 10.0) -> None:
+        if self.proc.poll() is not None:
+            return
+        try:
+            self.proc.terminate()
+            self.proc.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            self.proc.kill()
+
+
+def _start_ray(args: argparse.Namespace, log_path: Path | None) -> ManagedProcess:
+    cmd = [
+        "ray",
+        "start",
+        "--head",
+        f"--node-ip-address={args.host}",
+        f"--port={args.ray_port}",
+        f"--num-gpus={args.gpus}",
+        f"--num-cpus={args.cpus}",
+        "--dashboard-host=0.0.0.0",
+        "--block",
+    ]
+    env = os.environ.copy()
+    stdout = stderr = None
+    if log_path:
+        log_file = open(log_path, "w", encoding="utf-8")
+        stdout = log_file
+        stderr = log_file
+    else:
+        log_file = None
+    popen = subprocess.Popen(cmd, stdout=stdout, stderr=stderr, env=env)
+    process = ManagedProcess("ray", popen)
+    process._log_handle = log_file  # type: ignore[attr-defined]
+    return process
+
+
+def _start_vllm_controller(
+    args: argparse.Namespace,
+    endpoint_path: Path,
+    log_path: Path | None,
+) -> ManagedProcess:
+    env = os.environ.copy()
+    env.update(
+        {
+            "VLLM_MODEL_PATH": args.model,
+            "VLLM_TENSOR_PARALLEL_SIZE": str(args.tensor_parallel_size),
+            "VLLM_PIPELINE_PARALLEL_SIZE": str(args.pipeline_parallel_size),
+            "VLLM_DATA_PARALLEL_SIZE": str(args.data_parallel_size),
+            "VLLM_ENDPOINT_JSON_PATH": str(endpoint_path),
+        }
+    )
+    cmd = [
+        sys.executable,
+        str(REPO_ROOT / "scripts" / "vllm" / "start_vllm_ray_controller.py"),
+        "--ray-address",
+        f"{args.host}:{args.ray_port}",
+        "--host",
+        args.host,
+        "--port",
+        str(args.api_port),
+        "--tensor-parallel-size",
+        str(args.tensor_parallel_size),
+        "--pipeline-parallel-size",
+        str(args.pipeline_parallel_size),
+        "--data-parallel-size",
+        str(args.data_parallel_size),
+    ]
+    stdout = stderr = None
+    if log_path:
+        log_file = open(log_path, "w", encoding="utf-8")
+        stdout = log_file
+        stderr = log_file
+    else:
+        log_file = None
+    popen = subprocess.Popen(cmd, stdout=stdout, stderr=stderr, env=env)
+    process = ManagedProcess("vllm_controller", popen)
+    process._log_handle = log_file  # type: ignore[attr-defined]
+    return process
+
+
+def _wait_for_endpoint(endpoint_path: Path, controller: ManagedProcess, timeout: int = 300) -> None:
+    start = time.time()
+    while time.time() - start < timeout:
+        if controller.proc.poll() is not None:
+            raise RuntimeError("vLLM controller exited before writing the endpoint JSON. Check logs.")
+        if endpoint_path.exists():
+            return
+        time.sleep(2)
+    raise TimeoutError(f"Timed out waiting for endpoint JSON at {endpoint_path}")
+
+
+def _run_endpoint_health_check(
+    endpoint_json: Path,
+    attempts: int,
+    delay: int,
+) -> None:
+    cmd = [
+        sys.executable,
+        str(REPO_ROOT / "scripts" / "vllm" / "wait_for_endpoint.py"),
+        "--endpoint-json",
+        str(endpoint_json),
+        "--max-attempts",
+        str(attempts),
+        "--retry-delay",
+        str(delay),
+        "--health-path",
+        "v1/models",
+    ]
+    subprocess.run(cmd, check=True)
+
+
+def _load_endpoint_metadata(endpoint_json: Path) -> dict:
+    data = json.loads(endpoint_json.read_text())
+    base_url = (data.get("endpoint_url") or "").rstrip("/")
+    api_base = f"{base_url}/v1" if base_url else ""
+    metrics = base_url.rstrip("/")
+    if metrics.endswith("/v1"):
+        metrics = metrics[:-3].rstrip("/")
+    metrics = f"{metrics}/metrics" if metrics else ""
+    data["api_base"] = api_base
+    data["metrics_endpoint"] = metrics
+    return data
+
+
+def _build_harbor_command(
+    args: argparse.Namespace,
+    dataset_label: str,
+    endpoint_meta: dict,
+) -> List[str]:
+    job_name = args.job_name or _default_job_name(dataset_label, args.model)
+    cmd = [
+        args.harbor_binary,
+        "jobs",
+        "start",
+        "--config",
+        args.harbor_config,
+        "--job-name",
+        job_name,
+        "--agent",
+        args.agent,
+        "--model",
+        args.model,
+        "--env",
+        args.eval_env,
+        "--n-concurrent",
+        str(args.n_concurrent),
+        "--k-attempts",
+        str(args.n_attempts),
+    ]
+    if args.dataset:
+        cmd.extend(["--dataset", args.dataset])
+    else:
+        cmd.extend(["-p", args.dataset_path])
+    if args.expected_trials:
+        cmd.extend(["--expected-trials", str(args.expected_trials)])
+
+    agent_kwargs: List[str] = list(args.agent_kwarg or [])
+    keys = {kw.split("=", 1)[0] for kw in agent_kwargs if "=" in kw}
+    if endpoint_meta.get("api_base") and "api_base" not in keys:
+        agent_kwargs.append(f"api_base={endpoint_meta['api_base']}")
+    if endpoint_meta.get("metrics_endpoint") and "metrics_endpoint" not in keys:
+        agent_kwargs.append(f"metrics_endpoint={endpoint_meta['metrics_endpoint']}")
+    for kw in agent_kwargs:
+        cmd.extend(["--agent-kwarg", kw])
+
+    for extra in args.harbor_extra_arg or []:
+        cmd.append(extra)
+
+    return cmd
+
+
+def _terminate(processes: Iterable[ManagedProcess]) -> None:
+    for proc in processes:
+        try:
+            proc.stop()
+        finally:
+            log_handle = getattr(proc, "_log_handle", None)
+            if log_handle:
+                log_handle.close()
+
+
+def main() -> None:
+    args = _parse_args()
+    args.harbor_config = str(Path(args.harbor_config).expanduser().resolve())
+    if args.dataset_path:
+        args.dataset_path = str(Path(args.dataset_path).expanduser().resolve())
+
+    _ensure_mutually_exclusive(args.dataset, args.dataset_path)
+
+    experiments_dir = Path(args.experiments_dir).expanduser().resolve()
+    experiments_dir.mkdir(parents=True, exist_ok=True)
+    logs_dir = experiments_dir / "logs"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+
+    endpoint_json = Path(args.endpoint_json or (experiments_dir / DEFAULT_ENDPOINT))
+    if endpoint_json.exists():
+        endpoint_json.unlink()
+
+    os.chdir(REPO_ROOT)
+
+    dataset_label = args.dataset or args.dataset_path or "dataset"
+    ray_log = Path(args.ray_log) if args.ray_log else logs_dir / "ray.log"
+    controller_log = Path(args.controller_log) if args.controller_log else logs_dir / "vllm_controller.log"
+
+    processes: List[ManagedProcess] = []
+
+    def _handle_signal(signum, _frame):
+        print(f"\nSignal {signum} received; shutting down...", file=sys.stderr)
+        _terminate(processes)
+        subprocess.run(["ray", "stop", "--force"], check=False)
+        sys.exit(1)
+
+    signal.signal(signal.SIGINT, _handle_signal)
+    signal.signal(signal.SIGTERM, _handle_signal)
+
+    ray_proc = _start_ray(args, ray_log)
+    processes.append(ray_proc)
+    vllm_proc = _start_vllm_controller(args, endpoint_json, controller_log)
+    processes.append(vllm_proc)
+
+    try:
+        _wait_for_endpoint(endpoint_json, vllm_proc)
+        _run_endpoint_health_check(endpoint_json, args.health_max_attempts, args.health_retry_delay)
+        endpoint_meta = _load_endpoint_metadata(endpoint_json)
+        harbor_cmd = _build_harbor_command(args, dataset_label, endpoint_meta)
+        print("Harbor command:", " ".join(harbor_cmd))
+        if not args.dry_run:
+            subprocess.run(harbor_cmd, check=True)
+    finally:
+        _terminate(processes[::-1])
+        subprocess.run(["ray", "stop", "--force"], check=False)
+
+
+if __name__ == "__main__":
+    main()
