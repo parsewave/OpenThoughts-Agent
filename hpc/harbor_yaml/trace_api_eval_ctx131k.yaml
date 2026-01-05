@@ -2,7 +2,7 @@
 
 job_name: api-eval-trace-job
 jobs_dir: trace_jobs
-n_attempts: 1
+n_attempts: 3
 timeout_multiplier: 1.0
 debug: false
 
@@ -22,14 +22,11 @@ orchestrator:
     queue_p95_drop_threshold: null
     algorithm_kwargs: {}
   retry:
-    max_retries: 0
+    max_retries: 100
     include_exceptions: null
     exclude_exceptions:
       - AgentTimeoutError
       - VerifierTimeoutError
-      - RewardFileNotFoundError
-      - RewardFileEmptyError
-      - VerifierOutputParseError
     wait_multiplier: 1.0
     min_wait_sec: 1.0
     max_wait_sec: 60.0
@@ -37,8 +34,8 @@ orchestrator:
 
 environment:
   type: daytona
-  force_build: false
-  delete: true
+  force_build: true
+  delete: false
   override_cpus: 1
   override_memory_mb: 2048
   override_storage_mb: 2048
