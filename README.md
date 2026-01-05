@@ -45,6 +45,15 @@ Optional extras (append the extra names to the command above, e.g. `uv pip insta
 * **Cloud orchestration helpers** (SkyPilot, Docker tooling):
   `.[cloud]`
 
+**Fresh Ubuntu/GCP quickstart**
+
+```bash
+sudo snap install astral-uv --classic     # installs uv system-wide
+uv venv --python 3.12                     # creates .venv with CPython 3.12
+source .venv/bin/activate
+uv pip install -e ".[datagen]"            # add ,cloud or other extras as needed
+```
+
 * **SFT stack**:  
   * Ensure the git submodule is initialized:  
     `git submodule update --init --recursive sft/llamafactory`

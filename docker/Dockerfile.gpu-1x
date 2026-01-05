@@ -12,7 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --upgrade pip uv
+RUN pip3 install --upgrade pip uv && \
+    uv venv --python 3.12 /opt/openthoughts/.venv
+
+ENV VIRTUAL_ENV=/opt/openthoughts/.venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 WORKDIR /opt/openthoughts
 COPY pyproject.toml ./
@@ -32,7 +36,7 @@ COPY CONTRIBUTING.md ./
 COPY LICENSE.txt ./
 COPY docker ./docker
 
-RUN uv pip install --system .[cloud,datagen]
+RUN . /opt/openthoughts/.venv/bin/activate && uv pip install -e ".[datagen,cloud]"
 
 ENV NVIDIA_VISIBLE_DEVICES=0
 
