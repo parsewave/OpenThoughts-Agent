@@ -1,29 +1,28 @@
 engine:
   type: vllm_local
-  model: Qwen/Qwen3-Coder-30B-A3B-Instruct
-  max_output_tokens: 16384
+  model: Qwen/Qwen3-8B
+  max_output_tokens: 8192
   healthcheck_interval: 300
   vllm_local: {}
 backend:
   type: vllm
   wait_for_endpoint: true
-  tensor_parallel_size: 8
+  tensor_parallel_size: 1
   pipeline_parallel_size: 1
-  data_parallel_size: 1
+  data_parallel_size: 2
 vllm_server:
-  model_path: Qwen/Qwen3-Coder-30B-A3B-Instruct
+  model_path: Qwen/Qwen3-8B
   num_replicas: 1
-  tensor_parallel_size: 8
+  tensor_parallel_size: 1
   pipeline_parallel_size: 1
-  data_parallel_size: 1
+  data_parallel_size: 2
   time_limit: '48:00:00'
-  max_model_len: 131072
+  max_model_len: 32768
   max_num_seqs: 16
   gpu_memory_utilization: 0.9
-  swap_space: 64
+  swap_space: 12
   enable_expert_parallel: false
-  max_seq_len_to_capture: 131072
-  trust_remote_code: true
+  max_seq_len_to_capture: 32768
   enable_auto_tool_choice: true
   tool_call_parser: qwen3_xml
   reasoning_parser: qwen3
@@ -38,5 +37,3 @@ vllm_server:
   - --enable-prefix-caching
   - --all2all-backend
   - pplx
-
-
