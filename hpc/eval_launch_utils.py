@@ -409,13 +409,9 @@ class EvalJobRunner:
 
         print(f"Running Harbor command: {' '.join(cmd)}")
         sys.stdout.flush()
-        result = subprocess.run(cmd, capture_output=True, text=True)
 
-        # Print output
-        if result.stdout:
-            print(result.stdout)
-        if result.stderr:
-            print(result.stderr, file=sys.stderr)
+        # Stream output in real-time (don't buffer with capture_output)
+        result = subprocess.run(cmd)
 
         if result.returncode != 0:
             print(f"Harbor exited with code {result.returncode}", file=sys.stderr)
