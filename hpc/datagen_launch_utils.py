@@ -1076,13 +1076,13 @@ class TracegenJobRunner:
         print(f"Running Harbor command: {' '.join(cmd)}")
         sys.stdout.flush()
 
-        # Stream output in real-time (don't buffer with capture_output)
-        result = subprocess.run(cmd)
-
-        if result.returncode != 0:
-            print(f"Harbor exited with code {result.returncode}", file=sys.stderr)
-
-        return result.returncode
+        # Use PTY-based runner for proper Harbor output handling
+        from hpc.cli_utils import run_harbor_cli
+        try:
+            return run_harbor_cli(cmd)
+        except subprocess.CalledProcessError as e:
+            print(f"Harbor exited with code {e.returncode}", file=sys.stderr)
+            return e.returncode
 
 
 def run_datagen_job_main():

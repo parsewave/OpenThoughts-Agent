@@ -10,12 +10,10 @@ where we have exclusive access to the box.
 from __future__ import annotations
 
 import argparse
-import errno
 import getpass
 import hashlib
 import json
 import os
-import pty
 import re
 import signal
 import subprocess
@@ -668,42 +666,9 @@ def _build_harbor_command(
 
 
 def _run_harbor_cli(cmd: List[str], log_path: Path | None) -> None:
-    if log_path:
-        with open(log_path, "w", encoding="utf-8") as harbor_log_file:
-            print(f"Streaming Harbor output to {log_path}")
-            subprocess.run(
-                cmd,
-                check=True,
-                stdout=harbor_log_file,
-                stderr=subprocess.STDOUT,
-            )
-        return
-
-    master_fd, slave_fd = pty.openpty()
-    try:
-        proc = subprocess.Popen(
-            cmd,
-            stdin=slave_fd,
-            stdout=slave_fd,
-            stderr=slave_fd,
-            text=False,
-        )
-        os.close(slave_fd)
-        while True:
-            try:
-                data = os.read(master_fd, 4096)
-            except OSError as exc:
-                if exc.errno != errno.EIO:
-                    raise
-                break
-            if not data:
-                break
-            os.write(sys.stdout.fileno(), data)
-    finally:
-        os.close(master_fd)
-    ret = proc.wait()
-    if ret != 0:
-        raise subprocess.CalledProcessError(ret, cmd)
+    # Use shared PTY-based runner
+    from hpc.cli_utils import run_harbor_cli
+    run_harbor_cli(cmd, log_path)
 
 
 def _terminate(processes: Iterable[ManagedProcess]) -> None:
