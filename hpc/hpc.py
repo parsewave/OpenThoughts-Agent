@@ -428,7 +428,7 @@ nyutorch = HPC(
     gpus_type="H200 141GB / L40S 48GB",
     total_partition_nodes=48,
     gpu_directive_format="--gres=gpu:{type}:{n}",
-    default_gpu_type="H200",  # Options: H200, L40S
+    default_gpu_type="h200",  # Options: h200, l40s
     # Runtime configuration for Ray/vLLM (from legacy scripts)
     conda_activate="source $SCRATCH/miniconda3/etc/profile.d/conda.sh && conda activate dcagent312",
     env_vars={
