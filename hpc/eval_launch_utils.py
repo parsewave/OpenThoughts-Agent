@@ -265,6 +265,11 @@ class EvalJobConfig:
     upload_username: str = ""
     upload_mode: str = "skip_on_error"
     hf_repo_prefix: str = "DCAgent2"
+    upload_to_database: bool = False
+    hf_repo_id: Optional[str] = None
+    hf_private: bool = False
+    hf_episodes: str = "last"
+    upload_forced_update: bool = False
 
 
 class EvalJobRunner:
@@ -313,6 +318,8 @@ class EvalJobRunner:
 
             if exit_code == 0:
                 print(f"Eval job '{self.config.job_name}' completed successfully")
+                # Attempt upload after successful Harbor run
+                self._maybe_upload_results()
             else:
                 print(f"Eval job '{self.config.job_name}' failed with code {exit_code}")
 
@@ -321,6 +328,63 @@ class EvalJobRunner:
         except Exception as e:
             print(f"Eval job failed with exception: {e}", file=sys.stderr)
             raise
+
+    def _maybe_upload_results(self) -> None:
+        """Upload eval results to HuggingFace and/or Supabase database after Harbor completes."""
+        if not self.config.upload_to_database and not self.config.hf_repo_id:
+            print("[upload] No upload configured; skipping.")
+            return
+
+        # Determine job directory
+        jobs_dir = Path(self.config.experiments_dir) / "trace_jobs"
+        job_dir = jobs_dir / self.config.job_name
+        if not job_dir.exists():
+            print(f"[upload] Job directory {job_dir} does not exist; skipping upload.")
+            return
+
+        from hpc.launch_utils import sync_eval_to_database, upload_traces_to_hf
+
+        # Derive model name (strip hosted_vllm prefix if present)
+        model_name = self.config.model
+        if model_name and model_name.startswith("hosted_vllm/"):
+            # Use original model path for database records
+            model_name = self.config.vllm_model_path or model_name
+
+        if self.config.upload_to_database:
+            # Full database sync (includes optional HF upload)
+            try:
+                result = sync_eval_to_database(
+                    job_dir=job_dir,
+                    username=self.config.upload_username or None,
+                    error_mode=self.config.upload_mode,
+                    agent_name=self.config.agent,
+                    model_name=model_name,
+                    benchmark_name=self.config.eval_benchmark_repo or self.config.dataset,
+                    register_benchmark=True,
+                    hf_repo_id=self.config.hf_repo_id,
+                    hf_private=self.config.hf_private,
+                    hf_episodes=self.config.hf_episodes,
+                    forced_update=self.config.upload_forced_update,
+                )
+                if result.get("success"):
+                    print(f"[upload] Database sync successful: job_id={result.get('job_id')}")
+                else:
+                    print(f"[upload] Database sync failed: {result.get('error', 'unknown error')}")
+            except Exception as e:
+                print(f"[upload] Database sync error: {e}", file=sys.stderr)
+        elif self.config.hf_repo_id:
+            # HF upload only (no database sync)
+            try:
+                hf_url = upload_traces_to_hf(
+                    job_dir=job_dir,
+                    hf_repo_id=self.config.hf_repo_id,
+                    hf_private=self.config.hf_private,
+                    hf_episodes=self.config.hf_episodes,
+                )
+                if hf_url:
+                    print(f"[upload] HuggingFace upload successful: {hf_url}")
+            except Exception as e:
+                print(f"[upload] HuggingFace upload error: {e}", file=sys.stderr)
 
     def _run_with_vllm(self) -> int:
         """Run eval with managed Ray cluster and vLLM server."""
@@ -534,6 +598,13 @@ def launch_eval_job_v2(exp_args: dict, hpc) -> None:
         agent_kwargs=agent_kwargs,
         upload_username=exp_args.get("job_creator") or os.environ.get("USER", "unknown"),
         vllm_server_config=vllm_server_config,
+        # Upload settings
+        upload_to_database=bool(exp_args.get("upload_to_database")),
+        upload_mode=exp_args.get("upload_error_mode") or "skip_on_error",
+        hf_repo_id=exp_args.get("upload_hf_repo") or None,
+        hf_private=bool(exp_args.get("upload_hf_private")),
+        hf_episodes=exp_args.get("upload_hf_episodes") or "last",
+        upload_forced_update=bool(exp_args.get("upload_forced_update")),
     )
 
     # Write config JSON

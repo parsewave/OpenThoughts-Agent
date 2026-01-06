@@ -843,6 +843,204 @@ def construct_sbatch_script(exp_args: dict) -> str:
     return sbatch_script_path
 
 
+# =============================================================================
+# Upload Utilities
+# =============================================================================
+
+
+def _ensure_database_module_path() -> None:
+    """Add the database module directory to sys.path if not already present."""
+    import sys
+    db_path = PROJECT_ROOT / "database"
+    if db_path.exists():
+        db_path_str = str(db_path)
+        if db_path_str not in sys.path:
+            sys.path.insert(0, db_path_str)
+
+
+def upload_traces_to_hf(
+    job_dir: PathInput,
+    hf_repo_id: str,
+    *,
+    hf_private: bool = False,
+    hf_token: Optional[str] = None,
+    hf_episodes: str = "last",
+    hf_success_filter: Optional[str] = None,
+    hf_verbose: bool = False,
+    dry_run: bool = False,
+) -> Optional[str]:
+    """Upload Harbor job traces to HuggingFace.
+
+    This function handles uploading trace data from a Harbor job directory
+    to a HuggingFace dataset repository. Used by both eval and datagen jobs.
+
+    Args:
+        job_dir: Path to the Harbor job directory containing traces.
+        hf_repo_id: HuggingFace repository ID (e.g., 'org/dataset-name').
+        hf_private: Whether to create a private HF repository.
+        hf_token: HuggingFace API token. Falls back to HF_TOKEN env var.
+        hf_episodes: Which episodes to export: "all" or "last".
+        hf_success_filter: Filter by success status: "success", "failure", or None.
+        hf_verbose: Enable verbose logging for HF upload.
+        dry_run: If True, skip actual upload and return None.
+
+    Returns:
+        HuggingFace dataset URL on success, or None if dry_run or upload fails.
+
+    Raises:
+        RuntimeError: If the database upload module is unavailable.
+    """
+    if dry_run:
+        print(f"[upload] DRY RUN: Would upload traces from {job_dir} to {hf_repo_id}")
+        return None
+
+    if not job_dir:
+        print("[upload] No job directory provided; skipping HF upload.")
+        return None
+
+    job_path = Path(job_dir)
+    if not job_path.exists():
+        print(f"[upload] Job directory {job_path} does not exist; skipping HF upload.")
+        return None
+
+    token = hf_token or os.environ.get("HF_TOKEN")
+    if not token:
+        print("[upload] No HF token provided (set HF_TOKEN env var); skipping HF upload.")
+        return None
+
+    _ensure_database_module_path()
+    try:
+        from unified_db.utils import upload_traces_to_hf as _hf_upload
+    except ImportError as exc:
+        raise RuntimeError(
+            "HuggingFace upload helpers are unavailable. "
+            "Ensure the database module is installed or on PYTHONPATH."
+        ) from exc
+
+    print(f"[upload] Uploading traces from {job_path} to HuggingFace: {hf_repo_id}")
+    try:
+        hf_url = _hf_upload(
+            job_dir=str(job_path),
+            hf_repo_id=hf_repo_id,
+            private=hf_private,
+            token=token,
+            episodes=hf_episodes,
+            success_filter=hf_success_filter,
+            verbose=hf_verbose,
+        )
+        print(f"[upload] HuggingFace upload complete: {hf_url}")
+        return hf_url
+    except Exception as exc:
+        print(f"[upload] HuggingFace upload failed: {exc}")
+        raise
+
+
+def sync_eval_to_database(
+    job_dir: PathInput,
+    *,
+    username: Optional[str] = None,
+    error_mode: str = "skip_on_error",
+    agent_name: Optional[str] = None,
+    model_name: Optional[str] = None,
+    benchmark_name: Optional[str] = None,
+    register_benchmark: bool = True,
+    hf_repo_id: Optional[str] = None,
+    hf_private: bool = False,
+    hf_token: Optional[str] = None,
+    hf_episodes: str = "last",
+    forced_update: bool = False,
+    dry_run: bool = False,
+) -> Dict[str, Any]:
+    """Sync evaluation results to Supabase database (with optional HF upload).
+
+    This function orchestrates the complete upload workflow for eval jobs:
+    1. Upload traces to HuggingFace (if hf_repo_id provided)
+    2. Upload job/trial records to Supabase database
+
+    For datagen jobs that only need HF upload, use upload_traces_to_hf() directly.
+
+    Args:
+        job_dir: Path to the Harbor job directory.
+        username: Username for job registration. Falls back to UPLOAD_USERNAME env or current user.
+        error_mode: Error handling mode:
+            - "rollback_on_error": Abort on any error (atomic).
+            - "skip_on_error": Continue on individual trial failures.
+        agent_name: Agent name (auto-detected if not provided).
+        model_name: Model name (auto-detected if not provided).
+        benchmark_name: Benchmark name (auto-detected if not provided).
+        register_benchmark: Auto-register benchmark if not found.
+        hf_repo_id: HuggingFace repository ID for traces. If None, skips HF upload.
+        hf_private: Whether to create a private HF repository.
+        hf_token: HuggingFace API token. Falls back to HF_TOKEN env var.
+        hf_episodes: Which episodes to export: "all" or "last".
+        forced_update: Allow updating existing job records.
+        dry_run: If True, skip actual upload and return empty result.
+
+    Returns:
+        Dict with upload summary including:
+        - success: Whether the upload succeeded
+        - job_id: UUID of the job in Supabase
+        - n_trials_uploaded: Number of trials uploaded
+        - hf_dataset_url: HuggingFace dataset URL (if uploaded)
+
+    Raises:
+        RuntimeError: If the database upload module is unavailable.
+    """
+    import getpass
+
+    if dry_run:
+        print(f"[upload] DRY RUN: Would sync eval results from {job_dir} to database")
+        return {"success": True, "dry_run": True, "job_id": None, "n_trials_uploaded": 0}
+
+    if not job_dir:
+        print("[upload] No job directory provided; skipping database sync.")
+        return {"success": False, "error": "No job directory provided"}
+
+    job_path = Path(job_dir)
+    if not job_path.exists():
+        print(f"[upload] Job directory {job_path} does not exist; skipping database sync.")
+        return {"success": False, "error": f"Job directory does not exist: {job_path}"}
+
+    resolved_username = username or os.environ.get("UPLOAD_USERNAME") or getpass.getuser()
+    token = hf_token or os.environ.get("HF_TOKEN")
+
+    # Warn if HF repo requested but no token
+    if hf_repo_id and not token:
+        print("[upload] HF repo requested but no token provided; skipping HF upload step.")
+        hf_repo_id = None
+
+    _ensure_database_module_path()
+    try:
+        from unified_db.utils import upload_eval_results
+    except ImportError as exc:
+        raise RuntimeError(
+            "Database upload helpers are unavailable. "
+            "Install the database extras or ensure unified_db is on PYTHONPATH."
+        ) from exc
+
+    print(f"[upload] Syncing eval results from {job_path} to database (user: {resolved_username})")
+    result = upload_eval_results(
+        job_dir=str(job_path),
+        username=resolved_username,
+        error_mode=error_mode,
+        agent_name=agent_name,
+        model_name=model_name,
+        benchmark_name=benchmark_name,
+        register_benchmark=register_benchmark,
+        hf_repo_id=hf_repo_id,
+        hf_private=hf_private,
+        hf_token=token,
+        hf_episodes=hf_episodes,
+        forced_update=forced_update,
+    )
+
+    uploaded = result.get("n_trials_uploaded", 0)
+    job_id = result.get("job_id")
+    hf_url = result.get("hf_dataset_url")
+    print(f"[upload] Database sync complete (job_id={job_id}, trials={uploaded}, hf={hf_url or 'n/a'})")
+    return result
+
+
 __all__ = [
     # Constants
     "PROJECT_ROOT",
@@ -882,4 +1080,7 @@ __all__ = [
     "construct_sbatch_script",
     "extract_template_keys",
     "fill_template",
+    # Upload utilities
+    "upload_traces_to_hf",
+    "sync_eval_to_database",
 ]

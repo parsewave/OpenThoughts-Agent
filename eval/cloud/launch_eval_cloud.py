@@ -183,6 +183,49 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--dry-run", action="store_true", help="Pass --dry-run to run_eval.")
     parser.add_argument("--job-name", help="Optional override for Harbor job name.")
 
+    # Upload options (passed through to run_eval.py)
+    # Traces (full rollout data) -> HuggingFace
+    # Result abstracts (job/trial metadata, metrics) -> Supabase
+    parser.add_argument(
+        "--upload-to-database",
+        action="store_true",
+        help="After Harbor finishes, upload result abstracts to Supabase and traces to HuggingFace.",
+    )
+    parser.add_argument(
+        "--upload-username",
+        help="Username for Supabase result attribution (defaults to $UPLOAD_USERNAME or current user).",
+    )
+    parser.add_argument(
+        "--upload-error-mode",
+        choices=["skip_on_error", "rollback_on_error"],
+        default="skip_on_error",
+        help="Supabase upload error handling (default: skip_on_error).",
+    )
+    parser.add_argument(
+        "--upload-hf-repo",
+        help="HuggingFace repo for traces upload (defaults to <org>/<job_name>).",
+    )
+    parser.add_argument(
+        "--upload-hf-token",
+        help="HuggingFace token for traces upload (defaults to $HF_TOKEN).",
+    )
+    parser.add_argument(
+        "--upload-hf-private",
+        action="store_true",
+        help="Create the HuggingFace traces repo as private.",
+    )
+    parser.add_argument(
+        "--upload-hf-episodes",
+        choices=["last", "all"],
+        default="last",
+        help="Which episodes to include in HuggingFace traces upload.",
+    )
+    parser.add_argument(
+        "--upload-forced-update",
+        action="store_true",
+        help="Allow overwriting existing Supabase result records for the same job.",
+    )
+
     # Cloud specific options
     parser.add_argument(
         "--cloud-provider",
@@ -289,6 +332,25 @@ def _build_run_eval_command(args: argparse.Namespace, remote_output_dir: str) ->
         cmd.extend(["--agent-kwarg", kwarg])
     for extra in args.harbor_extra_arg:
         cmd.extend(["--harbor-extra-arg", extra])
+
+    # Upload options
+    if args.upload_to_database:
+        cmd.append("--upload-to-database")
+    if args.upload_username:
+        cmd.extend(["--upload-username", args.upload_username])
+    if args.upload_error_mode:
+        cmd.extend(["--upload-error-mode", args.upload_error_mode])
+    if args.upload_hf_repo:
+        cmd.extend(["--upload-hf-repo", args.upload_hf_repo])
+    if args.upload_hf_token:
+        cmd.extend(["--upload-hf-token", args.upload_hf_token])
+    if args.upload_hf_private:
+        cmd.append("--upload-hf-private")
+    if args.upload_hf_episodes:
+        cmd.extend(["--upload-hf-episodes", args.upload_hf_episodes])
+    if args.upload_forced_update:
+        cmd.append("--upload-forced-update")
+
     return cmd
 
 

@@ -168,14 +168,17 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Print commands without executing Harbor.",
     )
+    # Upload options:
+    # - Traces (full rollout data) -> HuggingFace
+    # - Result abstracts (job/trial metadata, metrics) -> Supabase
     parser.add_argument(
         "--upload-to-database",
         action="store_true",
-        help="After Harbor finishes, upload traces + metrics to Supabase (same flow as HPC eval jobs).",
+        help="After Harbor finishes, upload result abstracts to Supabase and traces to HuggingFace.",
     )
     parser.add_argument(
         "--upload-username",
-        help="Username to attribute in Supabase (defaults to $UPLOAD_USERNAME or current user).",
+        help="Username for Supabase result attribution (defaults to $UPLOAD_USERNAME or current user).",
     )
     parser.add_argument(
         "--upload-error-mode",
@@ -185,27 +188,27 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--upload-hf-repo",
-        help="Hugging Face repo id used when uploading traces (defaults to <org>/<job_name>).",
+        help="HuggingFace repo for traces upload (defaults to <org>/<job_name>).",
     )
     parser.add_argument(
         "--upload-hf-token",
-        help="Hugging Face token for trace upload (defaults to $HF_TOKEN).",
+        help="HuggingFace token for traces upload (defaults to $HF_TOKEN).",
     )
     parser.add_argument(
         "--upload-hf-private",
         action="store_true",
-        help="Create/overwrite the Hugging Face repo as private.",
+        help="Create the HuggingFace traces repo as private.",
     )
     parser.add_argument(
         "--upload-hf-episodes",
         choices=["last", "all"],
         default="last",
-        help="Which episodes to upload to Hugging Face when pushing traces.",
+        help="Which episodes to include in HuggingFace traces upload.",
     )
     parser.add_argument(
         "--upload-forced-update",
         action="store_true",
-        help="Allow overwriting existing Supabase records for the same job.",
+        help="Allow overwriting existing Supabase result records for the same job.",
     )
     return parser.parse_args()
 
@@ -355,6 +358,7 @@ def _load_endpoint_metadata(endpoint_json: Path) -> dict:
 
 
 def _maybe_upload_results(args: argparse.Namespace) -> None:
+    """Upload eval results using the shared upload functions from hpc.launch_utils."""
     if not getattr(args, "upload_to_database", False):
         return
     if args.dry_run:
@@ -370,27 +374,16 @@ def _maybe_upload_results(args: argparse.Namespace) -> None:
         print(f"[upload] Expected Harbor job directory {run_dir} does not exist; upload skipped.")
         return
 
-    _ensure_database_module_path()
-    try:
-        from unified_db.utils import upload_eval_results
-    except ImportError as exc:
-        raise RuntimeError(
-            "Supabase upload helpers are unavailable. Install the database extras "
-            "(e.g., `pip install .[cloud]`) or ensure dcagents-leaderboard is on PYTHONPATH."
-        ) from exc
+    # Use shared upload function from hpc.launch_utils
+    from hpc.launch_utils import sync_eval_to_database
 
-    username = args.upload_username or os.environ.get("UPLOAD_USERNAME") or getpass.getuser()
     hf_repo_id = args.upload_hf_repo or _derive_default_hf_repo_id(args, job_name)
-    hf_token = args.upload_hf_token or os.environ.get("HF_TOKEN")
     if hf_repo_id:
         hf_repo_id = _sanitize_hf_repo_id(hf_repo_id)
-    if hf_repo_id and not hf_token:
-        print("[upload] HF repo requested but no token provided; skipping HF upload step.")
-        hf_repo_id = None
-    print(f"[upload] Uploading Harbor job '{job_name}' from {run_dir}")
-    result = upload_eval_results(
-        run_dir,
-        username=username,
+
+    result = sync_eval_to_database(
+        job_dir=run_dir,
+        username=args.upload_username,
         error_mode=args.upload_error_mode,
         agent_name=args.agent,
         model_name=args.model,
@@ -398,16 +391,14 @@ def _maybe_upload_results(args: argparse.Namespace) -> None:
         register_benchmark=True,
         hf_repo_id=hf_repo_id,
         hf_private=args.upload_hf_private,
-        hf_token=hf_token,
+        hf_token=args.upload_hf_token,
         hf_episodes=args.upload_hf_episodes,
         forced_update=args.upload_forced_update,
+        dry_run=args.dry_run,
     )
-    uploaded = result.get("n_trials_uploaded")
-    job_id = result.get("job_id")
-    hf_dataset = result.get("hf_dataset_url")
-    print(
-        f"[upload] Upload complete (job_id={job_id}, trials={uploaded}, hf_dataset={hf_dataset or 'n/a'})."
-    )
+
+    if not result.get("success"):
+        print(f"[upload] Upload failed: {result.get('error', 'unknown error')}")
 
 
 def _build_harbor_command(

@@ -646,6 +646,10 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
             gpus_per_node=gpus_per_node,
             cpus_per_node=cpus_per_node,
             vllm_server_config=trace_vllm_server_config,
+            # HF upload settings (use trace_target_repo as default HF repo)
+            hf_repo_id=exp_args.get("upload_hf_repo") or trace_target_repo,
+            hf_private=bool(exp_args.get("upload_hf_private")),
+            hf_episodes=exp_args.get("upload_hf_episodes") or "last",
         )
 
         # Write trace config JSON
@@ -933,6 +937,9 @@ class TracegenJobConfig:
 
     # Upload settings
     upload_username: str = ""
+    hf_repo_id: Optional[str] = None
+    hf_private: bool = False
+    hf_episodes: str = "last"
 
     # Resource allocation (from CLI overrides, None = use HPC cluster defaults)
     num_nodes: int = 1
@@ -985,6 +992,8 @@ class TracegenJobRunner:
 
             if exit_code == 0:
                 print(f"Trace generation job '{self.config.job_name}' completed successfully")
+                # Attempt HF upload after successful Harbor run
+                self._maybe_upload_traces()
             else:
                 print(f"Trace generation job '{self.config.job_name}' failed with code {exit_code}")
 
@@ -993,6 +1002,33 @@ class TracegenJobRunner:
         except Exception as e:
             print(f"Trace generation job failed with exception: {e}", file=sys.stderr)
             raise
+
+    def _maybe_upload_traces(self) -> None:
+        """Upload traces to HuggingFace after Harbor completes."""
+        if not self.config.hf_repo_id:
+            print("[upload] No HF repo configured; skipping upload.")
+            return
+
+        # Determine job directory
+        jobs_dir = Path(self.config.experiments_dir) / "trace_jobs"
+        job_dir = jobs_dir / self.config.job_name
+        if not job_dir.exists():
+            print(f"[upload] Job directory {job_dir} does not exist; skipping upload.")
+            return
+
+        from hpc.launch_utils import upload_traces_to_hf
+
+        try:
+            hf_url = upload_traces_to_hf(
+                job_dir=job_dir,
+                hf_repo_id=self.config.hf_repo_id,
+                hf_private=self.config.hf_private,
+                hf_episodes=self.config.hf_episodes,
+            )
+            if hf_url:
+                print(f"[upload] HuggingFace upload successful: {hf_url}")
+        except Exception as e:
+            print(f"[upload] HuggingFace upload error: {e}", file=sys.stderr)
 
     def _run_with_vllm(self) -> int:
         """Run trace generation with managed Ray cluster and vLLM server."""
