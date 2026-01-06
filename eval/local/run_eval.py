@@ -459,7 +459,7 @@ def _build_harbor_command(
     extra_args = list(args.harbor_extra_arg or [])
 
     def _flag_present(flag: str) -> bool:
-        return any(arg == flag for arg in extra_args)
+        return any(arg == flag or arg.startswith(f"{flag}=") for arg in extra_args)
 
     if not (_flag_present("--export-traces") or _flag_present("--no-export-traces")):
         extra_args.append("--export-traces")
@@ -467,6 +467,10 @@ def _build_harbor_command(
         _flag_present("--export-verifier-metadata") or _flag_present("--no-export-verifier-metadata")
     ):
         extra_args.append("--export-verifier-metadata")
+    if not (_flag_present("--export-episodes")):
+        extra_args.extend(["--export-episodes", "last"])
+    if not (_flag_present("--auto-resume") or _flag_present("--no-auto-resume")):
+        extra_args.append("--auto-resume")
 
     for extra in extra_args:
         cmd.append(extra)
