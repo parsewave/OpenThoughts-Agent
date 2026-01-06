@@ -2,33 +2,25 @@
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import os
-import re
 import shlex
 import shutil
+import subprocess
 import sys
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, List, Mapping, Union
+from typing import Any, Dict, Optional
 
 from omegaconf import OmegaConf
 
-from data.generation import BaseDataGenerator
 from data.generation.utils import load_datagen_config, resolve_engine_runtime
 from hpc.core_launch_utils import cleanup_endpoint_file
 from hpc.launch_utils import (
-    PROJECT_ROOT,
     default_vllm_endpoint_path,
     derive_datagen_job_name,  # Re-exported for backwards compatibility
-    is_local_mode,
-    run_local_script,
-    submit_script,
     launch_sbatch,
-    update_exp_args,
 )
-from scripts.harbor.job_config_utils import load_job_config
 
 DIRENV = os.path.dirname(__file__)
 DATAGEN_CONFIG_DIR = os.path.join(DIRENV, "datagen_yaml")
@@ -36,58 +28,6 @@ HARBOR_CONFIG_DIR = os.path.join(DIRENV, "harbor_yaml")
 DEFAULT_RAY_CGRAPH_TIMEOUT = os.environ.get("RAY_CGRAPH_TIMEOUT_DEFAULT", "86500")
 DEFAULT_RAY_CGRAPH_MAX_INFLIGHT = os.environ.get("RAY_CGRAPH_MAX_INFLIGHT_DEFAULT", "")
 HARBOR_MODEL_PLACEHOLDER = "placeholder/override-at-runtime"
-
-
-# Backwards compatibility wrappers for renamed functions
-def _is_local_mode(hpc) -> bool:
-    """Wrapper for backwards compatibility - use is_local_mode from launch_utils."""
-    return is_local_mode(hpc)
-
-
-def _run_local_script(script_path: str) -> str:
-    """Wrapper for backwards compatibility - use run_local_script from launch_utils."""
-    return run_local_script(script_path)
-
-
-def _submit_script(script_path: str, *, dependency: str | None = None, array: str | None = None, hpc=None) -> str:
-    """Wrapper for backwards compatibility - use submit_script from launch_utils."""
-    return submit_script(script_path, dependency=dependency, array=array, hpc=hpc)
-
-
-def _detect_gpu_required(datagen_script: str) -> bool:
-    """Best-effort detection of GPU requirement for a datagen script."""
-
-    try:
-        script_path = os.path.abspath(datagen_script)
-        if not os.path.exists(script_path):
-            return False
-
-        spec = importlib.util.spec_from_file_location("datagen_module", script_path)
-        if spec is None or spec.loader is None:
-            return False
-
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)  # type: ignore[attr-defined]
-
-        generator_cls = None
-        for attr in dir(module):
-            obj = getattr(module, attr)
-            if (
-                isinstance(obj, type)
-                and issubclass(obj, BaseDataGenerator)
-                and obj is not BaseDataGenerator
-            ):
-                generator_cls = obj
-                break
-
-        if not generator_cls:
-            return False
-
-        generator = generator_cls()
-        run_fn = getattr(generator, "run_task_generation", None)
-        return bool(getattr(run_fn, "_gpu_required", False))
-    except Exception:
-        return False
 
 
 def _validate_sbatch_templates(hpc_obj) -> None:
@@ -111,25 +51,6 @@ def _validate_sbatch_templates(hpc_obj) -> None:
         raise FileNotFoundError(
             "Missing universal sbatch templates: " + ", ".join(missing)
         )
-
-
-# default_vllm_endpoint_path is now imported from launch_utils
-
-
-def _cleanup_stale_vllm_endpoint(exp_args: Mapping[str, Any]) -> None:
-    """Remove a leftover vllm_endpoint.json in the experiments directory."""
-
-    experiments_dir = exp_args.get("experiments_dir")
-    if not experiments_dir:
-        return
-
-    try:
-        base_dir = Path(experiments_dir).expanduser()
-    except Exception:
-        return
-
-    endpoint_path = base_dir / "vllm_endpoint.json"
-    cleanup_endpoint_file(endpoint_path, descriptor="stale vLLM endpoint file")
 
 
 def resolve_datagen_config_path(raw_value: str) -> Path:
@@ -418,120 +339,6 @@ def _snapshot_datagen_config(
     return str(snapshot_path)
 
 
-def _build_vllm_env_vars(
-    exp_args: dict,
-    *,
-    include_pinggy: bool = False,
-) -> Tuple[Dict[str, str], dict]:
-    """Return environment variables used to configure vLLM processes."""
-
-    env: Dict[str, str] = {}
-    cfg = exp_args.get("_datagen_vllm_server_config")
-    if not cfg:
-        return env, exp_args
-
-    env["VLLM_MODEL_PATH"] = cfg.model_path
-    env["VLLM_NUM_REPLICAS"] = str(cfg.num_replicas or 1)
-    env["VLLM_TENSOR_PARALLEL_SIZE"] = str(cfg.tensor_parallel_size or 1)
-    env["VLLM_PIPELINE_PARALLEL_SIZE"] = str(cfg.pipeline_parallel_size or 1)
-    env["VLLM_DATA_PARALLEL_SIZE"] = str(getattr(cfg, "data_parallel_size", None) or 1)
-
-    if cfg.hf_overrides:
-        env["VLLM_HF_OVERRIDES"] = cfg.hf_overrides
-    if cfg.use_deep_gemm:
-        env["VLLM_USE_DEEP_GEMM"] = "1"
-    if cfg.max_num_seqs is not None:
-        env["VLLM_MAX_NUM_SEQS"] = str(cfg.max_num_seqs)
-    if cfg.gpu_memory_utilization is not None:
-        env["VLLM_GPU_MEMORY_UTILIZATION"] = str(cfg.gpu_memory_utilization)
-    if getattr(cfg, "cpu_offload_gb", None) is not None:
-        env["VLLM_CPU_OFFLOAD_GB"] = str(cfg.cpu_offload_gb)
-    if getattr(cfg, "kv_offloading_size", None) is not None:
-        env["VLLM_KV_OFFLOADING_SIZE"] = str(cfg.kv_offloading_size)
-    if getattr(cfg, "kv_offloading_backend", None):
-        env["VLLM_KV_OFFLOADING_BACKEND"] = cfg.kv_offloading_backend
-    if cfg.enable_expert_parallel:
-        env["VLLM_ENABLE_EXPERT_PARALLEL"] = "1"
-    if cfg.swap_space is not None:
-        env["VLLM_SWAP_SPACE"] = str(cfg.swap_space)
-    if cfg.max_seq_len_to_capture is not None:
-        env["VLLM_MAX_SEQ_LEN_TO_CAPTURE"] = str(cfg.max_seq_len_to_capture)
-    if cfg.max_model_len is not None:
-        env["VLLM_MAX_MODEL_LEN"] = str(cfg.max_model_len)
-    if cfg.trust_remote_code:
-        env["VLLM_TRUST_REMOTE_CODE"] = "1"
-    if cfg.disable_log_requests:
-        env["VLLM_DISABLE_LOG_REQUESTS"] = "1"
-    if cfg.custom_model_name:
-        env["VLLM_CUSTOM_MODEL_NAME"] = cfg.custom_model_name
-    if cfg.enable_auto_tool_choice:
-        env["VLLM_ENABLE_AUTO_TOOL_CHOICE"] = "1"
-    if cfg.tool_call_parser:
-        env["VLLM_TOOL_CALL_PARSER"] = cfg.tool_call_parser
-    if cfg.reasoning_parser:
-        env["VLLM_REASONING_PARSER"] = cfg.reasoning_parser
-    if getattr(cfg, "logging_level", None) is not None:
-        env["VLLM_LOGGING_LEVEL"] = str(cfg.logging_level)
-
-    if include_pinggy:
-        explicit_cli_keys = set(exp_args.get("_explicit_cli_keys", []) or [])
-        pinggy_fields = (
-            ("VLLM_PINGGY_PERSISTENT_URL", "pinggy_persistent_url", "PINGGY_PERSISTENT_URL"),
-            ("VLLM_PINGGY_SSH_COMMAND", "pinggy_ssh_command", "PINGGY_SSH_COMMAND"),
-            ("VLLM_PINGGY_DEBUGGER_URL", "pinggy_debugger_url", "PINGGY_DEBUGGER_URL"),
-        )
-        for env_key, arg_key, fallback_env in pinggy_fields:
-            candidate = exp_args.get(arg_key)
-            explicit = arg_key in explicit_cli_keys
-            if isinstance(candidate, str):
-                candidate = candidate.strip()
-            fallback_allowed = not explicit
-            if candidate in (None, "", "None") and fallback_allowed:
-                fallback = os.environ.get(fallback_env)
-                if isinstance(fallback, str):
-                    fallback = fallback.strip()
-                candidate = fallback
-            if candidate in (None, "", "None"):
-                continue
-            candidate_str = str(candidate)
-            env[env_key] = candidate_str
-            if exp_args.get(arg_key) != candidate_str:
-                exp_args[arg_key] = candidate_str
-
-    max_output_tokens = exp_args.get("datagen_max_tokens")
-    if max_output_tokens not in (None, "", "None"):
-        env["VLLM_MAX_OUTPUT_TOKENS"] = str(max_output_tokens)
-
-    endpoint_path = exp_args.get("vllm_endpoint_json_path")
-    if not endpoint_path and getattr(cfg, "endpoint_json_path", None):
-        endpoint_path = cfg.endpoint_json_path
-    if not endpoint_path:
-        experiments_dir = exp_args.get("experiments_dir")
-        if not experiments_dir:
-            raise ValueError("experiments_dir is required to compute default vLLM endpoint path")
-        endpoint_path = default_vllm_endpoint_path(experiments_dir)
-        exp_args["vllm_endpoint_json_path"] = endpoint_path
-    env["VLLM_ENDPOINT_JSON_PATH"] = endpoint_path
-
-    extra_cli_args = exp_args.get("_vllm_server_extra_args")
-    if extra_cli_args:
-        env["VLLM_SERVER_EXTRA_ARGS_JSON"] = json.dumps(extra_cli_args)
-
-    submit_timeout = exp_args.get("ray_cgraph_submit_timeout")
-    get_timeout = exp_args.get("ray_cgraph_get_timeout")
-    max_inflight = exp_args.get("ray_cgraph_max_inflight_executions")
-    if submit_timeout:
-        env["RAY_CGRAPH_submit_timeout"] = str(submit_timeout)
-    if get_timeout:
-        env["RAY_CGRAPH_get_timeout"] = str(get_timeout)
-    if max_inflight:
-        env["RAY_CGRAPH_max_inflight_executions"] = str(max_inflight)
-
-    _maybe_set_ray_cgraph_env(env)
-
-    return env, exp_args
-
-
 @dataclass
 class TraceChunkPlan:
     index: int
@@ -708,8 +515,7 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
     3. Using universal_taskgen.sbatch and universal_tracegen.sbatch templates
     4. Submitting the jobs
     """
-    from dataclasses import asdict
-    from hpc.launch_utils import launch_sbatch, update_exp_args
+    # asdict and launch_sbatch are imported at module level
 
     print("\n=== DATA GENERATION MODE (Universal Launcher) ===")
 
@@ -765,6 +571,9 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
 
     # === Task Generation ===
     if task_enabled:
+        # Convert vllm_cfg dataclass to dict for pass-through
+        vllm_server_config = asdict(vllm_cfg) if vllm_cfg else {}
+
         task_config = TaskgenJobConfig(
             job_name=f"{job_name}_tasks",
             datagen_script=exp_args.get("datagen_script") or "",
@@ -787,6 +596,7 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
             disable_verification=bool(exp_args.get("disable_verification")),
             num_nodes=int(exp_args.get("num_nodes") or 1),
             gpus_per_node=gpus_per_node,
+            vllm_server_config=vllm_server_config,
         )
 
         # Write task config JSON
@@ -874,6 +684,9 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
                 except json.JSONDecodeError:
                     pass
 
+        # Convert vllm_cfg dataclass to dict for pass-through (if not already done)
+        trace_vllm_server_config = asdict(vllm_cfg) if vllm_cfg else {}
+
         trace_config = TracegenJobConfig(
             job_name=f"{job_name}_traces",
             harbor_config=harbor_config_resolved,
@@ -901,6 +714,7 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
             agent_kwargs=agent_kwargs,
             num_nodes=int(exp_args.get("num_nodes") or 1),
             gpus_per_node=gpus_per_node,
+            vllm_server_config=trace_vllm_server_config,
         )
 
         # Write trace config JSON
@@ -998,6 +812,7 @@ class TaskgenJobConfig:
     endpoint_json_path: Optional[str] = None
     ray_port: int = 6379
     api_port: int = 8000
+    vllm_server_config: Dict[str, Any] = field(default_factory=dict)  # Raw vllm_server config from YAML
 
     # Health check settings
     health_max_attempts: int = 120
@@ -1093,6 +908,7 @@ class TaskgenJobRunner:
             endpoint_json_path=self.config.endpoint_json_path,
             health_max_attempts=self.config.health_max_attempts,
             health_retry_delay=self.config.health_retry_delay,
+            server_config=self.config.vllm_server_config,  # Pass through YAML config
         )
 
         log_dir = Path(self.config.experiments_dir) / "logs"
@@ -1177,6 +993,7 @@ class TracegenJobConfig:
     endpoint_json_path: Optional[str] = None
     ray_port: int = 6379
     api_port: int = 8000
+    vllm_server_config: Dict[str, Any] = field(default_factory=dict)  # Raw vllm_server config from YAML
 
     # Health check settings
     health_max_attempts: int = 120
@@ -1280,6 +1097,7 @@ class TracegenJobRunner:
             endpoint_json_path=self.config.endpoint_json_path,
             health_max_attempts=self.config.health_max_attempts,
             health_retry_delay=self.config.health_retry_delay,
+            server_config=self.config.vllm_server_config,  # Pass through YAML config
         )
 
         log_dir = Path(self.config.experiments_dir) / "logs"
@@ -1406,7 +1224,6 @@ __all__ = [
     "_normalize_cli_args",
     "_prepare_datagen_configuration",
     "_snapshot_datagen_config",
-    "_build_vllm_env_vars",
     "resolve_datagen_config_path",
     "resolve_harbor_config_path",
     # Chunk planning

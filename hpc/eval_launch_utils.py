@@ -19,7 +19,6 @@ from hpc.launch_utils import (
     launch_sbatch,
     _parse_optional_int,
 )
-from hpc.datagen_launch_utils import _build_vllm_env_vars
 from scripts.harbor.job_config_utils import load_job_config
 
 DEFAULT_REGISTRY_HINTS = [
@@ -239,6 +238,7 @@ class EvalJobConfig:
     endpoint_json_path: Optional[str] = None
     ray_port: int = 6379
     api_port: int = 8000
+    vllm_server_config: Dict[str, Any] = field(default_factory=dict)  # Raw vllm_server config from YAML
 
     # Health check settings
     health_max_attempts: int = 120
@@ -334,6 +334,7 @@ class EvalJobRunner:
             endpoint_json_path=self.config.endpoint_json_path,
             health_max_attempts=self.config.health_max_attempts,
             health_retry_delay=self.config.health_retry_delay,
+            server_config=self.config.vllm_server_config,  # Pass through YAML config
         )
 
         log_dir = Path(self.config.experiments_dir) / "logs"
@@ -463,6 +464,9 @@ def launch_eval_job_v2(exp_args: dict, hpc) -> None:
         )
         cleanup_endpoint_file(endpoint_json_path, descriptor="stale eval endpoint file")
 
+    # Convert vllm_cfg dataclass to dict for pass-through
+    vllm_server_config = asdict(vllm_cfg) if vllm_cfg else {}
+
     # Build the job config
     job_config = EvalJobConfig(
         job_name=job_name,
@@ -490,6 +494,7 @@ def launch_eval_job_v2(exp_args: dict, hpc) -> None:
         health_retry_delay=int(exp_args.get("trace_health_retry_delay") or 15),
         agent_kwargs=agent_kwargs,
         upload_username=exp_args.get("job_creator") or os.environ.get("USER", "unknown"),
+        vllm_server_config=vllm_server_config,
     )
 
     # Write config JSON

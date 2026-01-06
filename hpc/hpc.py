@@ -347,7 +347,7 @@ nyugreene = HPC(
 nyutorch = HPC(
     name="nyutorch",
     # hostname_pattern=r"gh\d+\.hpc\.nyu\.edu",
-    hostname_pattern = r"torch-login.*\.hpc\.nyu\.edu",
+    hostname_pattern=r"torch-login.*\.hpc\.nyu\.edu",
     train_sbatch_filename="nyutorch_train.sbatch",
     dotenv_filename="nyutorch.env",
     account="",
@@ -358,6 +358,14 @@ nyutorch = HPC(
     internet_node=True,
     gpus_type="H200 141GB",
     total_partition_nodes=48,
+    # Runtime configuration for Ray/vLLM (from legacy scripts)
+    conda_activate="source $SCRATCH/miniconda3/etc/profile.d/conda.sh && conda activate dcagent312",
+    env_vars={
+        "PYTHONFAULTHANDLER": "1",
+        "NCCL_TIMEOUT": "1800",
+        "NCCL_IB_TIMEOUT": "23",
+        "PYTORCH_CUDA_ALLOC_CONF": "garbage_collection_threshold:0.6,max_split_size_mb:128",
+    },
 )
 
 oumi = HPC(

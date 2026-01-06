@@ -34,6 +34,83 @@ if TYPE_CHECKING:
     from hpc.ray_utils import RayCluster
 
 
+# Fields from vllm_server config that are for our system, not vLLM
+_OUR_FIELDS = {"num_replicas", "time_limit", "endpoint_json_path"}
+
+# Fields that map to different vLLM CLI arg names
+_FIELD_RENAMES = {
+    "model_path": "model",
+}
+
+# Boolean flags (passed as --flag without value when True)
+_BOOLEAN_FLAGS = {
+    "enable_chunked_prefill",
+    "enable_prefix_caching",
+    "enable_auto_tool_choice",
+    "trust_remote_code",
+    "disable_log_requests",
+    "enable_reasoning",
+}
+
+# Fields that are environment variables, not CLI args
+_ENV_VAR_FIELDS = {
+    "enable_expert_parallel": "VLLM_ENABLE_EXPERT_PARALLEL",
+    "use_deep_gemm": "VLLM_USE_DEEP_GEMM",
+}
+
+
+def _build_vllm_cli_args(server_config: dict) -> tuple[list[str], dict[str, str]]:
+    """Convert vllm_server config dict to CLI args and env vars.
+
+    Returns:
+        Tuple of (cli_args list, env_vars dict)
+    """
+    cli_args = []
+    env_vars = {}
+
+    for key, value in server_config.items():
+        # Skip our internal fields
+        if key in _OUR_FIELDS:
+            continue
+
+        # Skip None/empty values
+        if value is None or value == "":
+            continue
+
+        # Handle extra_args (already a list of CLI args)
+        if key == "extra_args":
+            if isinstance(value, list):
+                cli_args.extend(str(v) for v in value)
+            continue
+
+        # Handle env var fields
+        if key in _ENV_VAR_FIELDS:
+            if value:  # Only set if truthy
+                env_vars[_ENV_VAR_FIELDS[key]] = "1"
+            continue
+
+        # Rename field if needed
+        arg_name = _FIELD_RENAMES.get(key, key)
+
+        # Convert underscore to dash for CLI
+        arg_name = arg_name.replace("_", "-")
+
+        # Handle boolean flags
+        if key in _BOOLEAN_FLAGS:
+            if value:  # Only add flag if True
+                cli_args.append(f"--{arg_name}")
+            continue
+
+        # Handle regular key-value args
+        if isinstance(value, bool):
+            # Non-flag booleans: pass as true/false string
+            cli_args.extend([f"--{arg_name}", str(value).lower()])
+        else:
+            cli_args.extend([f"--{arg_name}", str(value)])
+
+    return cli_args, env_vars
+
+
 @dataclass
 class VLLMConfig:
     """Configuration for a vLLM server."""
@@ -55,8 +132,8 @@ class VLLMConfig:
     controller_script: str = "scripts/vllm/start_vllm_ray_controller.py"
     wait_for_endpoint_script: str = "scripts/vllm/wait_for_endpoint.py"
 
-    # Environment variables to pass to controller
-    env_vars: dict = field(default_factory=dict)
+    # Raw vllm_server config from YAML - passed through to vLLM
+    server_config: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -145,10 +222,18 @@ class VLLMServer:
         if self.config.custom_model_name:
             cmd.extend(["--served-model-name", self.config.custom_model_name])
 
+        # Build CLI args and env vars from server_config (pass-through from YAML)
+        if self.config.server_config:
+            extra_cli_args, extra_env_vars = _build_vllm_cli_args(self.config.server_config)
+            cmd.extend(extra_cli_args)
+            if extra_cli_args:
+                print(f"  Extra vLLM args: {' '.join(extra_cli_args[:10])}{'...' if len(extra_cli_args) > 10 else ''}")
+
         # Set environment
         env = os.environ.copy()
         env["VLLM_MODEL_PATH"] = self.config.model_path
-        env.update(self.config.env_vars)
+        if self.config.server_config:
+            env.update(extra_env_vars)
 
         # Start the server process
         self._process = subprocess.Popen(
