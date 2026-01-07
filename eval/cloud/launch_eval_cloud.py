@@ -146,8 +146,18 @@ class EvalCloudLauncher(CloudLauncher):
 
         return cmd
 
+    def get_periodic_sync_paths(self, args, remote_output_dir: str, remote_workdir: str) -> List[tuple]:
+        """Return paths to sync periodically during job execution.
+
+        Syncs logs and Harbor trace_jobs directory to track eval progress.
+        """
+        return [
+            (f"{remote_output_dir}/logs", str(Path(args.local_sync_dir) / "logs")),
+            (f"{remote_workdir}/trace_jobs", str(Path(args.local_sync_dir) / "trace_jobs")),
+        ]
+
     def sync_additional_outputs(self, cluster_name: str, args, remote_workdir: str) -> None:
-        """Sync Harbor trace_jobs directory."""
+        """Sync Harbor trace_jobs directory (final sync after job completes)."""
         trace_jobs_remote = f"{remote_workdir}/trace_jobs"
         trace_jobs_local = str(Path(args.local_sync_dir) / "trace_jobs")
         print(f"[cloud-sync] Also syncing Harbor trace_jobs from {trace_jobs_remote}...")

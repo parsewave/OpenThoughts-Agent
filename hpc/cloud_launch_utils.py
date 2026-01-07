@@ -906,28 +906,53 @@ class CloudLauncher:
         cluster_name = getattr(handle, "cluster_name", None) or args.cluster_name
         return job_id, cluster_name
 
+    def get_periodic_sync_paths(
+        self,
+        args: "argparse.Namespace",
+        remote_output_dir: str,
+        remote_workdir: str,
+    ) -> List[tuple]:
+        """Return list of (remote_dir, local_dir) tuples for periodic sync during job execution.
+
+        Override in subclasses to add task-specific directories like trace_jobs.
+        The base implementation syncs the logs directory.
+
+        Args:
+            args: Parsed arguments
+            remote_output_dir: Remote output directory path
+            remote_workdir: Remote working directory path
+
+        Returns:
+            List of (remote_path, local_path) tuples to sync periodically
+        """
+        return [
+            (f"{remote_output_dir}/logs", str(Path(args.local_sync_dir) / "logs")),
+        ]
+
     def wait_for_job(
         self,
         cluster_name: str,
         job_id: int | None,
         args: "argparse.Namespace",
         remote_output_dir: str,
+        remote_workdir: str,
     ) -> bool:
         """Wait for job completion, streaming logs. Returns True if job failed."""
         import sky
 
-        # Start periodic log sync if enabled
-        log_sync = None
+        # Start periodic sync for all configured directories
+        sync_threads: List[PeriodicRemoteSync] = []
         if cluster_name and args.log_sync_interval > 0:
-            local_logs_dir = str(Path(args.local_sync_dir) / "logs")
-            remote_logs_dir = f"{remote_output_dir}/logs"
-            log_sync = PeriodicRemoteSync(
-                cluster_name=cluster_name,
-                remote_dir=remote_logs_dir,
-                local_dir=local_logs_dir,
-                interval_seconds=args.log_sync_interval,
-            )
-            log_sync.start()
+            sync_paths = self.get_periodic_sync_paths(args, remote_output_dir, remote_workdir)
+            for remote_dir, local_dir in sync_paths:
+                sync = PeriodicRemoteSync(
+                    cluster_name=cluster_name,
+                    remote_dir=remote_dir,
+                    local_dir=local_dir,
+                    interval_seconds=args.log_sync_interval,
+                )
+                sync.start()
+                sync_threads.append(sync)
 
         job_failed = False
         if cluster_name:
@@ -944,8 +969,8 @@ class CloudLauncher:
             except Exception as e:
                 print(f"[cloud] Warning: Failed to tail logs: {e}", file=sys.stderr)
             finally:
-                if log_sync:
-                    log_sync.stop()
+                for sync in sync_threads:
+                    sync.stop()
 
             # Check job status
             job_failed = self._check_job_failed(cluster_name, job_id)
@@ -1122,7 +1147,7 @@ class CloudLauncher:
 
         # Launch and wait
         job_id, cluster_name = self.launch_task(task, args)
-        self.wait_for_job(cluster_name, job_id, args, remote_output_dir)
+        self.wait_for_job(cluster_name, job_id, args, remote_output_dir, remote_workdir)
 
         # Sync and teardown
         self.sync_outputs(cluster_name, args, remote_output_dir, remote_workdir)
