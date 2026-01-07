@@ -31,22 +31,20 @@ DEFAULT_ENDPOINT = "vllm_endpoint.json"
 # Import shared utilities for local runners
 from hpc.local_runner_utils import (
     ManagedProcess,
-    maybe_int,
     start_ray,
     start_vllm_controller,
     wait_for_endpoint,
     terminate_processes,
-    _build_vllm_cli_args,
+    default_job_name,
+    build_harbor_command,
+    apply_datagen_defaults,
+    setup_docker_runtime_if_needed,
+    load_harbor_config,
+    resolve_jobs_dir_path,
+    run_endpoint_health_check,
+    load_endpoint_metadata,
 )
 from hpc.launch_utils import generate_served_model_id, hosted_vllm_alias
-
-
-def _resolve_jobs_dir_path(jobs_dir_value: Optional[str]) -> Path:
-    raw_value = jobs_dir_value or "jobs"
-    path = Path(raw_value)
-    if not path.is_absolute():
-        path = (REPO_ROOT / path).resolve()
-    return path
 
 
 def _ensure_database_module_path() -> None:
@@ -116,7 +114,8 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--model", help="Trace model identifier (used for Harbor + vLLM).")
     parser.add_argument("--agent", help="Harbor agent name to run (default terminus-2).")
-    parser.add_argument("--eval-env", default="daytona", help="Harbor environment name.")
+    parser.add_argument("--eval-env", default="daytona", choices=["daytona", "docker", "modal"],
+                        help="Harbor environment backend: daytona (cloud), docker (local/podman), modal. (default: daytona)")
     parser.add_argument("--n-concurrent", type=int, default=16, help="Concurrent eval trials.")
     parser.add_argument("--n-attempts", type=int, default=3, help="Retries (Harbor --n-attempts flag).")
     parser.add_argument(
@@ -133,7 +132,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--tensor-parallel-size", type=int)
     parser.add_argument("--pipeline-parallel-size", type=int)
     parser.add_argument("--data-parallel-size", type=int)
-    parser.add_argument("--health-max-attempts", type=int, default=20)
+    parser.add_argument("--health-max-attempts", type=int, default=100)
     parser.add_argument("--health-retry-delay", type=int, default=30)
     parser.add_argument("--harbor-binary", default="harbor", help="Harbor CLI executable.")
     parser.add_argument(
@@ -225,143 +224,6 @@ def _ensure_mutually_exclusive(dataset: Optional[str], dataset_path: Optional[st
         raise ValueError("Must provide --dataset or --dataset-path.")
 
 
-def _timestamp() -> str:
-    return time.strftime("%Y%m%d_%H%M%S", time.localtime())
-
-
-def _default_job_name(dataset_label: str, model_label: str) -> str:
-    sanitized_dataset = dataset_label.replace("/", "-").replace(" ", "_")
-    sanitized_model = model_label.replace("/", "-").replace(" ", "_")
-    return f"eval-{sanitized_dataset}-{sanitized_model}-{_timestamp()}"
-
-
-def _deep_copy(value: Any) -> Any:
-    return json.loads(json.dumps(value))
-
-
-def _apply_nested_key(target: dict, dotted_key: str, value: Any) -> None:
-    parts = dotted_key.split(".")
-    cursor = target
-    for part in parts[:-1]:
-        if part not in cursor or not isinstance(cursor[part], dict):
-            cursor[part] = {}
-        cursor = cursor[part]
-    cursor[parts[-1]] = value
-
-
-def _parse_agent_kwarg_strings(entries: List[str]) -> tuple[dict[str, Any], List[str]]:
-    overrides: dict[str, Any] = {}
-    passthrough: List[str] = []
-    for entry in entries:
-        if "=" not in entry:
-            passthrough.append(entry)
-            continue
-        key, raw_value = entry.split("=", 1)
-        key = key.strip()
-        raw_value = raw_value.strip()
-        if not key:
-            passthrough.append(entry)
-            continue
-        try:
-            value = json.loads(raw_value)
-        except json.JSONDecodeError:
-            value = raw_value
-        overrides[key] = value
-    return overrides, passthrough
-
-
-def _serialize_agent_kwargs(kwargs: dict) -> List[str]:
-    serialized: List[str] = []
-    for key, value in kwargs.items():
-        if isinstance(value, (dict, list)):
-            serialized.append(f"{key}={json.dumps(value)}")
-        else:
-            serialized.append(f"{key}={value}")
-    return serialized
-
-
-def _apply_datagen_defaults(args: argparse.Namespace) -> None:
-    args._vllm_cli_args: List[str] = []
-    args._vllm_env_vars: dict[str, str] = {}
-    if not args.datagen_config:
-        return
-
-    cfg_path = Path(args.datagen_config).expanduser().resolve()
-    if not cfg_path.exists():
-        raise FileNotFoundError(f"Datagen config not found: {cfg_path}")
-    with cfg_path.open("r", encoding="utf-8") as handle:
-        datagen_cfg = yaml.safe_load(handle) or {}
-    args.datagen_config = str(cfg_path)
-
-    engine_cfg = datagen_cfg.get("engine") or {}
-    backend_cfg = datagen_cfg.get("backend") or {}
-    vllm_cfg = datagen_cfg.get("vllm_server") or {}
-
-    if args.model is None:
-        args.model = vllm_cfg.get("model_path") or engine_cfg.get("model")
-
-    tp_default = maybe_int(vllm_cfg.get("tensor_parallel_size")) or maybe_int(
-        backend_cfg.get("tensor_parallel_size")
-    )
-    pp_default = maybe_int(vllm_cfg.get("pipeline_parallel_size")) or maybe_int(
-        backend_cfg.get("pipeline_parallel_size")
-    )
-    dp_default = maybe_int(vllm_cfg.get("data_parallel_size")) or maybe_int(
-        backend_cfg.get("data_parallel_size")
-    )
-
-    if args.tensor_parallel_size is None and tp_default:
-        args.tensor_parallel_size = tp_default
-    if args.pipeline_parallel_size is None and pp_default:
-        args.pipeline_parallel_size = pp_default
-    if args.data_parallel_size is None and dp_default:
-        args.data_parallel_size = dp_default
-
-    if args.ray_port is None:
-        args.ray_port = maybe_int(backend_cfg.get("ray_port")) or args.ray_port
-    if args.api_port is None:
-        args.api_port = maybe_int(backend_cfg.get("api_port")) or args.api_port
-
-    # Build CLI args and env vars from vllm_server config (pass-through to vLLM)
-    merged_cfg = {**engine_cfg, **vllm_cfg}
-    cli_args, env_vars = _build_vllm_cli_args(merged_cfg)
-    args._vllm_cli_args = cli_args
-    args._vllm_env_vars = env_vars
-
-
-def _run_endpoint_health_check(
-    endpoint_json: Path,
-    attempts: int,
-    delay: int,
-) -> None:
-    cmd = [
-        sys.executable,
-        str(REPO_ROOT / "scripts" / "vllm" / "wait_for_endpoint.py"),
-        "--endpoint-json",
-        str(endpoint_json),
-        "--max-attempts",
-        str(attempts),
-        "--retry-delay",
-        str(delay),
-        "--health-path",
-        "v1/models",
-    ]
-    subprocess.run(cmd, check=True)
-
-
-def _load_endpoint_metadata(endpoint_json: Path) -> dict:
-    data = json.loads(endpoint_json.read_text())
-    base_url = (data.get("endpoint_url") or "").rstrip("/")
-    api_base = f"{base_url}/v1" if base_url else ""
-    metrics = base_url.rstrip("/")
-    if metrics.endswith("/v1"):
-        metrics = metrics[:-3].rstrip("/")
-    metrics = f"{metrics}/metrics" if metrics else ""
-    data["api_base"] = api_base
-    data["metrics_endpoint"] = metrics
-    return data
-
-
 def _maybe_upload_results(args: argparse.Namespace) -> None:
     """Upload eval results using the shared upload functions from hpc.launch_utils."""
     if not getattr(args, "upload_to_database", False):
@@ -410,71 +272,6 @@ def _maybe_upload_results(args: argparse.Namespace) -> None:
         print(f"[upload] Upload failed: {result.get('error', 'unknown error')}")
 
 
-def _build_harbor_command(
-    args: argparse.Namespace,
-    dataset_label: str,
-    endpoint_meta: dict,
-) -> List[str]:
-    harbor_model = getattr(args, "_harbor_model_name", args.model)
-    job_model_label = args.model or harbor_model or "model"
-    job_name = args.job_name or _default_job_name(dataset_label, job_model_label)
-    args._harbor_job_name = job_name
-    base_agent_kwargs = _deep_copy(getattr(args, "_base_agent_kwargs", {}) or {})
-    if endpoint_meta.get("metrics_endpoint"):
-        base_agent_kwargs["metrics_endpoint"] = endpoint_meta["metrics_endpoint"]
-    if endpoint_meta.get("api_base"):
-        base_agent_kwargs["api_base"] = endpoint_meta["api_base"]
-    override_kwargs, passthrough = _parse_agent_kwarg_strings(list(args.agent_kwarg or []))
-    for dotted_key, override_value in override_kwargs.items():
-        _apply_nested_key(base_agent_kwargs, dotted_key, override_value)
-    cmd = [
-        args.harbor_binary,
-        "jobs",
-        "start",
-        "--config",
-        args.harbor_config,
-        "--job-name",
-        job_name,
-        "--agent",
-        args.agent,
-        "--model",
-        harbor_model,
-        "--env",
-        args.eval_env,
-        "--n-concurrent",
-        str(args.n_concurrent),
-        "--n-attempts",
-        str(args.n_attempts),
-    ]
-    if args.dataset:
-        cmd.extend(["--dataset", args.dataset])
-    else:
-        cmd.extend(["-p", args.dataset_path])
-    serialized_kwargs = _serialize_agent_kwargs(base_agent_kwargs)
-    for kw in serialized_kwargs:
-        cmd.extend(["--agent-kwarg", kw])
-    for passthrough_kw in passthrough:
-        cmd.extend(["--agent-kwarg", passthrough_kw])
-    extra_args = list(args.harbor_extra_arg or [])
-
-    def _flag_present(flag: str) -> bool:
-        return any(arg == flag or arg.startswith(f"{flag}=") for arg in extra_args)
-
-    if not (_flag_present("--export-traces") or _flag_present("--no-export-traces")):
-        extra_args.append("--export-traces")
-    if not (
-        _flag_present("--export-verifier-metadata") or _flag_present("--no-export-verifier-metadata")
-    ):
-        extra_args.append("--export-verifier-metadata")
-    if not (_flag_present("--export-episodes")):
-        extra_args.extend(["--export-episodes", "last"])
-
-    for extra in extra_args:
-        cmd.append(extra)
-
-    return cmd
-
-
 def _run_harbor_cli(cmd: List[str], log_path: Path | None) -> None:
     # Use shared PTY-based runner
     from hpc.cli_utils import run_harbor_cli
@@ -483,7 +280,10 @@ def _run_harbor_cli(cmd: List[str], log_path: Path | None) -> None:
 
 def main() -> None:
     args = _parse_args()
-    _apply_datagen_defaults(args)
+    apply_datagen_defaults(args)
+
+    # Set up Docker runtime if using docker backend
+    setup_docker_runtime_if_needed(args.eval_env)
 
     if args.agent is None:
         args.agent = "terminus-2"
@@ -510,21 +310,10 @@ def main() -> None:
     if args.cpus is None:
         args.cpus = os.cpu_count() or 16
     args.harbor_config = str(Path(args.harbor_config).expanduser().resolve())
-    harbor_config_data = {}
-    try:
-        with open(args.harbor_config, "r", encoding="utf-8") as harbor_handle:
-            harbor_config_data = yaml.safe_load(harbor_handle) or {}
-    except FileNotFoundError:
-        harbor_config_data = {}
-    if isinstance(harbor_config_data, dict):
-        jobs_dir_value = harbor_config_data.get("jobs_dir")
-    else:
-        jobs_dir_value = None
-    args._jobs_dir_path = _resolve_jobs_dir_path(jobs_dir_value)
-    agents_def = harbor_config_data.get("agents") if isinstance(harbor_config_data, dict) else None
-    first_agent = agents_def[0] if agents_def else {}
-    base_agent_kwargs = first_agent.get("kwargs") if isinstance(first_agent, dict) else {}
-    args._base_agent_kwargs = _deep_copy(base_agent_kwargs or {})
+    harbor_config_data = load_harbor_config(args.harbor_config)
+    jobs_dir_value = harbor_config_data.get("jobs_dir") if isinstance(harbor_config_data, dict) else None
+    args._jobs_dir_path = resolve_jobs_dir_path(jobs_dir_value, REPO_ROOT)
+    args._harbor_config_data = harbor_config_data
     if args.dataset_path:
         args.dataset_path = str(Path(args.dataset_path).expanduser().resolve())
 
@@ -587,9 +376,31 @@ def main() -> None:
 
     try:
         wait_for_endpoint(endpoint_json, vllm_proc)
-        _run_endpoint_health_check(endpoint_json, args.health_max_attempts, args.health_retry_delay)
-        endpoint_meta = _load_endpoint_metadata(endpoint_json)
-        harbor_cmd = _build_harbor_command(args, dataset_label, endpoint_meta)
+        run_endpoint_health_check(endpoint_json, args.health_max_attempts, args.health_retry_delay, REPO_ROOT)
+        endpoint_meta = load_endpoint_metadata(endpoint_json)
+
+        # Compute job name and store for later use (e.g., uploads)
+        harbor_model = getattr(args, "_harbor_model_name", args.model)
+        job_model_label = args.model or harbor_model or "model"
+        job_name = args.job_name or default_job_name("eval", dataset_label, job_model_label)
+        args._harbor_job_name = job_name
+
+        harbor_cmd = build_harbor_command(
+            harbor_binary=args.harbor_binary,
+            harbor_config_path=args.harbor_config,
+            harbor_config_data=getattr(args, "_harbor_config_data", {}),
+            job_name=job_name,
+            agent_name=args.agent,
+            model_name=harbor_model,
+            env_type=args.eval_env,
+            n_concurrent=args.n_concurrent,
+            n_attempts=args.n_attempts,
+            endpoint_meta=endpoint_meta,
+            agent_kwarg_overrides=list(args.agent_kwarg or []),
+            harbor_extra_args=list(args.harbor_extra_arg or []),
+            dataset_slug=args.dataset,
+            dataset_path=args.dataset_path,
+        )
         print("Harbor command:", " ".join(harbor_cmd))
         if not args.dry_run:
             _run_harbor_cli(harbor_cmd, harbor_log)

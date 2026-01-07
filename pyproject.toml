@@ -39,7 +39,7 @@ datagen = [
     "google-cloud-aiplatform>=1.67.0",
     "google-genai>=0.1.0",
     "nvidia-cuda-nvcc-cu12==12.8.93; platform_system != 'Darwin'",
-    "vllm==0.11.2; platform_system != 'Darwin'",
+    "vllm[flashinfer]==0.11.2; platform_system != 'Darwin'",
     "torch==2.9.0+cu128; platform_system != 'Darwin' or platform_machine != 'arm64'",
     "torch==2.9.0; platform_system == 'Darwin' and platform_machine == 'arm64'",
 ]
@@ -74,6 +74,17 @@ cloud-all = [
 ]
 rl = [
     "skyrl @ git+https://github.com/mlfoundations/skyrl.git",
+]
+# Harbor environment backends
+harbor-docker = [
+    "docker>=7.0.0",
+]
+harbor-modal = [
+    "modal>=0.60.0",
+]
+harbor-all = [
+    "docker>=7.0.0",
+    "modal>=0.60.0",
 ]
 
 [tool.setuptools.packages.find]

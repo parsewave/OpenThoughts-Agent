@@ -42,6 +42,8 @@ class EvalCloudLauncher(CloudLauncher):
         parser.add_argument("--dataset-path", help="Path to tasks directory (exclusive with --dataset).")
         parser.add_argument("--model", required=True, help="Model identifier used by run_eval.")
         parser.add_argument("--agent", default="terminus-2", help="Harbor agent to run.")
+        parser.add_argument("--eval-env", default="daytona", choices=["daytona", "docker", "modal"],
+                            help="Harbor environment backend: daytona (cloud), docker (local/podman), modal. (default: daytona)")
         parser.add_argument("--harbor-extra-arg", action="append", default=[], help="Extra --harbor jobs start args.")
         parser.add_argument("--agent-kwarg", action="append", default=[], help="Additional --agent-kwarg entries.")
         parser.add_argument("--n-concurrent", type=int, default=self.default_n_concurrent)
@@ -131,6 +133,7 @@ class EvalCloudLauncher(CloudLauncher):
 
         cmd.extend([
             "--agent", args.agent,
+            "--eval-env", args.eval_env,
             "--n-concurrent", str(args.n_concurrent),
             "--n-attempts", str(args.n_attempts),
             "--gpus", str(args.gpus),

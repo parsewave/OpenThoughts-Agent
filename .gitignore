@@ -345,6 +345,10 @@ data/self_instruct/seed
 eval/tacc/jobs/
 eval/tacc/runs/
 cloud_runs/
+trace_runs/
+
+# HF cache
+.hf_cloud_cache/
 
 # Google Cloud SDK and credentials
 google-cloud-sdk/

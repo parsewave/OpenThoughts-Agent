@@ -36,7 +36,7 @@ COPY CONTRIBUTING.md ./
 COPY LICENSE.txt ./
 COPY docker ./docker
 
-RUN . /opt/openthoughts/.venv/bin/activate && uv pip install -e ".[datagen,cloud]"
+RUN . /opt/openthoughts/.venv/bin/activate && uv pip install -e ".[datagen,cloud,harbor-all]"
 RUN echo "ulimit -n 65535" >> /etc/profile.d/openthoughts-ulimit.sh
 
 CMD ["bash"]

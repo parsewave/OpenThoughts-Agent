@@ -41,7 +41,8 @@ class TracegenCloudLauncher(CloudLauncher):
         parser.add_argument("--tasks-input-path", required=True, help="Path to tasks directory OR HuggingFace repo (org/repo-name).")
         parser.add_argument("--model", help="Model identifier (overrides datagen config).")
         parser.add_argument("--agent", default="terminus-2", help="Harbor agent to run.")
-        parser.add_argument("--trace-env", default="daytona", help="Harbor environment name (default: daytona).")
+        parser.add_argument("--trace-env", default="daytona", choices=["daytona", "docker", "modal"],
+                            help="Harbor environment backend: daytona (cloud), docker (local/podman), modal. (default: daytona)")
         parser.add_argument("--harbor-extra-arg", action="append", default=[], help="Extra --harbor jobs start args.")
         parser.add_argument("--agent-kwarg", action="append", default=[], help="Additional --agent-kwarg entries.")
         parser.add_argument("--n-concurrent", type=int, default=self.default_n_concurrent, help="Concurrent trace trials (default: 64).")
