@@ -749,8 +749,8 @@ class LocalHarborRunner:
         parser.add_argument(
             "--n-attempts",
             type=int,
-            default=3,
-            help="Retries per task (default: 3).",
+            default=1,
+            help="Times to run each task for repeated trials (default: 1). Not retries on failure.",
         )
         parser.add_argument(
             "--job-name",

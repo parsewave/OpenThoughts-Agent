@@ -47,7 +47,7 @@ class EvalCloudLauncher(CloudLauncher):
         parser.add_argument("--harbor-extra-arg", action="append", default=[], help="Extra --harbor jobs start args.")
         parser.add_argument("--agent-kwarg", action="append", default=[], help="Additional --agent-kwarg entries.")
         parser.add_argument("--n-concurrent", type=int, default=self.default_n_concurrent)
-        parser.add_argument("--n-attempts", type=int, default=3)
+        parser.add_argument("--n-attempts", type=int, default=3, help="Times to run each task for standard error calculation (default: 3).")
         parser.add_argument("--gpus", type=int, default=None, help="GPUs for run_eval (default: inferred from --accelerator).")
         parser.add_argument("--dry-run", action="store_true", help="Pass --dry-run to run_eval.")
         parser.add_argument("--job-name", help="Optional override for Harbor job name.")

@@ -46,7 +46,7 @@ class TracegenCloudLauncher(CloudLauncher):
         parser.add_argument("--harbor-extra-arg", action="append", default=[], help="Extra --harbor jobs start args.")
         parser.add_argument("--agent-kwarg", action="append", default=[], help="Additional --agent-kwarg entries.")
         parser.add_argument("--n-concurrent", type=int, default=self.default_n_concurrent, help="Concurrent trace trials (default: 64).")
-        parser.add_argument("--n-attempts", type=int, default=3, help="Retries per task (default: 3).")
+        parser.add_argument("--n-attempts", type=int, default=1, help="Times to run each task for repeated trials (default: 1).")
         parser.add_argument("--gpus", type=int, default=None, help="GPUs for run_tracegen (default: inferred from --accelerator).")
         parser.add_argument("--dry-run", action="store_true", help="Pass --dry-run to run_tracegen.")
         parser.add_argument("--job-name", help="Optional override for Harbor job name.")
