@@ -1,4 +1,0 @@
-New Terminal Output:
-
-/etc/ssl/openssl.cnf
-root@0716088d4fbb:/app#

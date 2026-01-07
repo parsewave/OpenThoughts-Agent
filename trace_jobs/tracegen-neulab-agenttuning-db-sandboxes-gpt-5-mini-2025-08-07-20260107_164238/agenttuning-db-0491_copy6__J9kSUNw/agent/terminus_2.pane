@@ -1,16 +1,0 @@
-[?2004hroot@009a4cf7f679:/app# which mysql
-[?2004l[?2004hroot@009a4cf7f679:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@009a4cf7f679:/app# ps aux | grep mysqld | grep -v grep
-[?2004l[?2004hroot@009a4cf7f679:/app# mysql -uroot -e "SHOW DATABASES;"
-[?2004lbash: mysql: command not found
-[?2004hroot@009a4cf7f679:/app# apt-get update
-[?2004l0% [Working]            Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
-0% [Working]            Get:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease [126 kB]
-0% [2 InRelease 15.6 kB/126 kB 12%]0% [2 InRelease 33.0 kB/126 kB 26%]                                   0% [Working]            Hit:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease
-0% [Working]0% [Waiting for headers]                        Get:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease [126 kB]
-0% [4 InRelease 6932 B/126 kB 5%]                                 0% [Working]0% [Waiting for headers]                        Get:5 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 Packages [1894 kB]
-0% [5 Packages 8447 B/1894 kB 0%]30% [5 Packages 370 kB/1894 kB 20%]                                   58% [Waiting for headers]                         Get:6 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 Packages [2223 kB]
-67% [6 Packages 482 kB/2223 kB 22%]67% [5 Packages store 0 B] [6 Packages 482 kB/2223 kB 22%]                                                          99% [5 Packages store 0 B]                          99% [Working]99% [6 Packages store 0 B]                          100% [Working]              Fetched 4370 kB in 0s (12.5 MB/s)
-Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-[?2004hroot@009a4cf7f679:/app# 

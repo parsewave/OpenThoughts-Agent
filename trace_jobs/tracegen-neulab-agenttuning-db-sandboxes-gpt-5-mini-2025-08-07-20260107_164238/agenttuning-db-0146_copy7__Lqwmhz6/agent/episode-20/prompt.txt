@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@96e975cf865c:/app# echo "Please choose one: (1) remote DB (provide creds+question), (2) upload .sql (provide path), (3) install local server (confirm+passw
-ord), (4) craft SQL (provide schema+question)."
-Please choose one: (1) remote DB (provide creds+question), (2) upload .sql (provide path), (3) install local server (confirm+password), (4) craft SQL (provide s
-chema+question).
-root@96e975cf865c:/app#

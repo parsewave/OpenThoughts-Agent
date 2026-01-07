@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@42a520661e86:/app# echo "Please choose: (A) provide DB details in the format: host=... port=... user=... password=... database=... question='...' OR (B) re
-ply 'install local server' to let me install and configure MySQL here."
-Please choose: (A) provide DB details in the format: host=... port=... user=... password=... database=... question='...' OR (B) reply 'install local server' to
-let me install and configure MySQL here.
-root@42a520661e86:/app#

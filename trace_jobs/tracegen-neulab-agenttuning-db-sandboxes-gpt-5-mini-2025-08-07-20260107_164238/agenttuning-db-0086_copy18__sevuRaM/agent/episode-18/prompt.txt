@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@42a520661e86:/app# echo "Choose one (reply exactly):\n(A) Provide DB details on one line: host=... port=... user=... password=... database=... question='..
-.'\nOR\n(B) Reply exactly: install local server\n(I will proceed only after your explicit reply.)"
-Choose one (reply exactly):\n(A) Provide DB details on one line: host=... port=... user=... password=... database=... question='...'\nOR\n(B) Reply exactly: ins
-tall local server\n(I will proceed only after your explicit reply.)
-root@42a520661e86:/app#

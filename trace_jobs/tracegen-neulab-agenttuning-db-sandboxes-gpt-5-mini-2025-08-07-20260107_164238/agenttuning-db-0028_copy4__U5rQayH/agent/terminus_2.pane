@@ -1,24 +1,0 @@
-[?2004hroot@998928e17e2a:/app# ls -la
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:01 [01;34m..[0m
-[?2004hroot@998928e17e2a:/app# ls -la /app
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:01 [01;34m..[0m
-[?2004hroot@998928e17e2a:/app# ls -la /var/lib/mysql
-[?2004lls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@998928e17e2a:/app# ps aux | grep -i mysqld | grep -v grep
-[?2004l[?2004hroot@998928e17e2a:/app# ss -lntp | grep 3306 || true
-[?2004lbash: ss: command not found
-[?2004hroot@998928e17e2a:/app# env | grep -i mysql || true
-[?2004l[?2004hroot@998928e17e2a:/app# which mysql
-[?2004l[?2004hroot@998928e17e2a:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@998928e17e2a:/app# ls -la /etc/mysql
-[?2004lls: cannot access '/etc/mysql': No such file or directory
-[?2004hroot@998928e17e2a:/app# ls -la /var/run/mysqld
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-[?2004hroot@998928e17e2a:/app# find / -maxdepth 3 -type f -name my.cnf -print 2>/dev/null
-[?2004l[?2004hroot@998928e17e2a:/app# find / -maxdepth 4 -type f -name '*.sql' -print 2>/dev/null || true
-[?2004l[?2004hroot@998928e17e2a:/app# 

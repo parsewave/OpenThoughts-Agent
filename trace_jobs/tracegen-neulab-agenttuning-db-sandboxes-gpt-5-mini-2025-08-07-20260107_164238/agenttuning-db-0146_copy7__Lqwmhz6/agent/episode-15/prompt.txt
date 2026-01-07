@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@96e975cf865c:/app# echo "Awaiting your choice: (1) remote DB (provide creds+question), (2) upload .sql (provide path), (3) install local server (confirm+pa
-ssword), or (4) just craft SQL (provide schema+question)."
-Awaiting your choice: (1) remote DB (provide creds+question), (2) upload .sql (provide path), (3) install local server (confirm+password), or (4) just craft SQL
- (provide schema+question).
-root@96e975cf865c:/app#

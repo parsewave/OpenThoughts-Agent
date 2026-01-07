@@ -1,6 +1,0 @@
-{
-  "analysis": "MySQL server and client are installed and running in the container. A prior SHOW DATABASES returned only the default schemas: information_schema, mysql, performance_schema, and sys. No user databases or tables have been inspected yet. The terminal is idle and waiting for your next instruction or for the raw output of any SQL I ask you to run.",
-  "plan": "I need you to tell me the specific question you want answered from the database or pick one of the example actions below. After you choose, I will produce exactly one SQL statement in the required format (preceded by 'Action: Operation' and a single fenced SQL code block containing a one-line SQL statement). You will run that SQL and return its raw MySQL output; I will parse it and either ask for another single SQL operation or, if finished, provide the final answer in the exact 'Action: Answer' pattern. Choose one of these now and provide any names/conditions needed: 1) List tables in a database (provide database name). 2) Describe table schema (provide database.table). 3) Show rows (provide database.table and optional LIMIT/WHERE). 4) Run a count or aggregate (provide database.table and condition). 5) A custom query (describe it).",
-  "commands": [],
-  "task_complete": false
-}

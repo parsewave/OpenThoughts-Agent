@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@96e975cf865c:/app# echo "Please choose an action and provide required details: 1) remote DB (host,port,user,password or interactive,database,question), 2)
-upload .sql (path and import preference), 3) install local server (confirm + root password and DB/user names), 4) craft SQL (provide schema + question)."
-Please choose an action and provide required details: 1) remote DB (host,port,user,password or interactive,database,question), 2) upload .sql (path and import p
-reference), 3) install local server (confirm + root password and DB/user names), 4) craft SQL (provide schema + question).
-root@96e975cf865c:/app#

@@ -1,9 +1,0 @@
-New Terminal Output:
-
-root@e84cf06a0b94:/app# echo "Please reply with ONE of the following exactly:\n\n1) Provide the exact question you want answered (include DB/table/columns/filte
-rs).\n2) Provide one exploratory SQL to run now (example: \"SHOW TABLES FROM mysql;\" or \"SHOW TABLES FROM your_db;\").\n3) Reply exactly: create test database
-\n\nI will wait for your reply before running any SQL."
-Please reply with ONE of the following exactly:\n\n1) Provide the exact question you want answered (include DB/table/columns/filters).\n2) Provide one explorato
-ry SQL to run now (example: "SHOW TABLES FROM mysql;" or "SHOW TABLES FROM your_db;").\n3) Reply exactly: create test database\n\nI will wait for your reply bef
-ore running any SQL.
-root@e84cf06a0b94:/app#

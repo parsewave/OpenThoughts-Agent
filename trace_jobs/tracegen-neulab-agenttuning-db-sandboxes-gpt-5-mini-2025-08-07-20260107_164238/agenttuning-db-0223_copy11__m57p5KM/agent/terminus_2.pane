@@ -1,24 +1,0 @@
-[?2004hroot@60c7189e065e:/app# whoami
-[?2004lroot
-[?2004hroot@60c7189e065e:/app# pwd
-[?2004l/app
-[?2004hroot@60c7189e065e:/app# ls -la /app
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:01 [01;34m..[0m
-[?2004hroot@60c7189e065e:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@60c7189e065e:/app# ps aux | grep -i mysqld | grep -v grep
-[?2004l[?2004hroot@60c7189e065e:/app# ls -la /var/run/mysqld
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-[?2004hroot@60c7189e065e:/app# env | grep -i MYSQL || true
-[?2004l[?2004hroot@60c7189e065e:/app# apt-get update
-[?2004l0% [Working]            Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
-0% [Working]0% [Waiting for headers]                        Get:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease [126 kB]
-0% [2 InRelease 14.2 kB/126 kB 11%]                                   0% [Working]0% [Waiting for headers]                        Hit:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease
-                        0% [Working]0% [Waiting for headers]                        Get:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease [126 kB]
-0% [4 InRelease 5484 B/126 kB 4%]                                 0% [Working]24% [Waiting for headers]                         Get:5 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 Packages [1894 kB]
-24% [5 Packages 5551 B/1894 kB 0%]                                  58% [Waiting for headers]                         Get:6 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 Packages [2223 kB]
-59% [6 Packages 29.8 kB/2223 kB 1%]59% [5 Packages store 0 B] [6 Packages 29.8 kB/2223 kB 1%]                                                          66% [6 Packages 401 kB/2223 kB 18%]                                   99% [Working]99% [6 Packages store 0 B]                          100% [Working]              Fetched 4370 kB in 2s (2444 kB/s)
-Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-[?2004hroot@60c7189e065e:/app# 

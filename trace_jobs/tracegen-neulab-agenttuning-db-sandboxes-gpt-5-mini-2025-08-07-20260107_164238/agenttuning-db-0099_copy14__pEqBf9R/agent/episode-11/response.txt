@@ -1,6 +1,0 @@
-{
-  "analysis": "MySQL server and client are installed and running in the container. A prior SHOW DATABASES; returned only the default system databases (information_schema, mysql, performance_schema, sys). No application databases or tables have been inspected because you haven't provided a specific question or target database/table names yet. The environment is ready to run SQL, but no further operations have been performed.",
-  "plan": "I need you to provide the exact database question you want answered (for example: \"Show tables in database X\", \"DESCRIBE table_name in database X\", \"SELECT * FROM table WHERE condition\", \"COUNT rows in table Y\", etc.). Once you state the question I will: (1) explain my understanding and the single SQL statement I plan to run, and (2) either (a) perform an operation by outputting Action: Operation followed by one SQL statement (single-line, in a markdown code block) for you to execute and return the raw MySQL output, or (b) if no DB operation is needed, output Action: Answer with the final answer. I will only issue one SQL statement at a time as you requested.",
-  "commands": [],
-  "task_complete": false
-}

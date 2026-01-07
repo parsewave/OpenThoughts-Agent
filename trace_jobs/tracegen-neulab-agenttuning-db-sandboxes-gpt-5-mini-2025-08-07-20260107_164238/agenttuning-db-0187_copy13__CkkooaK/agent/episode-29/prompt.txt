@@ -1,6 +1,0 @@
-New Terminal Output:
-
-root@aaca2c7a0a20:/app# mysql -u root -e 'SHOW DATABASES;'
-ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (111)
-[1]+  Killed                  nohup mysqld --user=mysql --datadir=/var/lib/mysql --socket=/var/run/mysqld/mysqld.sock > /var/log/mysqld.log 2>&1
-root@aaca2c7a0a20:/app#

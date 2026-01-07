@@ -1,5 +1,0 @@
-New Terminal Output:
-
-root@96e975cf865c:/app# echo "Awaiting your choice: provide remote DB credentials, upload a .sql dump, or ask to install a local server."
-Awaiting your choice: provide remote DB credentials, upload a .sql dump, or ask to install a local server.
-root@96e975cf865c:/app#

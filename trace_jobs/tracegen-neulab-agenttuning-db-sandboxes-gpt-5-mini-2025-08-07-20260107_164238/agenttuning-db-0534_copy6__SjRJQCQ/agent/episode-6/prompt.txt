@@ -1,9 +1,0 @@
-New Terminal Output:
-
-mysql --version
-apt-get update
-apt-get install -y default-mysql-client
-mysql --version
-echo "mysql client installed (or attempted). Please provide MySQL connection details (host port user password database) or place a SQL dump file in the containe
-r and tell me its path."
-

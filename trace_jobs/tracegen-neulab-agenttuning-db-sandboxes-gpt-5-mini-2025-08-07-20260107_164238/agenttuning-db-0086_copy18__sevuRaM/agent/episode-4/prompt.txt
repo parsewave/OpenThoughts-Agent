@@ -1,5 +1,0 @@
-New Terminal Output:
-
-root@42a520661e86:/app# echo "MySQL client installed and ready. Please provide DB connection details and the question to run."
-MySQL client installed and ready. Please provide DB connection details and the question to run.
-root@42a520661e86:/app#

@@ -1,31 +1,0 @@
-[?2004hroot@270fcb2b13dc:/app# whoami
-[?2004lroot
-[?2004hroot@270fcb2b13dc:/app# pwd
-[?2004l/app
-[?2004hroot@270fcb2b13dc:/app# ls -la
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:00 [01;34m..[0m
-[?2004hroot@270fcb2b13dc:/app# ps aux | egrep 'mysqld|mysql' | grep -v grep
-[?2004l[?2004hroot@270fcb2b13dc:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@270fcb2b13dc:/app# ls -la /var/lib/mysql
-[?2004lls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@270fcb2b13dc:/app# cat /etc/os-release
-[?2004lPRETTY_NAME="Ubuntu 24.04.3 LTS"
-NAME="Ubuntu"
-VERSION_ID="24.04"
-VERSION="24.04.3 LTS (Noble Numbat)"
-VERSION_CODENAME=noble
-ID=ubuntu
-ID_LIKE=debian
-HOME_URL="https://www.ubuntu.com/"
-SUPPORT_URL="https://help.ubuntu.com/"
-BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
-PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
-UBUNTU_CODENAME=noble
-LOGO=ubuntu-logo
-[?2004hroot@270fcb2b13dc:/app# echo "No MySQL client or server detected. Please provide one of the following:\n1) The database question plus connection details: host, pport, user, password, database (I will run a single SQL you provide).\n2) A path to a SQL dump or database files to inspect.\n3) Reply 'install client' to let mee install the MySQL client here.\n4) Reply 'install server' to install a local server and example data."
-[?2004lNo MySQL client or server detected. Please provide one of the following:\n1) The database question plus connection details: host, port, user, password, database (I will run a single SQL you provide).\n2) A path to a SQL dump or database files to inspect.\n3) Reply 'install client' to let me install the MySQL client here.\n4) Reply 'install server' to install a local server and example data.
-[?2004hroot@270fcb2b13dc:/app# which mysql || true
-[?2004l[?2004hroot@270fcb2b13dc:/app# 

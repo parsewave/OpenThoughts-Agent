@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@42a520661e86:/app# echo "Please provide DB connection details (host, port, user, password, database) and the question to run, or say 'install local server'
- to have me set up MySQL locally."
-Please provide DB connection details (host, port, user, password, database) and the question to run, or say 'install local server' to have me set up MySQL local
-ly.
-root@42a520661e86:/app#

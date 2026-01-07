@@ -1,9 +1,0 @@
-New Terminal Output:
-
-root@e84cf06a0b94:/app# echo "Please choose EXACTLY one option by replying in this terminal:\n\nOption 1 (remote): Provide remote connection info and the exact
-question to answer. Include: host, port (optional), user, password or 'prompt', database, AND the precise query intent.\n\nOption 2 (local): Reply exactly: inst
-all local server\n\nI will not proceed until you explicitly choose one of these."
-Please choose EXACTLY one option by replying in this terminal:\n\nOption 1 (remote): Provide remote connection info and the exact question to answer. Include: h
-ost, port (optional), user, password or 'prompt', database, AND the precise query intent.\n\nOption 2 (local): Reply exactly: install local server\n\nI will not
- proceed until you explicitly choose one of these.
-root@e84cf06a0b94:/app#

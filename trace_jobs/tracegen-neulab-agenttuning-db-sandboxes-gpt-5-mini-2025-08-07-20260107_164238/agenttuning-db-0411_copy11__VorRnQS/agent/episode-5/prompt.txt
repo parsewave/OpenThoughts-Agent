@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@96737c1658aa:/app# echo "Please provide DB connection details: host, port (if not 3306), user, password, and database name; or say 'attempt localhost' to t
-ry connecting to localhost without credentials."
-Please provide DB connection details: host, port (if not 3306), user, password, and database name; or say 'attempt localhost' to try connecting to localhost wit
-hout credentials.
-root@96737c1658aa:/app#

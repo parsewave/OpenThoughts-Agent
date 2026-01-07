@@ -1,35 +1,0 @@
-[?2004hroot@023977a07b5d:/app# which mysql
-[?2004l[?2004hroot@023977a07b5d:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@023977a07b5d:/app# ps aux | grep -E 'mysql|mariadb' | grep -v grep
-[?2004l[?2004hroot@023977a07b5d:/app# ls -la /var/run/mysqld
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-[?2004hroot@023977a07b5d:/app# ls -la /root/.my.cnf
-[?2004lls: cannot access '/root/.my.cnf': No such file or directory
-[?2004hroot@023977a07b5d:/app# cat /etc/mysql/debian.cnf
-[?2004lcat: /etc/mysql/debian.cnf: No such file or directory
-[?2004hroot@023977a07b5d:/app# cat /etc/os-release
-[?2004lPRETTY_NAME="Ubuntu 24.04.3 LTS"
-NAME="Ubuntu"
-VERSION_ID="24.04"
-VERSION="24.04.3 LTS (Noble Numbat)"
-VERSION_CODENAME=noble
-ID=ubuntu
-ID_LIKE=debian
-HOME_URL="https://www.ubuntu.com/"
-SUPPORT_URL="https://help.ubuntu.com/"
-BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
-PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
-UBUNTU_CODENAME=noble
-LOGO=ubuntu-logo
-[?2004hroot@023977a07b5d:/app# which apt-get
-[?2004l/usr/bin/apt-get
-[?2004hroot@023977a07b5d:/app# which apk
-[?2004l[?2004hroot@023977a07b5d:/app# which yum
-[?2004l[?2004hroot@023977a07b5d:/app# apt-get update
-[?2004l0% [Working]            Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
-0% [Working]            Hit:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease
-0% [Working]0% [Waiting for headers]                        Hit:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease
-                        0% [Working]            Hit:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease
-0% [Working]0% [Working]0% [Working]20% [Working]             Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-[?2004hroot@023977a07b5d:/app# 

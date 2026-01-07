@@ -1,12 +1,0 @@
-[?2004hroot@2e5ea901f6a8:/app# ps aux | egrep 'mysqld|mysql' | egrep -v 'egrep'
-[?2004lroot       343  0.0  0.0   3124  1332 pts/1    S+   22:02   0:00 grep -E --color=auto mysqld|mysql
-[?2004hroot@2e5ea901f6a8:/app# ls -la /var/run/mysqld
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-[?2004hroot@2e5ea901f6a8:/app# ls -la /etc/mysql
-[?2004lls: cannot access '/etc/mysql': No such file or directory
-[?2004hroot@2e5ea901f6a8:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@2e5ea901f6a8:/app# env | egrep 'MYSQL|DB' || true
-[?2004l[?2004hroot@2e5ea901f6a8:/app# ss -ltnp | egrep ':3306\\s|:3306$|mysql' || true
-[?2004lbash: ss: command not found
-[?2004hroot@2e5ea901f6a8:/app# 

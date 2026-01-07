@@ -1,9 +1,0 @@
-New Terminal Output:
-
-root@134f0e576ab7:/app# ls -la /var/lib/mysql || true
-ls: cannot access '/var/lib/mysql': No such file or directory
-root@134f0e576ab7:/app# ls -la /run/mysqld || true
-ls: cannot access '/run/mysqld': No such file or directory
-root@134f0e576ab7:/app# ss -lntp | grep 3306 || true
-bash: ss: command not found
-root@134f0e576ab7:/app#

@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@e84cf06a0b94:/app# echo "Please choose: 1) provide remote connection info + the question to answer, OR 2) reply exactly 'install local server' to have me i
-nstall and start a local MariaDB/MySQL server."
-Please choose: 1) provide remote connection info + the question to answer, OR 2) reply exactly 'install local server' to have me install and start a local Maria
-DB/MySQL server.
-root@e84cf06a0b94:/app#

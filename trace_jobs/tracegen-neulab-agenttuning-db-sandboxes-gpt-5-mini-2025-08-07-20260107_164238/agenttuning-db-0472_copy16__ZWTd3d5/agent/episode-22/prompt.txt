@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@134f0e576ab7:/app# echo "MySQL is running. Please provide the SQL question to answer, or upload a .sql dump under /app and tell me its path and desired DB
-name."
-MySQL is running. Please provide the SQL question to answer, or upload a .sql dump under /app and tell me its path and desired DB name.
-[1]+  Killed                  mysqld --datadir=/var/lib/mysql --socket=/run/mysqld/mysqld.sock --bind-address=127.0.0.1
-root@134f0e576ab7:/app#

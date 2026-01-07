@@ -1,10 +1,0 @@
-[?2004hroot@f86fde47454c:/app# mysql -V
-[?2004lbash: mysql: command not found
-[?2004hroot@f86fde47454c:/app# ps aux | grep mysqld | grep -v grep
-[?2004l[?2004hroot@f86fde47454c:/app# ss -ltnp | grep 3306 || netstat -ltnp | grep 3306 || true
-[?2004lbash: ss: command not found
-bash: netstat: command not found
-[?2004hroot@f86fde47454c:/app# ls -la /var/lib/mysql
-[?2004lls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@f86fde47454c:/app# cat /etc/mysql/my.cnf 2>/dev/null || cat /etc/my.cnf 2>/dev/null || true
-[?2004l[?2004hroot@f86fde47454c:/app# 

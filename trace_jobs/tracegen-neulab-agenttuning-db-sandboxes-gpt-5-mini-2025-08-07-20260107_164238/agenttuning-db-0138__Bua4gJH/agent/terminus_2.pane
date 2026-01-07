@@ -1,394 +1,0 @@
-[?2004hroot@3e3c84e12814:/app# ls -la
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 21:44 [01;34m..[0m
-[?2004hroot@3e3c84e12814:/app# which mysql
-[?2004l[?2004hroot@3e3c84e12814:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@3e3c84e12814:/app# ss -lntp | sed -n '1,200p'
-[?2004lbash: ss: command not found
-[?2004hroot@3e3c84e12814:/app# ls -la /var/run/mysqld
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-[?2004hroot@3e3c84e12814:/app# env | grep -i mysql || true
-[?2004l[?2004hroot@3e3c84e12814:/app# test -f /etc/mysql/debian.cnf && sed -n '1,200p' /etc/mysql/debian.cnf || true
-[?2004l[?2004hroot@3e3c84e12814:/app# apt-get update
-[?2004l0% [Working]            Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
-0% [Working]0% [Waiting for headers]                        Hit:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease
-                        0% [Working]0% [Waiting for headers]                        Hit:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease
-                        0% [Working]0% [Waiting for headers]                        Hit:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease
-                        0% [Working]0% [Working]0% [Working]0% [Working]20% [Working]             Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-[?2004hroot@3e3c84e12814:/app# apt-get install -y default-mysql-client
-[?2004lReading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 50%Building dependency tree... 50%Building dependency tree... Done
-Reading state information... 0% Reading state information... 0%Reading state information... Done
-The following additional packages will be installed:
-  libedit2 mysql-client-8.0 mysql-client-core-8.0 mysql-common
-The following NEW packages will be installed:
-  default-mysql-client libedit2 mysql-client-8.0 mysql-client-core-8.0 mysql-common
-0 upgraded, 5 newly installed, 0 to remove and 13 not upgraded.
-Need to get 2937 kB of archives.
-After this operation, 62.1 MB of additional disk space will be used.
-0% [Working]            Get:1 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libedit2 arm64 3.1-20230828-1build1 [97.5 kB]
-0% [1 libedit2 14.2 kB/97.5 kB 15%]                                   7% [Working]            Get:2 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-client-core-8.0 arm64 8.0.44-0ubuntu0.24.04.2 [2807 kB]
-7% [2 mysql-client-core-8.0 5498 B/2807 kB 0%]39% [2 mysql-client-core-8.0 1199 kB/2807 kB 43%]                                                 Get:3 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 mysql-common all 5.8+1.1.0build1 [6746 B]
-                                                 87% [3 mysql-common 6746 B/6746 B 100%]                                       91% [Waiting for headers]                         Get:4 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-client-8.0 arm64 8.0.44-0ubuntu0.24.04.2 [22.5 kB]
-91% [4 mysql-client-8.0 0 B/22.5 kB 0%]                                       Get:5 http://ports.ubuntu.com/ubuntu-ports noble/universe arm64 default-mysql-client all 1.1.0build1 [2908 B]
-96% [5 default-mysql-client 2908 B/2908 B 100%]                                               100% [Working]              Fetched 2937 kB in 1s (2092 kB/s)
-debconf: delaying package configuration, since apt-utils is not installed
-Selecting previously unselected package libedit2:arm64.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 17165 files and directories currently installed.)
-Preparing to unpack .../libedit2_3.1-20230828-1build1_arm64.deb ...
-Unpacking libedit2:arm64 (3.1-20230828-1build1) ...
-Selecting previously unselected package mysql-client-core-8.0.
-Preparing to unpack .../mysql-client-core-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-Unpacking mysql-client-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package mysql-common.
-Preparing to unpack .../mysql-common_5.8+1.1.0build1_all.deb ...
-Unpacking mysql-common (5.8+1.1.0build1) ...
-Selecting previously unselected package mysql-client-8.0.
-Preparing to unpack .../mysql-client-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-Unpacking mysql-client-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package default-mysql-client.
-Preparing to unpack .../default-mysql-client_1.1.0build1_all.deb ...
-Unpacking default-mysql-client (1.1.0build1) ...
-Setting up mysql-common (5.8+1.1.0build1) ...
-update-alternatives: using /etc/mysql/my.cnf.fallback to provide /etc/mysql/my.cnf (my.cnf) in auto mode
-Setting up libedit2:arm64 (3.1-20230828-1build1) ...
-Setting up mysql-client-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Setting up mysql-client-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Setting up default-mysql-client (1.1.0build1) ...
-Processing triggers for libc-bin (2.39-0ubuntu8.6) ...
-[?2004hroot@3e3c84e12814:/app# which mysql
-[?2004l/usr/bin/mysql
-[?2004hroot@3e3c84e12814:/app# mysql --version
-[?2004lmysql  Ver 8.0.44-0ubuntu0.24.04.2 for Linux on aarch64 ((Ubuntu))
-[?2004hroot@3e3c84e12814:/app# ps aux | grep -i mysqld | grep -v grep || true
-[?2004l[?2004hroot@3e3c84e12814:/app# ls -la /etc/mysql || true
-[?2004ltotal 20
-drwxr-xr-x 3 root root 4096 Jan  7 21:46 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 21:46 [01;34m..[0m
-drwxr-xr-x 2 root root 4096 Jan  7 21:46 [01;34mconf.d[0m
-lrwxrwxrwx 1 root root   24 Oct 20  2020 [01;36mmy.cnf[0m -> /etc/alternatives/my.cnf
--rw-r--r-- 1 root root  839 Oct 20  2020 my.cnf.fallback
-[?2004hroot@3e3c84e12814:/app# ls -la /var/lib/mysql || true
-[?2004lls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@3e3c84e12814:/app# ls -la /run | sed -n '1,200p' || true
-[?2004ltotal 16
-drwxr-xr-x 4 root root 4096 Sep 10 02:20 .
-drwxr-xr-x 1 root root 4096 Jan  7 21:44 ..
-drwxrwxrwt 2 root root 4096 Sep 10 02:14 lock
-drwxr-xr-x 2 root root 4096 Sep 10 02:20 systemd
-[?2004hroot@3e3c84e12814:/app# ls -la /tmp | grep -i mysql || true
-[?2004l[?2004hroot@3e3c84e12814:/app# find /run /var/run /var/lib /tmp -maxdepth 2 -type s -name 'mysql*.sock' 2>/dev/null | sed -n '1,200p' || true
-[?2004l[?2004hroot@3e3c84e12814:/app# apt-get update
-[?2004l0% [Working]            Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
-0% [Working]0% [Waiting for headers]                        Hit:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease
-                        0% [Working]            Hit:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease
-0% [Working]            Hit:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease
-0% [Working]0% [Working]0% [Working]apt-get install -y mysql-server
-0% [Working]0% [Working]0% [Working]0% [Working]0% [Working]20% [Working]             Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 6%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 59%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-[?2004hroot@3e3c84e12814:/app# apt-get install -y mysql-server
-[?2004lReading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 59%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 50%Building dependency tree... 50%Building dependency tree... 82%Building dependency tree... Done
-Reading state information... 0% Reading state information... 0%Reading state information... Done
-The following additional packages will be installed:
-  krb5-locales libaio1t64 libcgi-fast-perl libcgi-pm-perl libclone-perl libencode-locale-perl libevent-pthreads-2.1-7t64 libfcgi-bin libfcgi-perl libfcgi0t64
-  libgssapi-krb5-2 libhtml-parser-perl libhtml-tagset-perl libhtml-template-perl libhttp-date-perl libhttp-message-perl libicu74 libio-html-perl libk5crypto3
-  libkeyutils1 libkrb5-3 libkrb5support0 liblwp-mediatypes-perl libmecab2 libnuma1 libprotobuf-lite32t64 libtimedate-perl libtirpc-common libtirpc3t64
-  liburi-perl mecab-ipadic mecab-ipadic-utf8 mecab-utils mysql-server-8.0 mysql-server-core-8.0 psmisc
-Suggested packages:
-  krb5-doc krb5-user libdata-dump-perl libipc-sharedcache-perl libio-compress-brotli-perl libbusiness-isbn-perl libregexp-ipv6-perl libwww-perl mailx tinyca
-The following NEW packages will be installed:
-  krb5-locales libaio1t64 libcgi-fast-perl libcgi-pm-perl libclone-perl libencode-locale-perl libevent-pthreads-2.1-7t64 libfcgi-bin libfcgi-perl libfcgi0t64
-  libgssapi-krb5-2 libhtml-parser-perl libhtml-tagset-perl libhtml-template-perl libhttp-date-perl libhttp-message-perl libicu74 libio-html-perl libk5crypto3
-  libkeyutils1 libkrb5-3 libkrb5support0 liblwp-mediatypes-perl libmecab2 libnuma1 libprotobuf-lite32t64 libtimedate-perl libtirpc-common libtirpc3t64
-  liburi-perl mecab-ipadic mecab-ipadic-utf8 mecab-utils mysql-server mysql-server-8.0 mysql-server-core-8.0 psmisc
-0 upgraded, 37 newly installed, 0 to remove and 13 not upgraded.
-Need to get 38.2 MB of archives.
-After this operation, 222 MB of additional disk space will be used.
-0% [Working]            Get:1 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libaio1t64 arm64 0.3.113-6build1.1 [7192 B]
-0% [1 libaio1t64 7192 B/7192 B 100%]                                    1% [Working]            Get:2 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libevent-pthreads-2.1-7t64 arm64 2.1.12-stable-9ubuntu2 [7932 B]
-1% [2 libevent-pthreads-2.1-7t64 7932 B/7932 B 100%]                                                    Get:3 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libicu74 arm64 74.2-1ubuntu3.1 [10.8 MB]
-                                                    1% [3 libicu74 5497 B/10.8 MB 0%]1% [3 libicu74 132 kB/10.8 MB 1%]2% [3 libicu74 197 kB/10.8 MB 2%]2% [3 libicu74 328 kB/10.8 MB 3%]                                                                                                           28.4 kB/s 22min 14s2% [3 libicu74 508 kB/10.8 MB 5%]                                                                                                           26.3 kB/s 23min 53s16% [3 libicu74 7311 kB/10.8 MB 68%]                                                                                                               914 kB/s 33s24% [Waiting for headers]                                                                                                                          914 kB/s 29s                                                                                                                                                               Get:4 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libmecab2 arm64 0.996-14ubuntu4 [188 kB]
-25% [4 libmecab2 113 kB/188 kB 60%]                                                                                                                914 kB/s 29s25% [Waiting for headers]                                                                                                                          914 kB/s 29s                                                                                                                                                               Get:5 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libnuma1 arm64 2.0.18-1build1 [23.6 kB]
-                                                                                                                                                               Get:6 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libprotobuf-lite32t64 arm64 3.21.12-8.2ubuntu0.2 [221 kB]
-26% [6 libprotobuf-lite32t64 12.3 kB/221 kB 6%]                                                                                                    914 kB/s 29s                                                                                                                                                               Get:7 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libkrb5support0 arm64 1.20.1-6ubuntu2.6 [34.8 kB]
-27% [7 libkrb5support0 34.8 kB/34.8 kB 100%]                                                                                                       914 kB/s 29s                                                                                                                                                               Get:8 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libk5crypto3 arm64 1.20.1-6ubuntu2.6 [85.8 kB]
-27% [8 libk5crypto3 37.1 kB/85.8 kB 43%]                                                                                                           914 kB/s 29s                                                                                                                                                               Get:9 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libkeyutils1 arm64 1.6.3-3build1 [9654 B]
-28% [9 libkeyutils1 0 B/9654 B 0%]                                                                                                                 914 kB/s 29s                                                                                                                                                               Get:10 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libkrb5-3 arm64 1.20.1-6ubuntu2.6 [349 kB]
-29% [10 libkrb5-3 65.2 kB/349 kB 19%]                                                                                                              914 kB/s 29s                                                                                                                                                               Get:11 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libgssapi-krb5-2 arm64 1.20.1-6ubuntu2.6 [142 kB]
-30% [11 libgssapi-krb5-2 109 kB/142 kB 77%]                                                                                                        914 kB/s 28s                                                                                                                                                               Get:12 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libtirpc-common all 1.3.4+ds-1.1build1 [8094 B]
-31% [Waiting for headers]                                                                                                                          914 kB/s 28s                                                                                                                                                               Get:13 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libtirpc3t64 arm64 1.3.4+ds-1.1build1 [83.6 kB]
-31% [13 libtirpc3t64 0 B/83.6 kB 0%]                                                                                                               914 kB/s 28s32% [Waiting for headers]                                                                                                                          914 kB/s 28s                                                                                                                                                               Get:14 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-server-core-8.0 arm64 8.0.44-0ubuntu0.24.04.2 [17.4 MB]
-32% [14 mysql-server-core-8.0 20.9 kB/17.4 MB 0%]                                                                                                  914 kB/s 28s59% [14 mysql-server-core-8.0 12.9 MB/17.4 MB 74%]                                                                                                 914 kB/s 14s69% [Waiting for headers]                                                                                                                           914 kB/s 9s                                                                                                                                                               Get:15 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 psmisc arm64 23.7-1build1 [178 kB]
-                                                                                                                                                               Get:16 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-server-8.0 arm64 8.0.44-0ubuntu0.24.04.2 [1241 kB]
-70% [16 mysql-server-8.0 55.0 kB/1241 kB 4%]                                                                                                        914 kB/s 9s73% [Waiting for headers]                                                                                                                           914 kB/s 8s                                                                                                                                                               Get:17 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 krb5-locales all 1.20.1-6ubuntu2.6 [14.8 kB]
-74% [Waiting for headers]                                                                                                                           914 kB/s 8s                                                                                                                                                               Get:18 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhtml-tagset-perl all 3.20-6 [11.3 kB]
-74% [18 libhtml-tagset-perl 11.3 kB/11.3 kB 100%]                                                                                                   914 kB/s 8s74% [Working]                                                                                                                                       914 kB/s 8s                                                                                                                                                               Get:19 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 liburi-perl all 5.27-1 [88.0 kB]
-74% [19 liburi-perl 43.6 kB/88.0 kB 50%]                                                                                                            914 kB/s 8s75% [Waiting for headers]                                                                                                                           914 kB/s 8s                                                                                                                                                               Get:20 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhtml-parser-perl arm64 3.81-1build3 [85.0 kB]
-                                                                                                                                                               Get:21 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libcgi-pm-perl all 4.63-1 [185 kB]
-                                                                                                                                                               Get:22 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libfcgi0t64 arm64 2.4.2-2.1ubuntu0.24.04.1 [27.2 kB]
-77% [22 libfcgi0t64 27.2 kB/27.2 kB 100%]                                                                                                           914 kB/s 7s                                                                                                                                                               Get:23 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libfcgi-perl arm64 0.82+ds-3build2 [20.8 kB]
-77% [23 libfcgi-perl 18.6 kB/20.8 kB 89%]                                                                                                           914 kB/s 7s78% [Working]                                                                                                                                       914 kB/s 7s                                                                                                                                                               Get:24 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libcgi-fast-perl all 1:2.17-1 [10.3 kB]
-78% [24 libcgi-fast-perl 10.3 kB/10.3 kB 100%]                                                                                                      914 kB/s 7s78% [Waiting for headers]                                                                                                                           914 kB/s 7s                                                                                                                                                               Get:25 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libclone-perl arm64 0.46-1build3 [10.5 kB]
-78% [25 libclone-perl 10.5 kB/10.5 kB 100%]                                                                                                         914 kB/s 7s                                                                                                                                                               Get:26 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libencode-locale-perl all 1.05-3 [11.6 kB]
-79% [26 libencode-locale-perl 11.6 kB/11.6 kB 100%]                                                                                                 914 kB/s 7s79% [Waiting for headers]                                                                                                                           914 kB/s 7s                                                                                                                                                               Get:27 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libfcgi-bin arm64 2.4.2-2.1ubuntu0.24.04.1 [10.7 kB]
-79% [27 libfcgi-bin 10.7 kB/10.7 kB 100%]                                                                                                           914 kB/s 7s                                                                                                                                                               Get:28 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhtml-template-perl all 2.97-2 [60.2 kB]
-80% [28 libhtml-template-perl 51.1 kB/60.2 kB 85%]                                                                                                  914 kB/s 7s81% [Working]                                                                                                                                       914 kB/s 7s                                                                                                                                                               Get:29 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libtimedate-perl all 2.3300-2 [34.0 kB]
-81% [29 libtimedate-perl 33.0 kB/34.0 kB 97%]                                                                                                       914 kB/s 7s81% [Waiting for headers]                                                                                                                           914 kB/s 7s                                                                                                                                                               Get:30 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhttp-date-perl all 6.06-1 [10.2 kB]
-                                                                                                                                                               Get:31 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libio-html-perl all 1.004-3 [15.9 kB]
-                                                                                                                                                               Get:32 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 liblwp-mediatypes-perl all 6.04-2 [20.1 kB]
-83% [Waiting for headers]                                                                                                                           914 kB/s 7s                                                                                                                                                               Get:33 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhttp-message-perl all 6.45-1ubuntu1 [78.2 kB]
-83% [33 libhttp-message-perl 78.2 kB/78.2 kB 100%]                                                                                                  914 kB/s 7s                                                                                                                                                               Get:34 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 mecab-utils arm64 0.996-14ubuntu4 [4892 B]
-                                                                                                                                                               Get:35 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 mecab-ipadic all 2.7.0-20070801+main-3 [6718 kB]
-87% [35 mecab-ipadic 1179 kB/6718 kB 18%]                                                                                                           914 kB/s 6s                                                                                                                                                               Get:36 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 mecab-ipadic-utf8 all 2.7.0-20070801+main-3 [4384 B]
-                                                                                                                                                               Get:37 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-server all 8.0.44-0ubuntu0.24.04.2 [9524 B]
-100% [Working]                                                                                                                                      914 kB/s 0s                                                                                                                                                               Fetched 38.2 MB in 28s (1341 kB/s)
-debconf: delaying package configuration, since apt-utils is not installed
-Selecting previously unselected package libaio1t64:arm64.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 17231 files and directories currently installed.)
-Preparing to unpack .../00-libaio1t64_0.3.113-6build1.1_arm64.deb ...
-Unpacking libaio1t64:arm64 (0.3.113-6build1.1) ...
-Selecting previously unselected package libevent-pthreads-2.1-7t64:arm64.
-Preparing to unpack .../01-libevent-pthreads-2.1-7t64_2.1.12-stable-9ubuntu2_arm64.deb ...
-Unpacking libevent-pthreads-2.1-7t64:arm64 (2.1.12-stable-9ubuntu2) ...
-Selecting previously unselected package libicu74:arm64.
-Preparing to unpack .../02-libicu74_74.2-1ubuntu3.1_arm64.deb ...
-Unpacking libicu74:arm64 (74.2-1ubuntu3.1) ...
-Selecting previously unselected package libmecab2:arm64.
-Preparing to unpack .../03-libmecab2_0.996-14ubuntu4_arm64.deb ...
-Unpacking libmecab2:arm64 (0.996-14ubuntu4) ...
-Selecting previously unselected package libnuma1:arm64.
-Preparing to unpack .../04-libnuma1_2.0.18-1build1_arm64.deb ...
-Unpacking libnuma1:arm64 (2.0.18-1build1) ...
-Selecting previously unselected package libprotobuf-lite32t64:arm64.
-Preparing to unpack .../05-libprotobuf-lite32t64_3.21.12-8.2ubuntu0.2_arm64.deb ...
-Unpacking libprotobuf-lite32t64:arm64 (3.21.12-8.2ubuntu0.2) ...
-Selecting previously unselected package libkrb5support0:arm64.
-Preparing to unpack .../06-libkrb5support0_1.20.1-6ubuntu2.6_arm64.deb ...
-Unpacking libkrb5support0:arm64 (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package libk5crypto3:arm64.
-Preparing to unpack .../07-libk5crypto3_1.20.1-6ubuntu2.6_arm64.deb ...
-Unpacking libk5crypto3:arm64 (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package libkeyutils1:arm64.
-Preparing to unpack .../08-libkeyutils1_1.6.3-3build1_arm64.deb ...
-Unpacking libkeyutils1:arm64 (1.6.3-3build1) ...
-Selecting previously unselected package libkrb5-3:arm64.
-Preparing to unpack .../09-libkrb5-3_1.20.1-6ubuntu2.6_arm64.deb ...
-Unpacking libkrb5-3:arm64 (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package libgssapi-krb5-2:arm64.
-Preparing to unpack .../10-libgssapi-krb5-2_1.20.1-6ubuntu2.6_arm64.deb ...
-Unpacking libgssapi-krb5-2:arm64 (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package libtirpc-common.
-Preparing to unpack .../11-libtirpc-common_1.3.4+ds-1.1build1_all.deb ...
-Unpacking libtirpc-common (1.3.4+ds-1.1build1) ...
-Selecting previously unselected package libtirpc3t64:arm64.
-Preparing to unpack .../12-libtirpc3t64_1.3.4+ds-1.1build1_arm64.deb ...
-Adding 'diversion of /lib/aarch64-linux-gnu/libtirpc.so.3 to /lib/aarch64-linux-gnu/libtirpc.so.3.usr-is-merged by libtirpc3t64'
-Adding 'diversion of /lib/aarch64-linux-gnu/libtirpc.so.3.0.0 to /lib/aarch64-linux-gnu/libtirpc.so.3.0.0.usr-is-merged by libtirpc3t64'
-Unpacking libtirpc3t64:arm64 (1.3.4+ds-1.1build1) ...
-Selecting previously unselected package mysql-server-core-8.0.
-Preparing to unpack .../13-mysql-server-core-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-Unpacking mysql-server-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package psmisc.
-Preparing to unpack .../14-psmisc_23.7-1build1_arm64.deb ...
-Unpacking psmisc (23.7-1build1) ...
-Selecting previously unselected package mysql-server-8.0.
-Preparing to unpack .../15-mysql-server-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-debconf: unable to initialize frontend: Dialog
-debconf: (No usable dialog-like program is installed, so the dialog based frontend cannot be used. at /usr/share/perl5/Debconf/FrontEnd/Dialog.pm line 79.)
-debconf: falling back to frontend: Readline
-Unpacking mysql-server-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package krb5-locales.
-Preparing to unpack .../16-krb5-locales_1.20.1-6ubuntu2.6_all.deb ...
-Unpacking krb5-locales (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package libhtml-tagset-perl.
-Preparing to unpack .../17-libhtml-tagset-perl_3.20-6_all.deb ...
-Unpacking libhtml-tagset-perl (3.20-6) ...
-Selecting previously unselected package liburi-perl.
-Preparing to unpack .../18-liburi-perl_5.27-1_all.deb ...
-Unpacking liburi-perl (5.27-1) ...
-Selecting previously unselected package libhtml-parser-perl:arm64.
-Preparing to unpack .../19-libhtml-parser-perl_3.81-1build3_arm64.deb ...
-Unpacking libhtml-parser-perl:arm64 (3.81-1build3) ...
-Selecting previously unselected package libcgi-pm-perl.
-Preparing to unpack .../20-libcgi-pm-perl_4.63-1_all.deb ...
-Unpacking libcgi-pm-perl (4.63-1) ...
-Selecting previously unselected package libfcgi0t64:arm64.
-Preparing to unpack .../21-libfcgi0t64_2.4.2-2.1ubuntu0.24.04.1_arm64.deb ...
-Unpacking libfcgi0t64:arm64 (2.4.2-2.1ubuntu0.24.04.1) ...
-Selecting previously unselected package libfcgi-perl.
-Preparing to unpack .../22-libfcgi-perl_0.82+ds-3build2_arm64.deb ...
-Unpacking libfcgi-perl (0.82+ds-3build2) ...
-Selecting previously unselected package libcgi-fast-perl.
-Preparing to unpack .../23-libcgi-fast-perl_1%3a2.17-1_all.deb ...
-Unpacking libcgi-fast-perl (1:2.17-1) ...
-Selecting previously unselected package libclone-perl:arm64.
-Preparing to unpack .../24-libclone-perl_0.46-1build3_arm64.deb ...
-Unpacking libclone-perl:arm64 (0.46-1build3) ...
-Selecting previously unselected package libencode-locale-perl.
-Preparing to unpack .../25-libencode-locale-perl_1.05-3_all.deb ...
-Unpacking libencode-locale-perl (1.05-3) ...
-Selecting previously unselected package libfcgi-bin.
-Preparing to unpack .../26-libfcgi-bin_2.4.2-2.1ubuntu0.24.04.1_arm64.deb ...
-Unpacking libfcgi-bin (2.4.2-2.1ubuntu0.24.04.1) ...
-Selecting previously unselected package libhtml-template-perl.
-Preparing to unpack .../27-libhtml-template-perl_2.97-2_all.deb ...
-Unpacking libhtml-template-perl (2.97-2) ...
-Selecting previously unselected package libtimedate-perl.
-Preparing to unpack .../28-libtimedate-perl_2.3300-2_all.deb ...
-Unpacking libtimedate-perl (2.3300-2) ...
-Selecting previously unselected package libhttp-date-perl.
-Preparing to unpack .../29-libhttp-date-perl_6.06-1_all.deb ...
-Unpacking libhttp-date-perl (6.06-1) ...
-Selecting previously unselected package libio-html-perl.
-Preparing to unpack .../30-libio-html-perl_1.004-3_all.deb ...
-Unpacking libio-html-perl (1.004-3) ...
-Selecting previously unselected package liblwp-mediatypes-perl.
-Preparing to unpack .../31-liblwp-mediatypes-perl_6.04-2_all.deb ...
-Unpacking liblwp-mediatypes-perl (6.04-2) ...
-Selecting previously unselected package libhttp-message-perl.
-Preparing to unpack .../32-libhttp-message-perl_6.45-1ubuntu1_all.deb ...
-Unpacking libhttp-message-perl (6.45-1ubuntu1) ...
-Selecting previously unselected package mecab-utils.
-Preparing to unpack .../33-mecab-utils_0.996-14ubuntu4_arm64.deb ...
-Unpacking mecab-utils (0.996-14ubuntu4) ...
-Selecting previously unselected package mecab-ipadic.
-Preparing to unpack .../34-mecab-ipadic_2.7.0-20070801+main-3_all.deb ...
-Unpacking mecab-ipadic (2.7.0-20070801+main-3) ...
-Selecting previously unselected package mecab-ipadic-utf8.
-Preparing to unpack .../35-mecab-ipadic-utf8_2.7.0-20070801+main-3_all.deb ...
-Unpacking mecab-ipadic-utf8 (2.7.0-20070801+main-3) ...
-Selecting previously unselected package mysql-server.
-Preparing to unpack .../36-mysql-server_8.0.44-0ubuntu0.24.04.2_all.deb ...
-Unpacking mysql-server (8.0.44-0ubuntu0.24.04.2) ...
-Setting up libprotobuf-lite32t64:arm64 (3.21.12-8.2ubuntu0.2) ...
-Setting up libmecab2:arm64 (0.996-14ubuntu4) ...
-Setting up libkeyutils1:arm64 (1.6.3-3build1) ...
-Setting up psmisc (23.7-1build1) ...
-Setting up libclone-perl:arm64 (0.46-1build3) ...
-Setting up libevent-pthreads-2.1-7t64:arm64 (2.1.12-stable-9ubuntu2) ...
-Setting up libfcgi0t64:arm64 (2.4.2-2.1ubuntu0.24.04.1) ...
-Setting up libtirpc-common (1.3.4+ds-1.1build1) ...
-Setting up libhtml-tagset-perl (3.20-6) ...
-Setting up liblwp-mediatypes-perl (6.04-2) ...
-Setting up libfcgi-bin (2.4.2-2.1ubuntu0.24.04.1) ...
-Setting up libencode-locale-perl (1.05-3) ...
-Setting up krb5-locales (1.20.1-6ubuntu2.6) ...
-Setting up libkrb5support0:arm64 (1.20.1-6ubuntu2.6) ...
-Setting up mecab-utils (0.996-14ubuntu4) ...
-Setting up libio-html-perl (1.004-3) ...
-Setting up libk5crypto3:arm64 (1.20.1-6ubuntu2.6) ...
-Setting up libtimedate-perl (2.3300-2) ...
-Setting up libicu74:arm64 (74.2-1ubuntu3.1) ...
-Setting up libnuma1:arm64 (2.0.18-1build1) ...
-Setting up libaio1t64:arm64 (0.3.113-6build1.1) ...
-Setting up libfcgi-perl (0.82+ds-3build2) ...
-Setting up libkrb5-3:arm64 (1.20.1-6ubuntu2.6) ...
-Setting up liburi-perl (5.27-1) ...
-Setting up libhttp-date-perl (6.06-1) ...
-Setting up mecab-ipadic (2.7.0-20070801+main-3) ...
-Compiling IPA dictionary for Mecab.  This takes long time...
-reading /usr/share/mecab/dic/ipadic/unk.def ... 40
-emitting double-array:   9% |###                                        | emitting double-array:  18% |#######                                    | emitting double-array:  27% |###########                                | emitting double-array:  36% |###############                            | emitting double-array:  45% |###################                        | emitting double-array:  54% |#######################                    | emitting double-array:  63% |###########################                | emitting double-array:  72% |###############################            | emitting double-array:  81% |###################################        | emitting double-array:  90% |#######################################    | emitting double-array: 100% |###########################################| 
-/usr/share/mecab/dic/ipadic/model.def is not found. skipped.
-reading /usr/share/mecab/dic/ipadic/Noun.number.csv ... 42
-reading /usr/share/mecab/dic/ipadic/Noun.demonst.csv ... 120
-reading /usr/share/mecab/dic/ipadic/Postp.csv ... 146
-reading /usr/share/mecab/dic/ipadic/Noun.others.csv ... 151
-reading /usr/share/mecab/dic/ipadic/Noun.csv ... 60477
-reading /usr/share/mecab/dic/ipadic/Noun.proper.csv ... 27328
-reading /usr/share/mecab/dic/ipadic/Adj.csv ... 27210
-reading /usr/share/mecab/dic/ipadic/Adnominal.csv ... 135
-reading /usr/share/mecab/dic/ipadic/Auxil.csv ... 199
-reading /usr/share/mecab/dic/ipadic/Noun.name.csv ... 34202
-reading /usr/share/mecab/dic/ipadic/Noun.adverbal.csv ... 795
-reading /usr/share/mecab/dic/ipadic/Filler.csv ... 19
-reading /usr/share/mecab/dic/ipadic/Adverb.csv ... 3032
-reading /usr/share/mecab/dic/ipadic/Interjection.csv ... 252
-reading /usr/share/mecab/dic/ipadic/Postp-col.csv ... 91
-reading /usr/share/mecab/dic/ipadic/Suffix.csv ... 1393
-reading /usr/share/mecab/dic/ipadic/Noun.org.csv ... 16668
-reading /usr/share/mecab/dic/ipadic/Noun.verbal.csv ... 12146
-reading /usr/share/mecab/dic/ipadic/Verb.csv ... 130750
-reading /usr/share/mecab/dic/ipadic/Prefix.csv ... 221
-reading /usr/share/mecab/dic/ipadic/Conjunction.csv ... 171
-reading /usr/share/mecab/dic/ipadic/Others.csv ... 2
-reading /usr/share/mecab/dic/ipadic/Noun.adjv.csv ... 3328
-reading /usr/share/mecab/dic/ipadic/Noun.place.csv ... 72999
-reading /usr/share/mecab/dic/ipadic/Noun.nai.csv ... 42
-reading /usr/share/mecab/dic/ipadic/Symbol.csv ... 208
-emitting double-array:   0% |                                           | emitting double-array:   1% |                                           | emitting double-array:   2% |                                           | emitting double-array:   3% |#                                          | emitting double-array:   4% |#                                          | emitting double-array:   5% |##                                         | emitting double-array:   6% |##                                         | emitting double-array:   7% |###                                        | emitting double-array:   8% |###                                        | emitting double-array:   9% |###                                        | emitting double-array:  10% |####                                       | emitting double-array:  11% |####                                       | emitting double-array:  12% |#####                                      | emitting double-array:  13% |#####                                      | emitting double-array:  14% |######                                     | emitting double-array:  15% |######                                     | emitting double-array:  16% |######                                     | emitting double-array:  17% |#######                                    | emitting double-array:  18% |#######                                    | emitting double-array:  19% |########                                   | emitting double-array:  20% |########                                   | emitting double-array:  21% |#########                                  | emitting double-array:  22% |#########                                  | emitting double-array:  23% |#########                                  | emitting double-array:  24% |##########                                 | emitting double-array:  25% |##########                                 | emitting double-array:  26% |###########                                | emitting double-array:  27% |###########                                | emitting double-array:  28% |############                               | emitting double-array:  29% |############                               | emitting double-array:  30% |############                               | emitting double-array:  31% |#############                              | emitting double-array:  32% |#############                              | emitting double-array:  33% |##############                             | emitting double-array:  34% |##############                             | emitting double-array:  35% |###############                            | emitting double-array:  36% |###############                            | emitting double-array:  37% |###############                            | emitting double-array:  38% |################                           | emitting double-array:  39% |################                           | emitting double-array:  40% |#################                          | emitting double-array:  41% |#################                          | emitting double-array:  42% |##################                         | emitting double-array:  43% |##################                         | emitting double-array:  44% |##################                         | emitting double-array:  45% |###################                        | emitting double-array:  46% |###################                        | emitting double-array:  47% |####################                       | emitting double-array:  48% |####################                       | emitting double-array:  49% |#####################                      | emitting double-array:  50% |#####################                      | emitting double-array:  51% |#####################                      | emitting double-array:  52% |######################                     | emitting double-array:  53% |######################                     | emitting double-array:  54% |#######################                    | emitting double-array:  55% |#######################                    | emitting double-array:  56% |########################                   | emitting double-array:  57% |########################                   | emitting double-array:  58% |########################                   | emitting double-array:  59% |#########################                  | emitting double-array:  60% |#########################                  | emitting double-array:  61% |##########################                 | emitting double-array:  62% |##########################                 | emitting double-array:  63% |###########################                | emitting double-array:  64% |###########################                | emitting double-array:  65% |###########################                | emitting double-array:  66% |############################               | emitting double-array:  67% |############################               | emitting double-array:  68% |#############################              | emitting double-array:  69% |#############################              | emitting double-array:  70% |##############################             | emitting double-array:  71% |##############################             | emitting double-array:  72% |##############################             | emitting double-array:  73% |###############################            | emitting double-array:  74% |###############################            | emitting double-array:  75% |################################           | emitting double-array:  76% |################################           | emitting double-array:  77% |#################################          | emitting double-array:  78% |#################################          | emitting double-array:  79% |#################################          | emitting double-array:  80% |##################################         | emitting double-array:  81% |##################################         | emitting double-array:  82% |###################################        | emitting double-array:  83% |###################################        | emitting double-array:  84% |####################################       | emitting double-array:  85% |####################################       | emitting double-array:  86% |####################################       | emitting double-array:  87% |#####################################      | emitting double-array:  88% |#####################################      | emitting double-array:  89% |######################################     | emitting double-array:  90% |######################################     | emitting double-array:  91% |#######################################    | emitting double-array:  92% |#######################################    | emitting double-array:  93% |#######################################    | emitting double-array:  94% |########################################   | emitting double-array:  95% |########################################   | emitting double-array:  96% |#########################################  | emitting double-array:  97% |#########################################  | emitting double-array:  98% |########################################## | emitting double-array:  99% |########################################## | emitting double-array: 100% |###########################################| 
-reading /usr/share/mecab/dic/ipadic/matrix.def ... 1316x1316
-emitting matrix      :   0% |                                           | emitting matrix      :   1% |                                           | emitting matrix      :   2% |                                           | emitting matrix      :   3% |#                                          | emitting matrix      :   4% |#                                          | emitting matrix      :   5% |##                                         | emitting matrix      :   6% |##                                         | emitting matrix      :   7% |###                                        | emitting matrix      :   8% |###                                        | emitting matrix      :   9% |###                                        | emitting matrix      :  10% |####                                       | emitting matrix      :  11% |####                                       | emitting matrix      :  12% |#####                                      | emitting matrix      :  13% |#####                                      | emitting matrix      :  14% |######                                     | emitting matrix      :  15% |######                                     | emitting matrix      :  16% |######                                     | emitting matrix      :  17% |#######                                    | emitting matrix      :  18% |#######                                    | emitting matrix      :  19% |########                                   | emitting matrix      :  20% |########                                   | emitting matrix      :  21% |#########                                  | emitting matrix      :  22% |#########                                  | emitting matrix      :  23% |#########                                  | emitting matrix      :  24% |##########                                 | emitting matrix      :  25% |##########                                 | emitting matrix      :  26% |###########                                | emitting matrix      :  27% |###########                                | emitting matrix      :  28% |############                               | emitting matrix      :  29% |############                               | emitting matrix      :  30% |############                               | emitting matrix      :  31% |#############                              | emitting matrix      :  32% |#############                              | emitting matrix      :  33% |##############                             | emitting matrix      :  34% |##############                             | emitting matrix      :  35% |###############                            | emitting matrix      :  36% |###############                            | emitting matrix      :  37% |###############                            | emitting matrix      :  38% |################                           | emitting matrix      :  39% |################                           | emitting matrix      :  40% |#################                          | emitting matrix      :  41% |#################                          | emitting matrix      :  42% |##################                         | emitting matrix      :  43% |##################                         | emitting matrix      :  44% |##################                         | emitting matrix      :  45% |###################                        | emitting matrix      :  46% |###################                        | emitting matrix      :  47% |####################                       | emitting matrix      :  48% |####################                       | emitting matrix      :  49% |#####################                      | emitting matrix      :  50% |#####################                      | emitting matrix      :  51% |#####################                      | emitting matrix      :  52% |######################                     | emitting matrix      :  53% |######################                     | emitting matrix      :  54% |#######################                    | emitting matrix      :  55% |#######################                    | emitting matrix      :  56% |########################                   | emitting matrix      :  57% |########################                   | emitting matrix      :  58% |########################                   | emitting matrix      :  59% |#########################                  | emitting matrix      :  60% |#########################                  | emitting matrix      :  61% |##########################                 | emitting matrix      :  62% |##########################                 | emitting matrix      :  63% |###########################                | emitting matrix      :  64% |###########################                | emitting matrix      :  65% |###########################                | emitting matrix      :  66% |############################               | emitting matrix      :  67% |############################               | emitting matrix      :  68% |#############################              | emitting matrix      :  69% |#############################              | emitting matrix      :  70% |##############################             | emitting matrix      :  71% |##############################             | emitting matrix      :  72% |##############################             | emitting matrix      :  73% |###############################            | emitting matrix      :  74% |###############################            | emitting matrix      :  75% |################################           | emitting matrix      :  76% |################################           | emitting matrix      :  77% |#################################          | emitting matrix      :  78% |#################################          | emitting matrix      :  79% |#################################          | emitting matrix      :  80% |##################################         | emitting matrix      :  81% |##################################         | emitting matrix      :  82% |###################################        | emitting matrix      :  83% |###################################        | emitting matrix      :  84% |####################################       | emitting matrix      :  85% |####################################       | emitting matrix      :  86% |####################################       | emitting matrix      :  87% |#####################################      | emitting matrix      :  88% |#####################################      | emitting matrix      :  89% |######################################     | emitting matrix      :  90% |######################################     | emitting matrix      :  91% |#######################################    | emitting matrix      :  92% |#######################################    | emitting matrix      :  93% |#######################################    | emitting matrix      :  94% |########################################   | emitting matrix      :  95% |########################################   | emitting matrix      :  96% |#########################################  | emitting matrix      :  97% |#########################################  | emitting matrix      :  98% |########################################## | emitting matrix      :  99% |########################################## | emitting matrix      : 100% |###########################################| 
-
-done!
-update-alternatives: using /var/lib/mecab/dic/ipadic to provide /var/lib/mecab/dic/debian (mecab-dictionary) in auto mode
-Setting up libgssapi-krb5-2:arm64 (1.20.1-6ubuntu2.6) ...
-Setting up mecab-ipadic-utf8 (2.7.0-20070801+main-3) ...
-Compiling IPA dictionary for Mecab.  This takes long time...
-reading /usr/share/mecab/dic/ipadic/unk.def ... 40
-emitting double-array:   9% |###                                        | emitting double-array:  18% |#######                                    | emitting double-array:  27% |###########                                | emitting double-array:  36% |###############                            | emitting double-array:  45% |###################                        | emitting double-array:  54% |#######################                    | emitting double-array:  63% |###########################                | emitting double-array:  72% |###############################            | emitting double-array:  81% |###################################        | emitting double-array:  90% |#######################################    | emitting double-array: 100% |###########################################| 
-/usr/share/mecab/dic/ipadic/model.def is not found. skipped.
-reading /usr/share/mecab/dic/ipadic/Noun.number.csv ... 42
-reading /usr/share/mecab/dic/ipadic/Noun.demonst.csv ... 120
-reading /usr/share/mecab/dic/ipadic/Postp.csv ... 146
-reading /usr/share/mecab/dic/ipadic/Noun.others.csv ... 151
-reading /usr/share/mecab/dic/ipadic/Noun.csv ... 60477
-reading /usr/share/mecab/dic/ipadic/Noun.proper.csv ... 27328
-reading /usr/share/mecab/dic/ipadic/Adj.csv ... 27210
-reading /usr/share/mecab/dic/ipadic/Adnominal.csv ... 135
-reading /usr/share/mecab/dic/ipadic/Auxil.csv ... 199
-reading /usr/share/mecab/dic/ipadic/Noun.name.csv ... 34202
-reading /usr/share/mecab/dic/ipadic/Noun.adverbal.csv ... 795
-reading /usr/share/mecab/dic/ipadic/Filler.csv ... 19
-reading /usr/share/mecab/dic/ipadic/Adverb.csv ... 3032
-reading /usr/share/mecab/dic/ipadic/Interjection.csv ... 252
-reading /usr/share/mecab/dic/ipadic/Postp-col.csv ... 91
-reading /usr/share/mecab/dic/ipadic/Suffix.csv ... 1393
-reading /usr/share/mecab/dic/ipadic/Noun.org.csv ... 16668
-reading /usr/share/mecab/dic/ipadic/Noun.verbal.csv ... 12146
-reading /usr/share/mecab/dic/ipadic/Verb.csv ... 130750
-reading /usr/share/mecab/dic/ipadic/Prefix.csv ... 221
-reading /usr/share/mecab/dic/ipadic/Conjunction.csv ... 171
-reading /usr/share/mecab/dic/ipadic/Others.csv ... 2
-reading /usr/share/mecab/dic/ipadic/Noun.adjv.csv ... 3328
-reading /usr/share/mecab/dic/ipadic/Noun.place.csv ... 72999
-reading /usr/share/mecab/dic/ipadic/Noun.nai.csv ... 42
-reading /usr/share/mecab/dic/ipadic/Symbol.csv ... 208
-emitting double-array:   0% |                                           | emitting double-array:   1% |                                           | emitting double-array:   2% |                                           | emitting double-array:   3% |#                                          | emitting double-array:   4% |#                                          | emitting double-array:   5% |##                                         | emitting double-array:   6% |##                                         | emitting double-array:   7% |###                                        | emitting double-array:   8% |###                                        | emitting double-array:   9% |###                                        | emitting double-array:  10% |####                                       | emitting double-array:  11% |####                                       | emitting double-array:  12% |#####                                      | emitting double-array:  13% |#####                                      | emitting double-array:  14% |######                                     | emitting double-array:  15% |######                                     | emitting double-array:  16% |######                                     | emitting double-array:  17% |#######                                    | emitting double-array:  18% |#######                                    | emitting double-array:  19% |########                                   | emitting double-array:  20% |########                                   | emitting double-array:  21% |#########                                  | emitting double-array:  22% |#########                                  | emitting double-array:  23% |#########                                  | emitting double-array:  24% |##########                                 | emitting double-array:  25% |##########                                 | emitting double-array:  26% |###########                                | emitting double-array:  27% |###########                                | emitting double-array:  28% |############                               | emitting double-array:  29% |############                               | emitting double-array:  30% |############                               | emitting double-array:  31% |#############                              | emitting double-array:  32% |#############                              | emitting double-array:  33% |##############                             | emitting double-array:  34% |##############                             | emitting double-array:  35% |###############                            | emitting double-array:  36% |###############                            | emitting double-array:  37% |###############                            | emitting double-array:  38% |################                           | emitting double-array:  39% |################                           | emitting double-array:  40% |#################                          | emitting double-array:  41% |#################                          | emitting double-array:  42% |##################                         | emitting double-array:  43% |##################                         | emitting double-array:  44% |##################                         | emitting double-array:  45% |###################                        | emitting double-array:  46% |###################                        | emitting double-array:  47% |####################                       | emitting double-array:  48% |####################                       | emitting double-array:  49% |#####################                      | emitting double-array:  50% |#####################                      | emitting double-array:  51% |#####################                      | emitting double-array:  52% |######################                     | emitting double-array:  53% |######################                     | emitting double-array:  54% |#######################                    | emitting double-array:  55% |#######################                    | emitting double-array:  56% |########################                   | emitting double-array:  57% |########################                   | emitting double-array:  58% |########################                   | emitting double-array:  59% |#########################                  | emitting double-array:  60% |#########################                  | emitting double-array:  61% |##########################                 | emitting double-array:  62% |##########################                 | emitting double-array:  63% |###########################                | emitting double-array:  64% |###########################                | emitting double-array:  65% |###########################                | emitting double-array:  66% |############################               | emitting double-array:  67% |############################               | emitting double-array:  68% |#############################              | emitting double-array:  69% |#############################              | emitting double-array:  70% |##############################             | emitting double-array:  71% |##############################             | emitting double-array:  72% |##############################             | emitting double-array:  73% |###############################            | emitting double-array:  74% |###############################            | emitting double-array:  75% |################################           | emitting double-array:  76% |################################           | emitting double-array:  77% |#################################          | emitting double-array:  78% |#################################          | emitting double-array:  79% |#################################          | emitting double-array:  80% |##################################         | emitting double-array:  81% |##################################         | emitting double-array:  82% |###################################        | emitting double-array:  83% |###################################        | emitting double-array:  84% |####################################       | emitting double-array:  85% |####################################       | emitting double-array:  86% |####################################       | emitting double-array:  87% |#####################################      | emitting double-array:  88% |#####################################      | emitting double-array:  89% |######################################     | emitting double-array:  90% |######################################     | emitting double-array:  91% |#######################################    | emitting double-array:  92% |#######################################    | emitting double-array:  93% |#######################################    | emitting double-array:  94% |########################################   | emitting double-array:  95% |########################################   | emitting double-array:  96% |#########################################  | emitting double-array:  97% |#########################################  | emitting double-array:  98% |########################################## | emitting double-array:  99% |########################################## | emitting double-array: 100% |###########################################| 
-reading /usr/share/mecab/dic/ipadic/matrix.def ... 1316x1316
-emitting matrix      :   0% |                                           | emitting matrix      :   1% |                                           | emitting matrix      :   2% |                                           | emitting matrix      :   3% |#                                          | emitting matrix      :   4% |#                                          | emitting matrix      :   5% |##                                         | emitting matrix      :   6% |##                                         | emitting matrix      :   7% |###                                        | emitting matrix      :   8% |###                                        | emitting matrix      :   9% |###                                        | emitting matrix      :  10% |####                                       | emitting matrix      :  11% |####                                       | emitting matrix      :  12% |#####                                      | emitting matrix      :  13% |#####                                      | emitting matrix      :  14% |######                                     | emitting matrix      :  15% |######                                     | emitting matrix      :  16% |######                                     | emitting matrix      :  17% |#######                                    | emitting matrix      :  18% |#######                                    | emitting matrix      :  19% |########                                   | emitting matrix      :  20% |########                                   | emitting matrix      :  21% |#########                                  | emitting matrix      :  22% |#########                                  | emitting matrix      :  23% |#########                                  | emitting matrix      :  24% |##########                                 | emitting matrix      :  25% |##########                                 | emitting matrix      :  26% |###########                                | emitting matrix      :  27% |###########                                | emitting matrix      :  28% |############                               | emitting matrix      :  29% |############                               | emitting matrix      :  30% |############                               | emitting matrix      :  31% |#############                              | emitting matrix      :  32% |#############                              | emitting matrix      :  33% |##############                             | emitting matrix      :  34% |##############                             | emitting matrix      :  35% |###############                            | emitting matrix      :  36% |###############                            | emitting matrix      :  37% |###############                            | emitting matrix      :  38% |################                           | emitting matrix      :  39% |################                           | emitting matrix      :  40% |#################                          | emitting matrix      :  41% |#################                          | emitting matrix      :  42% |##################                         | emitting matrix      :  43% |##################                         | emitting matrix      :  44% |##################                         | emitting matrix      :  45% |###################                        | emitting matrix      :  46% |###################                        | emitting matrix      :  47% |####################                       | emitting matrix      :  48% |####################                       | emitting matrix      :  49% |#####################                      | emitting matrix      :  50% |#####################                      | emitting matrix      :  51% |#####################                      | emitting matrix      :  52% |######################                     | emitting matrix      :  53% |######################                     | emitting matrix      :  54% |#######################                    | emitting matrix      :  55% |#######################                    | emitting matrix      :  56% |########################                   | emitting matrix      :  57% |########################                   | emitting matrix      :  58% |########################                   | emitting matrix      :  59% |#########################                  | emitting matrix      :  60% |#########################                  | emitting matrix      :  61% |##########################                 | emitting matrix      :  62% |##########################                 | emitting matrix      :  63% |###########################                | emitting matrix      :  64% |###########################                | emitting matrix      :  65% |###########################                | emitting matrix      :  66% |############################               | emitting matrix      :  67% |############################               | emitting matrix      :  68% |#############################              | emitting matrix      :  69% |#############################              | emitting matrix      :  70% |##############################             | emitting matrix      :  71% |##############################             | emitting matrix      :  72% |##############################             | emitting matrix      :  73% |###############################            | emitting matrix      :  74% |###############################            | emitting matrix      :  75% |################################           | emitting matrix      :  76% |################################           | emitting matrix      :  77% |#################################          | emitting matrix      :  78% |#################################          | emitting matrix      :  79% |#################################          | emitting matrix      :  80% |##################################         | emitting matrix      :  81% |##################################         | emitting matrix      :  82% |###################################        | emitting matrix      :  83% |###################################        | emitting matrix      :  84% |####################################       | emitting matrix      :  85% |####################################       | emitting matrix      :  86% |####################################       | emitting matrix      :  87% |#####################################      | emitting matrix      :  88% |#####################################      | emitting matrix      :  89% |######################################     | emitting matrix      :  90% |######################################     | emitting matrix      :  91% |#######################################    | emitting matrix      :  92% |#######################################    | emitting matrix      :  93% |#######################################    | emitting matrix      :  94% |########################################   | emitting matrix      :  95% |########################################   | emitting matrix      :  96% |#########################################  | emitting matrix      :  97% |#########################################  | emitting matrix      :  98% |########################################## | emitting matrix      :  99% |########################################## | emitting matrix      : 100% |###########################################| 
-
-done!
-update-alternatives: using /var/lib/mecab/dic/ipadic-utf8 to provide /var/lib/mecab/dic/debian (mecab-dictionary) in auto mode
-Setting up libhtml-parser-perl:arm64 (3.81-1build3) ...
-Setting up libhttp-message-perl (6.45-1ubuntu1) ...
-Setting up libtirpc3t64:arm64 (1.3.4+ds-1.1build1) ...
-Setting up libcgi-pm-perl (4.63-1) ...
-Setting up libhtml-template-perl (2.97-2) ...
-Setting up mysql-server-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Setting up mysql-server-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-debconf: unable to initialize frontend: Dialog
-debconf: (No usable dialog-like program is installed, so the dialog based frontend cannot be used. at /usr/share/perl5/Debconf/FrontEnd/Dialog.pm line 79.)
-debconf: falling back to frontend: Readline
-invoke-rc.d: could not determine current runlevel
-invoke-rc.d: policy-rc.d denied execution of stop.
-update-alternatives: using /etc/mysql/mysql.cnf to provide /etc/mysql/my.cnf (my.cnf) in auto mode
-Renaming removed key_buffer and myisam-recover options (if present)
-if [ ! -d /var/lib/mysql/mysql ]; then mysqld --initialize-insecure --user=mysql --datadir=/var/lib/mysql || true; fi
-nohup mysqld_safe --datadir=/var/lib/mysql > /var/log/mysql_start.log 2>&1 &
-sleep 3
-ps aux | grep -i mysqld | grep -v grep || true
-mysql -uroot -e "SELECT VERSION();"
-mysqld will log errors to /var/log/mysql/error.log
-mysqld is running as pid 1882
-ps aux | grep -i mysqld | grep -v grep || true
-tail -n 200 /var/log/mysql_start.log || true
-mysql -uroot -e "SELECT VERSION();"
-invoke-rc.d: could not determine current runlevel
-invoke-rc.d: policy-rc.d denied execution of start.
-Setting up libcgi-fast-perl (1:2.17-1) ...
-Setting up mysql-server (8.0.44-0ubuntu0.24.04.2) ...
-Processing triggers for libc-bin (2.39-0ubuntu8.6) ...
-[?2004hroot@3e3c84e12814:/app# 

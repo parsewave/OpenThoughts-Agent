@@ -1,7 +1,0 @@
-[?2004hroot@024f7a47db74:/app# ps aux | grep -E "mysqld|mariadbd" | grep -v grep
-[?2004l[?2004hroot@024f7a47db74:/app# which mysql
-[?2004l[?2004hroot@024f7a47db74:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@024f7a47db74:/app# ls -la /var/lib/mysql 2>/dev/null || true
-[?2004l[?2004hroot@024f7a47db74:/app# ls -la /etc/mysql 2>/dev/null || true
-[?2004l[?2004hroot@024f7a47db74:/app# 

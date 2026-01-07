@@ -1,9 +1,0 @@
-New Terminal Output:
-
-root@3d31d3568545:/app# mysql -uroot -e "SHOW TABLES FROM sampledb;"
-+--------------------+
-| Tables_in_sampledb |
-+--------------------+
-| users              |
-+--------------------+
-root@3d31d3568545:/app#

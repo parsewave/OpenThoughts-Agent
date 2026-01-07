@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@134f0e576ab7:/app# echo "Choose option: A) provide remote DB creds + question; B) upload a .sql dump and give its path + question; C) allow local mysql-ser
-ver install and give root password and DB name."
-Choose option: A) provide remote DB creds + question; B) upload a .sql dump and give its path + question; C) allow local mysql-server install and give root pass
-word and DB name.
-root@134f0e576ab7:/app#

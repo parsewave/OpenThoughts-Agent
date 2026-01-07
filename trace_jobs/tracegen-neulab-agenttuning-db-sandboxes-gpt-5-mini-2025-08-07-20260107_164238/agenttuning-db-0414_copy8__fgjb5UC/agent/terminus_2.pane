@@ -1,11 +1,0 @@
-[?2004hroot@969bfacfba21:/app# which mysql
-[?2004l[?2004hroot@969bfacfba21:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@969bfacfba21:/app# ps aux | grep -i mysqld | grep -v grep
-[?2004l[?2004hroot@969bfacfba21:/app# ls -la /etc/mysql/
-[?2004lls: cannot access '/etc/mysql/': No such file or directory
-[?2004hroot@969bfacfba21:/app# ls -la /var/lib/mysql/
-[?2004lls: cannot access '/var/lib/mysql/': No such file or directory
-[?2004hroot@969bfacfba21:/app# cat /root/.my.cnf
-[?2004lcat: /root/.my.cnf: No such file or directory
-[?2004hroot@969bfacfba21:/app# 

@@ -1,132 +1,0 @@
-[?2004hroot@cf2d33d36953:/app# whoami
-[?2004lroot
-[?2004hroot@cf2d33d36953:/app# pwd
-[?2004l/app
-[?2004hroot@cf2d33d36953:/app# ls -la
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 21:44 [01;34m..[0m
-[?2004hroot@cf2d33d36953:/app# ps aux | grep -E 'mysqld|mysql' | grep -v grep
-[?2004l[?2004hroot@cf2d33d36953:/app# mysql -V
-[?2004lbash: mysql: command not found
-[?2004hroot@cf2d33d36953:/app# ls -la /var/lib/mysql
-[?2004lls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@cf2d33d36953:/app# env | grep -i mysql || true
-[?2004l[?2004hroot@cf2d33d36953:/app# ss -lntp 2>/dev/null | grep -E ':3306\s' || netstat -lntp 2>/dev/null | grep -E ':3306\s' || true
-[?2004l[?2004hroot@cf2d33d36953:/app# cat /etc/os-release
-[?2004lcommand -v apt-get || true
-command -v yum || true
-command -v apk || true
-PRETTY_NAME="Ubuntu 24.04.3 LTS"
-NAME="Ubuntu"
-VERSION_ID="24.04"
-VERSION="24.04.3 LTS (Noble Numbat)"
-VERSION_CODENAME=noble
-ID=ubuntu
-ID_LIKE=debian
-HOME_URL="https://www.ubuntu.com/"
-SUPPORT_URL="https://help.ubuntu.com/"
-BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
-PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
-UBUNTU_CODENAME=noble
-LOGO=ubuntu-logo
-[?2004hroot@cf2d33d36953:/app# command -v apt-get || true
-[?2004l/usr/bin/apt-get
-[?2004hroot@cf2d33d36953:/app# command -v yum || true
-[?2004l[?2004hroot@cf2d33d36953:/app# command -v apk || true
-[?2004l[?2004hroot@cf2d33d36953:/app# ls -la /etc/issue || true
-[?2004l-rw-r--r-- 1 root root 26 Aug  1 14:21 /etc/issue
-[?2004hroot@cf2d33d36953:/app# apt-get update
-[?2004l0% [Working]            Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
-0% [Working]0% [Waiting for headers]                        Get:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease [126 kB]
-0% [2 InRelease 14.2 kB/126 kB 11%]                                   0% [Working]0% [Waiting for headers]                        Hit:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease
-                        0% [Working]0% [Waiting for headers]                        Get:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease [126 kB]
-0% [4 InRelease 2588 B/126 kB 2%]                                 0% [Working]24% [Waiting for headers]                         Get:5 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 Packages [1894 kB]
-24% [5 Packages 5551 B/1894 kB 0%]                                  58% [Waiting for headers]                         Get:6 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 Packages [2223 kB]
-59% [6 Packages 70.2 kB/2223 kB 3%]59% [5 Packages store 0 B] [6 Packages 70.2 kB/2223 kB 3%]                                                          74% [6 Packages 829 kB/2223 kB 37%]                                   99% [Working]99% [6 Packages store 0 B]                          100% [Working]              Fetched 4370 kB in 2s (2266 kB/s)
-Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-[?2004hroot@cf2d33d36953:/app# DEBIAN_FRONTEND=noninteractive apt-get install -y default-mysql-client
-[?2004lReading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 50%Building dependency tree... 50%Building dependency tree... 96%Building dependency tree... Done
-Reading state information... 0% Reading state information... 0%Reading state information... Done
-The following additional packages will be installed:
-  libedit2 mysql-client-8.0 mysql-client-core-8.0 mysql-common
-The following NEW packages will be installed:
-  default-mysql-client libedit2 mysql-client-8.0 mysql-client-core-8.0 mysql-common
-0 upgraded, 5 newly installed, 0 to remove and 13 not upgraded.
-Need to get 2937 kB of archives.
-After this operation, 62.1 MB of additional disk space will be used.
-0% [Working]            Get:1 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libedit2 arm64 3.1-20230828-1build1 [97.5 kB]
-0% [1 libedit2 14.2 kB/97.5 kB 15%]                                   7% [Working]            Get:2 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-client-core-8.0 arm64 8.0.44-0ubuntu0.24.04.2 [2807 kB]
-7% [2 mysql-client-core-8.0 5498 B/2807 kB 0%]79% [2 mysql-client-core-8.0 2647 kB/2807 kB 94%]                                                 87% [Waiting for headers]                         Get:3 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 mysql-common all 5.8+1.1.0build1 [6746 B]
-                         91% [Working]             Get:4 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-client-8.0 arm64 8.0.44-0ubuntu0.24.04.2 [22.5 kB]
-91% [4 mysql-client-8.0 1791 B/22.5 kB 8%]                                          96% [Waiting for headers]                         Get:5 http://ports.ubuntu.com/ubuntu-ports noble/universe arm64 default-mysql-client all 1.1.0build1 [2908 B]
-                         100% [Working]              Fetched 2937 kB in 1s (2665 kB/s)
-debconf: delaying package configuration, since apt-utils is not installed
-Selecting previously unselected package libedit2:arm64.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 17165 files and directories currently installed.)
-Preparing to unpack .../libedit2_3.1-20230828-1build1_arm64.deb ...
-Unpacking libedit2:arm64 (3.1-20230828-1build1) ...
-Selecting previously unselected package mysql-client-core-8.0.
-Preparing to unpack .../mysql-client-core-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-Unpacking mysql-client-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package mysql-common.
-Preparing to unpack .../mysql-common_5.8+1.1.0build1_all.deb ...
-Unpacking mysql-common (5.8+1.1.0build1) ...
-Selecting previously unselected package mysql-client-8.0.
-Preparing to unpack .../mysql-client-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-Unpacking mysql-client-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package default-mysql-client.
-Preparing to unpack .../default-mysql-client_1.1.0build1_all.deb ...
-Unpacking default-mysql-client (1.1.0build1) ...
-Setting up mysql-common (5.8+1.1.0build1) ...
-update-alternatives: using /etc/mysql/my.cnf.fallback to provide /etc/mysql/my.cnf (my.cnf) in auto mode
-Setting up libedit2:arm64 (3.1-20230828-1build1) ...
-Setting up mysql-client-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Setting up mysql-client-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Setting up default-mysql-client (1.1.0build1) ...
-Processing triggers for libc-bin (2.39-0ubuntu8.6) ...
-[?2004hroot@cf2d33d36953:/app# mysql --version
-[?2004lmysql  Ver 8.0.44-0ubuntu0.24.04.2 for Linux on aarch64 ((Ubuntu))
-[?2004hroot@cf2d33d36953:/app# mysql --help | head -n 40
-[?2004lmysql  Ver 8.0.44-0ubuntu0.24.04.2 for Linux on aarch64 ((Ubuntu))
-Copyright (c) 2000, 2025, Oracle and/or its affiliates.
-
-Oracle is a registered trademark of Oracle Corporation and/or its
-affiliates. Other names may be trademarks of their respective
-owners.
-
-Usage: mysql [OPTIONS] [database]
-  -?, --help          Display this help and exit.
-  -I, --help          Synonym for -?
-  --auto-rehash       Enable automatic rehashing. One doesn't need to use
-                      'rehash' to get table and field completion, but startup
-                      and reconnecting may take a longer time. Disable with
-                      --disable-auto-rehash.
-                      (Defaults to on; use --skip-auto-rehash to disable.)
-  -A, --no-auto-rehash 
-                      No automatic rehashing. One has to use 'rehash' to get
-                      table and field completion. This gives a quicker start of
-                      mysql and disables rehashing on reconnect.
-  --auto-vertical-output 
-                      Automatically switch to vertical output mode if the
-                      result is wider than the terminal width.
-  -B, --batch         Don't use history file. Disable interactive behavior.
-                      (Enables --silent.)
-  --bind-address=name IP address to bind to.
-  --binary-as-hex     Print binary data as hex. Enabled by default for
-                      interactive terminals.
-  --character-sets-dir=name 
-                      Directory for character set files.
-  --column-type-info  Display column type information.
-  --commands          Enable or disable processing of local mysql commands.
-                      (Defaults to on; use --skip-commands to disable.)
-  -c, --comments      Preserve comments. Send comments to the server. The
-                      default is --skip-comments (discard comments), enable
-                      with --comments.
-  -C, --compress      Use compression in server/client protocol.
-  -#, --debug[=#]     This is a non-debug version. Catch this and exit.
-  --debug-check       This is a non-debug version. Catch this and exit.
-  -T, --debug-info    This is a non-debug version. Catch this and exit.
-  -D, --database=name Database to use.
-[?2004hroot@cf2d33d36953:/app# 

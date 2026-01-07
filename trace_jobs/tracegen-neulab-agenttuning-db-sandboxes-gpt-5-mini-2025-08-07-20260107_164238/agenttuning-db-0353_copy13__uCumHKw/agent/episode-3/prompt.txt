@@ -1,5 +1,0 @@
-New Terminal Output:
-
-root@fb03ca5f7a71:/app# mysql --batch --skip-column-names -e 'SHOW DATABASES;'
-ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)
-root@fb03ca5f7a71:/app#

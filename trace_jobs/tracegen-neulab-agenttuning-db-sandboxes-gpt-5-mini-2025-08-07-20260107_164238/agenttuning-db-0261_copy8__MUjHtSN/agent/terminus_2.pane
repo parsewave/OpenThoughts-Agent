@@ -1,16 +1,0 @@
-[?2004hroot@a7d5871b84e3:/app# whoami
-[?2004lroot
-[?2004hroot@a7d5871b84e3:/app# pwd
-[?2004l/app
-[?2004hroot@a7d5871b84e3:/app# ls -la
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:01 [01;34m..[0m
-[?2004hroot@a7d5871b84e3:/app# ls -la /etc | grep -i mysql || true
-[?2004l[?2004hroot@a7d5871b84e3:/app# ls -la /etc/mysql 2>/dev/null || true
-[?2004l[?2004hroot@a7d5871b84e3:/app# ls -la /var/lib/mysql 2>/dev/null || true
-[?2004l[?2004hroot@a7d5871b84e3:/app# which mysql 2>/dev/null || true
-[?2004l[?2004hroot@a7d5871b84e3:/app# mysql --version 2>/dev/null || true
-[?2004l[?2004hroot@a7d5871b84e3:/app# ps aux | grep -E "mysql|mariadb" | grep -v grep || true
-[?2004l[?2004hroot@a7d5871b84e3:/app# ss -lntp 2>/dev/null | head -n 20 || netstat -lntp 2>/dev/null | head -n 20 || true
-[?2004l[?2004hroot@a7d5871b84e3:/app# 

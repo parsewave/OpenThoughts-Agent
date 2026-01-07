@@ -1,22 +1,0 @@
-[?2004hroot@b6a412c27ef5:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@b6a412c27ef5:/app# ps aux | grep -i mysqld | grep -v grep
-[?2004l[?2004hroot@b6a412c27ef5:/app# ls -la /var/lib/mysql
-[?2004lls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@b6a412c27ef5:/app# ls -la /etc/mysql
-[?2004lls: cannot access '/etc/mysql': No such file or directory
-[?2004hroot@b6a412c27ef5:/app# cat /etc/mysql/debian.cnf
-[?2004lcat: /etc/mysql/debian.cnf: No such file or directory
-[?2004hroot@b6a412c27ef5:/app# env | grep -i mysql || true
-[?2004l[?2004hroot@b6a412c27ef5:/app# ls -la /app
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:00 [01;34m..[0m
-[?2004hroot@b6a412c27ef5:/app# ls -la /var/run/mysqld 2>/dev/null || true
-[?2004l[?2004hroot@b6a412c27ef5:/app# ls -la /tmp | grep -i mysql || true
-[?2004l[?2004hroot@b6a412c27ef5:/app# find /usr /bin /sbin /opt /usr/local -name mysql -type f -executable 2>/dev/null || true
-[?2004l[?2004hroot@b6a412c27ef5:/app# dpkg -l | grep -iE "mysql|mariadb" 2>/dev/null || rpm -qa | grep -iE "mysql|mariadb" 2>/dev/null || true
-[?2004lbash: rpm: command not found
-[?2004hroot@b6a412c27ef5:/app# apt --version 2>/dev/null || true
-[?2004lapt 2.8.3 (arm64)
-[?2004hroot@b6a412c27ef5:/app# 

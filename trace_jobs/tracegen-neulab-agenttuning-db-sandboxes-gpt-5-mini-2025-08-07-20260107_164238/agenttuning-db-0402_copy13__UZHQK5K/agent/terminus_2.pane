@@ -1,12 +1,0 @@
-[?2004hroot@962648b497fc:/app# whoami
-[?2004lroot
-[?2004hroot@962648b497fc:/app# ps aux | egrep 'mysqld|mysql' || true
-[?2004lroot       353  0.0  0.0   3124  1460 pts/1    S+   22:02   0:00 grep -E --color=auto [01;31m[Kmysqld[m[K|[01;31m[Kmysql[m[K
-[?2004hroot@962648b497fc:/app# ss -ltnp | egrep '3306|mysql' || true
-[?2004lbash: ss: command not found
-[?2004hroot@962648b497fc:/app# ls -la /var/lib/mysql || true
-[?2004lls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@962648b497fc:/app# which mysql || true
-[?2004l[?2004hroot@962648b497fc:/app# mysql --version || true
-[?2004lbash: mysql: command not found
-[?2004hroot@962648b497fc:/app# 

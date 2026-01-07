@@ -1,4 +1,0 @@
-New Terminal Output:
-
-te' \) 2>/dev/null | head -n 200
-

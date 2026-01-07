@@ -1,9 +1,0 @@
-New Terminal Output:
-
-root@c19200243131:/app# mysql -u root -e "SHOW TABLES FROM sample_db;"
-+---------------------+
-| Tables_in_sample_db |
-+---------------------+
-| employees           |
-+---------------------+
-root@c19200243131:/app#

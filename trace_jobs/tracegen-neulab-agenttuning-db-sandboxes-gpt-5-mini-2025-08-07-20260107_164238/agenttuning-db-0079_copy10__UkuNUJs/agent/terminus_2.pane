@@ -1,78 +1,0 @@
-[?2004hroot@d206199bc7a0:/app# ls -la
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:00 [01;34m..[0m
-[?2004hroot@d206199bc7a0:/app# ps aux | grep -E 'mysqld|mysql' | grep -v grep
-[?2004l[?2004hroot@d206199bc7a0:/app# ss -ltnp | grep 3306 || true
-[?2004lbash: ss: command not found
-[?2004hroot@d206199bc7a0:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@d206199bc7a0:/app# cat /etc/mysql/debian.cnf 2>/dev/null || true
-[?2004l[?2004hroot@d206199bc7a0:/app# env | grep -i mysql || true
-[?2004l[?2004hroot@d206199bc7a0:/app# find /app /var/lib/mysql /etc -maxdepth 3 -type f -name '*.sql' 2>/dev/null | head -n 50
-[?2004l[?2004hroot@d206199bc7a0:/app# find / -type s -name 'mysql.sock' 2>/dev/null || true
-[?2004lfind / -type f -name 'ibdata1' -o -name 'ib_logfile*' 2>/dev/null || true
-find / -type f -name 'my.cnf' -o -name '*.cnf' 2>/dev/null | grep -i mysql || true
-[?2004hroot@d206199bc7a0:/app# find / -type f -name 'ibdata1' -o -name 'ib_logfile*' 2>/dev/null || true
-[?2004l[?2004hroot@d206199bc7a0:/app# find / -type f -name 'my.cnf' -o -name '*.cnf' 2>/dev/null | grep -i mysql || true
-[?2004l[?2004hroot@d206199bc7a0:/app# ls -la /run /var/run /var/run/mysqld 2>/dev/null || true
-[?2004llrwxrwxrwx 1 root root    4 Sep 10 02:14 [0m[01;36m/var/run[0m -> [01;34m/run[0m
-
-/run:
-total 16
-drwxr-xr-x 4 root root 4096 Sep 10 02:20 [01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:00 [01;34m..[0m
-drwxrwxrwt 2 root root 4096 Sep 10 02:14 [30;42mlock[0m
-drwxr-xr-x 2 root root 4096 Sep 10 02:20 [01;34msystemd[0m
-[?2004hroot@d206199bc7a0:/app# which mysqld || true
-[?2004l[?2004hroot@d206199bc7a0:/app# which mariadb || true
-[?2004l[?2004hroot@d206199bc7a0:/app# which mysqladmin || true
-[?2004l[?2004hroot@d206199bc7a0:/app# python3 --version 2>/dev/null || python --version 2>/dev/null || true
-[?2004lPython 3.12.3
-[?2004hroot@d206199bc7a0:/app# python3 - <<'PY'
-[?2004l[?2004h> import pkgutil
-[?2004l[?2004h> print('pymysql', bool(pkgutil.find_loader('pymysql')))
-[?2004l[?2004h> print('mysql.connector', bool(pkgutil.find_loader('mysql.connector')))
-[?2004l[?2004h> PY
-[?2004l<stdin>:2: DeprecationWarning: 'pkgutil.find_loader' is deprecated and slated for removal in Python 3.14; use importlib.util.find_spec() instead
-pymysql False
-<stdin>:3: DeprecationWarning: 'pkgutil.find_loader' is deprecated and slated for removal in Python 3.14; use importlib.util.find_spec() instead
-Traceback (most recent call last):
-  File "/usr/lib/python3.12/pkgutil.py", line 309, in find_loader
-    spec = importlib.util.find_spec(fullname)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "<frozen importlib.util>", line 92, in find_spec
-ModuleNotFoundError: No module named 'mysql'
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "<stdin>", line 3, in <module>
-  File "/usr/lib/python3.12/pkgutil.py", line 315, in find_loader
-    raise ImportError(msg.format(fullname, type(ex), ex)) from ex
-ImportError: Error while finding loader for 'mysql.connector' (<class 'ModuleNotFoundError'>: No module named 'mysql')
-[?2004hroot@d206199bc7a0:/app# python3 -m pip --version
-[?2004lpython3 -m pip install --no-cache-dir PyMySQL mysql-connector-python
-pip 24.0 from /usr/lib/python3/dist-packages/pip (python 3.12)
-[?2004hroot@d206199bc7a0:/app# python3 -m pip install --no-cache-dir PyMySQL mysql-connector-python
-[?2004l[1;31merror[0m: [1mexternally-managed-environment[0m
-
-[31m×[0m This environment is externally managed
-[31m╰─>[0m To install Python packages system-wide, try apt install
-[31m   [0m python3-xyz, where xyz is the package you are trying to
-[31m   [0m install.
-[31m   [0m 
-[31m   [0m If you wish to install a non-Debian-packaged Python package,
-[31m   [0m create a virtual environment using python3 -m venv path/to/venv.
-[31m   [0m Then use path/to/venv/bin/python and path/to/venv/bin/pip. Make
-[31m   [0m sure you have python3-full installed.
-[31m   [0m 
-[31m   [0m If you wish to install a non-Debian packaged Python application,
-[31m   [0m it may be easiest to use pipx install xyz, which will manage a
-[31m   [0m virtual environment for you. Make sure you have pipx installed.
-[31m   [0m 
-[31m   [0m See /usr/share/doc/python3.12/README.venv for more information.
-
-[1;35mnote[0m: If you believe this is a mistake, please contact your Python installation or OS distribution provider. You can override this, at the risk of breaking your Python installation or OS, by passing --break-system-packages.
-[1;36mhint[0m: See PEP 668 for the detailed specification.
-[?2004hroot@d206199bc7a0:/app# 

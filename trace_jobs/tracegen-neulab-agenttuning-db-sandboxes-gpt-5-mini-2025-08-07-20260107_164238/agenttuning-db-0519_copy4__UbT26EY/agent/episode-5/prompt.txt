@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@7c1a788f300c:/app# echo "Please provide the question you want answered and the MySQL connection details (host, port, user, password, database), or a path t
-o a DB dump. If you prefer not to expose the password, say so and I will use MYSQL_PWD or ~/.my.cnf."
-Please provide the question you want answered and the MySQL connection details (host, port, user, password, database), or a path to a DB dump. If you prefer not
- to expose the password, say so and I will use MYSQL_PWD or ~/.my.cnf.
-root@7c1a788f300c:/app#

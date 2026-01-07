@@ -1,389 +1,0 @@
-[?2004hroot@0440e7d88395:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@0440e7d88395:/app# ps aux | grep -E 'mysqld|mysql' | grep -v grep
-[?2004l[?2004hroot@0440e7d88395:/app# ls -la /var/lib/mysql
-[?2004lls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@0440e7d88395:/app# mysql -uroot -e "SELECT VERSION();"
-[?2004lbash: mysql: command not found
-[?2004hroot@0440e7d88395:/app# ls -la /app
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 21:44 [01;34m..[0m
-[?2004hroot@0440e7d88395:/app# find /app -maxdepth 3 -type f \( -iname '*.sql' -o -iname '*.sql.gz' -o -iname '*.db' -o -iname '*.sqlite' -o -iname '*.csv' \) -print
-[?2004l[?2004hroot@0440e7d88395:/app# ls -la /etc/mysql
-[?2004lls: cannot access '/etc/mysql': No such file or directory
-[?2004hroot@0440e7d88395:/app# ls -la /var/run/mysqld
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-[?2004hroot@0440e7d88395:/app# printenv | grep -i mysql || true
-[?2004l[?2004hroot@0440e7d88395:/app# which mariadb || true
-[?2004l[?2004hroot@0440e7d88395:/app# which mysqladmin || true
-[?2004l[?2004hroot@0440e7d88395:/app# sqlite3 --version || true
-[?2004lbash: sqlite3: command not found
-[?2004hroot@0440e7d88395:/app# which python3 || true
-[?2004l/usr/bin/python3
-[?2004hroot@0440e7d88395:/app# [ -f /app/.env ] && sed -n '1,200p' /app/.env || echo ".env not found"
-[?2004l.env not found
-[?2004hroot@0440e7d88395:/app# ls -la /root
-[?2004ltotal 16
-drwx------ 2 root root 4096 Sep 10 02:20 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 21:44 [01;34m..[0m
--rw-r--r-- 1 root root 3106 Apr 22  2024 .bashrc
--rw-r--r-- 1 root root  161 Apr 22  2024 .profile
-[?2004hroot@0440e7d88395:/app# sed -n '1,200p' /root/.my.cnf || echo '.my.cnf not found'
-[?2004lsed: can't read /root/.my.cnf: No such file or directory
-.my.cnf not found
-[?2004hroot@0440e7d88395:/app# find / -path /proc -prune -o -path /sys -prune -o -path /dev -prune -o -type f -name 'my.cnf' -print -o -type f -name '.my.cnf' -print -oo -type f -iname '*.sql' -print -o -type f -iname '*.sql.gz' -print -o -type f -iname '*.db' -print -o -type f -iname '*.sqlite' -print -o -type f -iname '*.csv'' -print
-[?2004l[?2004hroot@0440e7d88395:/app# find / -type s -name '*.sock' 2>/dev/null || true
-[?2004l[?2004hroot@0440e7d88395:/app# printenv | sed -n '1,200p'
-[?2004lSHELL=/bin/bash
-TERM_PROGRAM_VERSION=3.4
-TMUX=/tmp/tmux-0/default,292,0
-HOSTNAME=0440e7d88395
-PWD=/app
-HOME=/root
-LS_COLORS=rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:mi=00:su=37;41:sg=30;43:ca=00:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arc=01;31:*.arj=01;31:*.taz=01;31:*.lha=01;31:*.lz4=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.tzo=01;31:*.t7z=01;31:*.zip=01;31:*.z=01;31:*.dz=01;31:*.gz=01;31:*.lrz=01;31:*.lz=01;31:*.lzo=01;31:*.xz=01;31:*.zst=01;31:*.tzst=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.war=01;31:*.ear=01;31:*.sar=01;31:*.rar=01;31:*.alz=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.cab=01;31:*.wim=01;31:*.swm=01;31:*.dwm=01;31:*.esd=01;31:*.avif=01;35:*.jpg=01;35:*.jpeg=01;35:*.mjpg=01;35:*.mjpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.webm=01;35:*.webp=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.m4a=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.oga=00;36:*.opus=00;36:*.spx=00;36:*.xspf=00;36:*~=00;90:*#=00;90:*.bak=00;90:*.crdownload=00;90:*.dpkg-dist=00;90:*.dpkg-new=00;90:*.dpkg-old=00;90:*.dpkg-tmp=00;90:*.old=00;90:*.orig=00;90:*.part=00;90:*.rej=00;90:*.rpmnew=00;90:*.rpmorig=00;90:*.rpmsave=00;90:*.swp=00;90:*.tmp=00;90:*.ucf-dist=00;90:*.ucf-new=00;90:*.ucf-old=00;90:
-TEST_DIR=/tests
-TERM=tmux-256color
-TMUX_PANE=%0
-SHLVL=1
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-TERM_PROGRAM=tmux
-_=/usr/bin/printenv
-[?2004hroot@0440e7d88395:/app# cat /etc/os-release || true
-[?2004lPRETTY_NAME="Ubuntu 24.04.3 LTS"
-NAME="Ubuntu"
-VERSION_ID="24.04"
-VERSION="24.04.3 LTS (Noble Numbat)"
-VERSION_CODENAME=noble
-ID=ubuntu
-ID_LIKE=debian
-HOME_URL="https://www.ubuntu.com/"
-SUPPORT_URL="https://help.ubuntu.com/"
-BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
-PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
-UBUNTU_CODENAME=noble
-LOGO=ubuntu-logo
-[?2004hroot@0440e7d88395:/app# which apt-get || true
-[?2004l/usr/bin/apt-get
-[?2004hroot@0440e7d88395:/app# apt-get update
-[?2004l0% [Working]            Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
-0% [Waiting for headers]                        Hit:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease
-                        0% [Working]            Hit:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease
-0% [Waiting for headers]                        Hit:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease
-                        0% [Working]0% [Working]0% [Working]0% [Working]20% [Working]             Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 70%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-[?2004hroot@0440e7d88395:/app# apt-get install -y default-mysql-client
-[?2004lReading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 55%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 50%Building dependency tree... 50%Building dependency tree... Done
-Reading state information... 0% Reading state information... 0%Reading state information... Done
-The following additional packages will be installed:
-  libedit2 mysql-client-8.0 mysql-client-core-8.0 mysql-common
-The following NEW packages will be installed:
-  default-mysql-client libedit2 mysql-client-8.0 mysql-client-core-8.0 mysql-common
-0 upgraded, 5 newly installed, 0 to remove and 13 not upgraded.
-Need to get 2937 kB of archives.
-After this operation, 62.1 MB of additional disk space will be used.
-0% [Working]            Get:1 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libedit2 arm64 3.1-20230828-1build1 [97.5 kB]
-0% [1 libedit2 14.2 kB/97.5 kB 15%]                                   7% [Working]            Get:2 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-client-core-8.0 arm64 8.0.44-0ubuntu0.24.04.2 [2807 kB]
-7% [2 mysql-client-core-8.0 17.1 kB/2807 kB 1%]                                               87% [Waiting for headers]                         Get:3 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 mysql-common all 5.8+1.1.0build1 [6746 B]
-                         Get:4 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-client-8.0 arm64 8.0.44-0ubuntu0.24.04.2 [22.5 kB]
-92% [4 mysql-client-8.0 22.5 kB/22.5 kB 100%]                                             Get:5 http://ports.ubuntu.com/ubuntu-ports noble/universe arm64 default-mysql-client all 1.1.0build1 [2908 B]
-                                             100% [Working]              Fetched 2937 kB in 0s (8505 kB/s)
-debconf: delaying package configuration, since apt-utils is not installed
-Selecting previously unselected package libedit2:arm64.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 17165 files and directories currently installed.)
-Preparing to unpack .../libedit2_3.1-20230828-1build1_arm64.deb ...
-Unpacking libedit2:arm64 (3.1-20230828-1build1) ...
-Selecting previously unselected package mysql-client-core-8.0.
-Preparing to unpack .../mysql-client-core-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-Unpacking mysql-client-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package mysql-common.
-Preparing to unpack .../mysql-common_5.8+1.1.0build1_all.deb ...
-Unpacking mysql-common (5.8+1.1.0build1) ...
-Selecting previously unselected package mysql-client-8.0.
-Preparing to unpack .../mysql-client-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-Unpacking mysql-client-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package default-mysql-client.
-Preparing to unpack .../default-mysql-client_1.1.0build1_all.deb ...
-Unpacking default-mysql-client (1.1.0build1) ...
-Setting up mysql-common (5.8+1.1.0build1) ...
-update-alternatives: using /etc/mysql/my.cnf.fallback to provide /etc/mysql/my.cnf (my.cnf) in auto mode
-Setting up libedit2:arm64 (3.1-20230828-1build1) ...
-Setting up mysql-client-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Setting up mysql-client-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Setting up default-mysql-client (1.1.0build1) ...
-Processing triggers for libc-bin (2.39-0ubuntu8.6) ...
-[?2004hroot@0440e7d88395:/app# mysql --version
-[?2004lmysql  Ver 8.0.44-0ubuntu0.24.04.2 for Linux on aarch64 ((Ubuntu))
-[?2004hroot@0440e7d88395:/app# find / -path /proc -prune -o -path /sys -prune -o -path /dev -prune -o -path /run -prune -o -path /var/lib/docker -prune -o -type f \( -iiname '.env' -o -iname '*.env' -o -iname 'my.cnf' -o -iname '.my.cnf' -o -iname '*.sql' -o -iname '*.sql.gz' -o -iname '*.db' -o -iname '*.sqlite' -o -iname '*.ccsv' \) -print 2>/dev/null
-[?2004l/var/lib/dpkg/alternatives/my.cnf
-[?2004hroot@0440e7d88395:/app# grep -R --exclude-dir={proc,sys,dev,run,var/lib/docker} -I -i 'mysql' / 2>/dev/null | sed -n '1,200p'
-[?2004l/usr/share/doc/mysql-client-core-8.0/copyright:Upstream-Name: MySQL 8.0
-/usr/share/doc/mysql-client-core-8.0/copyright:Upstream-Contact: http://bugs.mysql.com/
-/usr/share/doc/mysql-client-core-8.0/copyright:Source: http://dev.mysql.com/downloads/mysql/8.0.html
-/usr/share/doc/mysql-client-core-8.0/copyright: Also, MySQL carries the "FOSS License Exception" specified in LICENSE
-/usr/share/doc/mysql-client-core-8.0/copyright: This is a release of MySQL 8.0, brought to you by the MySQL team at
-/usr/share/doc/mysql-client-core-8.0/copyright: This distribution of MySQL 8.0 is distributed with certain software
-/usr/share/doc/mysql-client-core-8.0/copyright: the authors of MySQL hereby grant you an additional permission to link
-/usr/share/doc/mysql-client-core-8.0/copyright: This distribution includes the MySQL C API client library
-/usr/share/doc/mysql-client-core-8.0/copyright: (libmysqlclient) otherwise known as MySQL Connector/C. Without limiting
-/usr/share/doc/mysql-client-core-8.0/copyright:Files: debian/additions/mysqlreport*
-/usr/share/doc/mysql-client-core-8.0/copyright: include/probes_mysql_nodtrace.h
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/*
-/usr/share/doc/mysql-client-core-8.0/copyright: support-files/mysqld_multi.server.sh
-/usr/share/doc/mysql-client-core-8.0/copyright: support-files/mysql-log-rotate.sh
-/usr/share/doc/mysql-client-core-8.0/copyright: support-files/mysql.server-sys5.sh
-/usr/share/doc/mysql-client-core-8.0/copyright: libmysql/*
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/include/have_perfschema.inc
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/include/have_perfschema.inc
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/mtr_cases.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/mtr_gcov.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/mtr_gprof.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/mtr_io.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/mtr_match.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/mtr_misc.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/mtr_process.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/mtr_report.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/mtr_results.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/mtr_stress.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/mtr_unique.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/ConfigFactory.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/Config.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/CoreDump.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/File/*
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/Find.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/Handles.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/Options.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/Platform.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/SafeProcess/Base.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/SafeProcess.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/SafeProcess/safe_kill_win.cc
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/SafeProcess/safe_process.cc
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/SafeProcess/safe_process_win.cc
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/SysInfo.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/My/Test.pm
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/t/*
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/mtr_cases.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/mtr_gcov.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/mtr_gprof.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/mtr_im.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/mtr_io.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/mtr_match.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/mtr_misc.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/mtr_process.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/mtr_report.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/mtr_stress.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/mtr_timer.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/mtr_unique.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/My/*
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/My/*
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/lib/v1/mysql-test-run.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/mysql-stress-test.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/mysql-test-run.pl
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/std_data/*
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/suite/perfschema/include/*
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/suite/perfschema_stress/include/*
-/usr/share/doc/mysql-client-core-8.0/copyright: mysql-test/suite/perfschema_stress/include/*
-/usr/share/doc/mysql-client-core-8.0/copyright: support-files/mysql.m4
-/usr/share/doc/mysql-client-core-8.0/copyright:Copyright: 1979-2008 MySQL AB
-/usr/share/doc/mysql-client-core-8.0/copyright:           1995-2010 MySQL AB Sun Microsystems Inc
-/usr/share/doc/mysql-client-core-8.0/copyright:Copyright: 2000-2009 MySQL AB Sun Microsystems Inc
-/usr/share/doc/mysql-client-core-8.0/copyright:           2000-2007 MySQL AB
-/usr/share/doc/mysql-client-core-8.0/copyright:Copyright: 2000,2002-2006 MySQL AB & Ramil Kalimullin
-/usr/share/doc/mysql-client-core-8.0/copyright:Files: scripts/mysqld_safe.sh
-/usr/share/doc/mysql-client-core-8.0/copyright: support-files/mysql.server.sh
-/usr/share/doc/mysql-client-core-8.0/copyright:Copyright: 2000 MySQL AB
-/usr/share/doc/mysql-client-core-8.0/copyright:Copyright: 2003 MySQL AB
-/usr/share/doc/mysql-client-core-8.0/copyright: 2000-2011 MySQL AB & Innobase Oy.
-/usr/share/doc/mysql-client-core-8.0/copyright:Copyright: 2000-2010 MySQL AB & Innobase Oy.
-/usr/share/doc/mysql-client-core-8.0/copyright:Files: scripts/mysqldumpslow.sh
-/usr/share/doc/mysql-client-core-8.0/copyright:Copyright: 2000-2002,2005-2009 MySQL AB Sun Microsystems Inc
-/usr/share/doc/mysql-client-core-8.0/copyright: plugin/innodb_memcached/daemon_memcached/daemon/memcached_mysql.cc
-/usr/share/doc/mysql-client-core-8.0/copyright: plugin/innodb_memcached/daemon_memcached/daemon/memcached_mysql.h
-/usr/share/doc/mysql-client-core-8.0/copyright:Files: plugin/innodb_memcached/daemon_memcached/daemon/memcached_mysql.h
-/usr/share/doc/mysql-client-core-8.0/copyright:Copyright: 2008 MySQL AB
-/usr/share/doc/mysql-client-core-8.0/copyright:Copyright: 2008-2009 MySQL AB Sun Microsystems Inc
-/usr/share/doc/mysql-client-8.0/copyright:Upstream-Name: MySQL 8.0
-/usr/share/doc/mysql-client-8.0/copyright:Upstream-Contact: http://bugs.mysql.com/
-/usr/share/doc/mysql-client-8.0/copyright:Source: http://dev.mysql.com/downloads/mysql/8.0.html
-/usr/share/doc/mysql-client-8.0/copyright: Also, MySQL carries the "FOSS License Exception" specified in LICENSE
-/usr/share/doc/mysql-client-8.0/copyright: This is a release of MySQL 8.0, brought to you by the MySQL team at
-/usr/share/doc/mysql-client-8.0/copyright: This distribution of MySQL 8.0 is distributed with certain software
-/usr/share/doc/mysql-client-8.0/copyright: the authors of MySQL hereby grant you an additional permission to link
-/usr/share/doc/mysql-client-8.0/copyright: This distribution includes the MySQL C API client library
-/usr/share/doc/mysql-client-8.0/copyright: (libmysqlclient) otherwise known as MySQL Connector/C. Without limiting
-/usr/share/doc/mysql-client-8.0/copyright:Files: debian/additions/mysqlreport*
-/usr/share/doc/mysql-client-8.0/copyright: include/probes_mysql_nodtrace.h
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/*
-/usr/share/doc/mysql-client-8.0/copyright: support-files/mysqld_multi.server.sh
-/usr/share/doc/mysql-client-8.0/copyright: support-files/mysql-log-rotate.sh
-/usr/share/doc/mysql-client-8.0/copyright: support-files/mysql.server-sys5.sh
-/usr/share/doc/mysql-client-8.0/copyright: libmysql/*
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/include/have_perfschema.inc
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/include/have_perfschema.inc
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/mtr_cases.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/mtr_gcov.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/mtr_gprof.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/mtr_io.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/mtr_match.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/mtr_misc.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/mtr_process.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/mtr_report.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/mtr_results.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/mtr_stress.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/mtr_unique.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/ConfigFactory.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/Config.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/CoreDump.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/File/*
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/Find.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/Handles.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/Options.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/Platform.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/SafeProcess/Base.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/SafeProcess.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/SafeProcess/safe_kill_win.cc
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/SafeProcess/safe_process.cc
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/SafeProcess/safe_process_win.cc
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/SysInfo.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/My/Test.pm
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/t/*
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/mtr_cases.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/mtr_gcov.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/mtr_gprof.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/mtr_im.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/mtr_io.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/mtr_match.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/mtr_misc.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/mtr_process.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/mtr_report.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/mtr_stress.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/mtr_timer.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/mtr_unique.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/My/*
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/My/*
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/lib/v1/mysql-test-run.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/mysql-stress-test.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/mysql-test-run.pl
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/std_data/*
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/suite/perfschema/include/*
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/suite/perfschema_stress/include/*
-/usr/share/doc/mysql-client-8.0/copyright: mysql-test/suite/perfschema_stress/include/*
-/usr/share/doc/mysql-client-8.0/copyright: support-files/mysql.m4
-/usr/share/doc/mysql-client-8.0/copyright:Copyright: 1979-2008 MySQL AB
-/usr/share/doc/mysql-client-8.0/copyright:           1995-2010 MySQL AB Sun Microsystems Inc
-/usr/share/doc/mysql-client-8.0/copyright:Copyright: 2000-2009 MySQL AB Sun Microsystems Inc
-/usr/share/doc/mysql-client-8.0/copyright:           2000-2007 MySQL AB
-/usr/share/doc/mysql-client-8.0/copyright:Copyright: 2000,2002-2006 MySQL AB & Ramil Kalimullin
-/usr/share/doc/mysql-client-8.0/copyright:Files: scripts/mysqld_safe.sh
-/usr/share/doc/mysql-client-8.0/copyright: support-files/mysql.server.sh
-/usr/share/doc/mysql-client-8.0/copyright:Copyright: 2000 MySQL AB
-/usr/share/doc/mysql-client-8.0/copyright:Copyright: 2003 MySQL AB
-/usr/share/doc/mysql-client-8.0/copyright: 2000-2011 MySQL AB & Innobase Oy.
-/usr/share/doc/mysql-client-8.0/copyright:Copyright: 2000-2010 MySQL AB & Innobase Oy.
-/usr/share/doc/mysql-client-8.0/copyright:Files: scripts/mysqldumpslow.sh
-/usr/share/doc/mysql-client-8.0/copyright:Copyright: 2000-2002,2005-2009 MySQL AB Sun Microsystems Inc
-/usr/share/doc/mysql-client-8.0/copyright: plugin/innodb_memcached/daemon_memcached/daemon/memcached_mysql.cc
-/usr/share/doc/mysql-client-8.0/copyright: plugin/innodb_memcached/daemon_memcached/daemon/memcached_mysql.h
-/usr/share/doc/mysql-client-8.0/copyright:Files: plugin/innodb_memcached/daemon_memcached/daemon/memcached_mysql.h
-/usr/share/doc/mysql-client-8.0/copyright:Copyright: 2008 MySQL AB
-/usr/share/doc/mysql-client-8.0/copyright:Copyright: 2008-2009 MySQL AB Sun Microsystems Inc
-/usr/share/lintian/overrides/mysql-client-8.0:manpage-has-errors-from-man usr/share/man/man1/mysqladmin.1.gz 34: warning [p 1, 1.5i]: can't break line
-/usr/share/lintian/overrides/mysql-client-8.0:manpage-has-errors-from-man usr/share/man/man1/mysqldump.1.gz 1520: warning [p 9, 10.7i, div `3tbd3,1', 0.3i]: can't break line
-/usr/share/mysql-common/configure-symlinks:    update-alternatives --install /etc/mysql/my.cnf my.cnf "$my_cnf_path" 200
-/usr/share/lto-disabled-list/lto-disabled-list:python-testing.mysqld amd64
-/usr/bin/mysqldumpslow:# documentation.  The authors of MySQL hereby grant you an additional
-/usr/bin/mysqldumpslow:# mysqldumpslow - parse and summarize the MySQL slow query log
-/usr/bin/mysqldumpslow:    'i=s',	# name of server instance (if using mysql.server startup script)
-/usr/bin/mysqldumpslow:    my $defaults   = `my_print_defaults mysqld`;
-/usr/bin/mysqldumpslow:	or die "Can't determine basedir from 'my_print_defaults mysqld' output: $defaults";
-/usr/bin/mysqldumpslow:	die "Can't determine datadir from 'my_print_defaults mysqld' output: $defaults"
-/usr/bin/mysqldumpslow:warn "\nReading mysql slow query log from @ARGV\n";
-/usr/bin/mysqldumpslow:    # remove fluff that mysqld writes to log when it (re)starts:
-/usr/bin/mysqldumpslow:Usage: mysqldumpslow [ OPTS... ] [ LOGS... ]
-/usr/bin/mysqldumpslow:Parse and summarize the MySQL slow query log. Options are
-/usr/bin/mysqldumpslow:  -i NAME      name of server instance (if using mysql.server startup script)
-/usr/bin/mysqlreport:# mysqlreport v3.5 Apr 16 2008
-/usr/bin/mysqlreport:# http://hackmysql.com/mysqlreport
-/usr/bin/mysqlreport:# mysqlreport makes an easy-to-read report of important MySQL status values.
-/usr/bin/mysqlreport:my $MySQL_version;
-/usr/bin/mysqlreport:      print "mysqlreport has forked and detached.\n";
-/usr/bin/mysqlreport:      print "While running detached, mysqlreport writes reports to '$tmpfile'.\n";
-/usr/bin/mysqlreport:# Connect to MySQL
-/usr/bin/mysqlreport:   connect_to_MySQL();
-/usr/bin/mysqlreport:$have_innodb_vals = 1; # This might be set to 0 later in get_MySQL_version()
-/usr/bin/mysqlreport:      print STDERR "mysqlreport is writing relative reports to '$tmpfile'.\n" unless $op{'detach'}; 
-/usr/bin/mysqlreport:      get_MySQL_version();
-/usr/bin/mysqlreport:      get_MySQL_version();
-/usr/bin/mysqlreport:mysqlreport v3.5 Apr 16 2008
-/usr/bin/mysqlreport:mysqlreport makes an easy-to-read report of important MySQL status values.
-/usr/bin/mysqlreport:   --user USER       Connect to MySQL as USER
-[?2004hroot@0440e7d88395:/app# cat /etc/mysql/my.cnf || true
-[?2004l#
-# The MySQL database server configuration file.
-#
-# You can copy this to one of:
-# - "/etc/mysql/my.cnf" to set global options,
-# - "~/.my.cnf" to set user-specific options.
-# 
-# One can use all long options that the program supports.
-# Run program with --help to get a list of available options and with
-# --print-defaults to see which it would actually understand and use.
-#
-# For explanations see
-# http://dev.mysql.com/doc/mysql/en/server-system-variables.html
-
-# This will be passed to all mysql clients
-# It has been reported that passwords should be enclosed with ticks/quotes
-# escpecially if they contain "#" chars...
-# Remember to edit /etc/mysql/debian.cnf when changing the socket location.
-
-# Here is entries for some specific programs
-# The following values assume you have at least 32M ram
-
-!includedir /etc/mysql/conf.d/
-[?2004hroot@0440e7d88395:/app# ss -ltnp | grep 3306 || true
-[?2004lbash: ss: command not found
-[?2004hroot@0440e7d88395:/app# which mysql
-[?2004l/usr/bin/mysql
-[?2004hroot@0440e7d88395:/app# mysql --help | sed -n '1,40p'
-[?2004lmysql  Ver 8.0.44-0ubuntu0.24.04.2 for Linux on aarch64 ((Ubuntu))
-Copyright (c) 2000, 2025, Oracle and/or its affiliates.
-
-Oracle is a registered trademark of Oracle Corporation and/or its
-affiliates. Other names may be trademarks of their respective
-owners.
-
-Usage: mysql [OPTIONS] [database]
-  -?, --help          Display this help and exit.
-  -I, --help          Synonym for -?
-  --auto-rehash       Enable automatic rehashing. One doesn't need to use
-                      'rehash' to get table and field completion, but startup
-                      and reconnecting may take a longer time. Disable with
-                      --disable-auto-rehash.
-                      (Defaults to on; use --skip-auto-rehash to disable.)
-  -A, --no-auto-rehash 
-                      No automatic rehashing. One has to use 'rehash' to get
-                      table and field completion. This gives a quicker start of
-                      mysql and disables rehashing on reconnect.
-  --auto-vertical-output 
-                      Automatically switch to vertical output mode if the
-                      result is wider than the terminal width.
-  -B, --batch         Don't use history file. Disable interactive behavior.
-                      (Enables --silent.)
-  --bind-address=name IP address to bind to.
-  --binary-as-hex     Print binary data as hex. Enabled by default for
-                      interactive terminals.
-  --character-sets-dir=name 
-                      Directory for character set files.
-  --column-type-info  Display column type information.
-  --commands          Enable or disable processing of local mysql commands.
-                      (Defaults to on; use --skip-commands to disable.)
-  -c, --comments      Preserve comments. Send comments to the server. The
-                      default is --skip-comments (discard comments), enable
-                      with --comments.
-  -C, --compress      Use compression in server/client protocol.
-  -#, --debug[=#]     This is a non-debug version. Catch this and exit.
-  --debug-check       This is a non-debug version. Catch this and exit.
-  -T, --debug-info    This is a non-debug version. Catch this and exit.
-  -D, --database=name Database to use.
-[?2004hroot@0440e7d88395:/app# 

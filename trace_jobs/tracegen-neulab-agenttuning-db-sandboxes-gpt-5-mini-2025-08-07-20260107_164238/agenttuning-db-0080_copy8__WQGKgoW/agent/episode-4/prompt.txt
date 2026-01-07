@@ -1,8 +1,0 @@
-New Terminal Output:
-
-root@e84cf06a0b94:/app# echo "Please provide: 1) the question you want answered (be specific about tables/columns or the high-level result). 2) the MySQL connec
-tion details: host, port (optional), user, password (or say 'prompt'), and database name. Or state 'install local server' to have me install/start mariadb-serve
-r locally."
-Please provide: 1) the question you want answered (be specific about tables/columns or the high-level result). 2) the MySQL connection details: host, port (opti
-onal), user, password (or say 'prompt'), and database name. Or state 'install local server' to have me install/start mariadb-server locally.
-root@e84cf06a0b94:/app#

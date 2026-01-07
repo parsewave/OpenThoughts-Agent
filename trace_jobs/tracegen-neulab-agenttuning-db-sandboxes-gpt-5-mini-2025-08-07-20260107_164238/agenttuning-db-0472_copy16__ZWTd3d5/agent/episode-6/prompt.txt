@@ -1,6 +1,0 @@
-New Terminal Output:
-
-root@134f0e576ab7:/app# echo "Please provide DB connection details (host, port, user, password, database) and the SQL question, or upload a dump, or allow local
- mysql-server install."
-Please provide DB connection details (host, port, user, password, database) and the SQL question, or upload a dump, or allow local mysql-server install.
-root@134f0e576ab7:/app#

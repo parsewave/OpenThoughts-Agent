@@ -1,24 +1,0 @@
-[?2004hroot@8dd640992c58:/app# ls -la
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:00 [01;34m..[0m
-[?2004hroot@8dd640992c58:/app# pwd
-[?2004l/app
-[?2004hroot@8dd640992c58:/app# ls -la /var/run
-[?2004llrwxrwxrwx 1 root root 4 Sep 10 02:14 [0m[01;36m/var/run[0m -> [01;34m/run[0m
-[?2004hroot@8dd640992c58:/app# ls -la /var/run/mysqld
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-[?2004hroot@8dd640992c58:/app# ps aux | grep -E 'mysql|mysqld' | grep -v grep
-[?2004l[?2004hroot@8dd640992c58:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@8dd640992c58:/app# env | grep -i mysql || true
-[?2004l[?2004hroot@8dd640992c58:/app# ss -ltnp | grep 3306 || true
-[?2004lbash: ss: command not found
-[?2004hroot@8dd640992c58:/app# ls -la /etc/mysql
-[?2004lls: cannot access '/etc/mysql': No such file or directory
-[?2004hroot@8dd640992c58:/app# find / -type s -name '*.sock' 2>/dev/null
-[?2004l[?2004hroot@8dd640992c58:/app# find / -name my.cnf 2>/dev/null
-[?2004l[?2004hroot@8dd640992c58:/app# find / -type f \( -name '*.sql' -o -name '*.db' -o -name '*.sqlite' \) 2>/dev/null
-[?2004l[?2004hroot@8dd640992c58:/app# command -v mysql || true
-[?2004l[?2004hroot@8dd640992c58:/app# dpkg -l | grep -i mysql || true
-[?2004l[?2004hroot@8dd640992c58:/app# 

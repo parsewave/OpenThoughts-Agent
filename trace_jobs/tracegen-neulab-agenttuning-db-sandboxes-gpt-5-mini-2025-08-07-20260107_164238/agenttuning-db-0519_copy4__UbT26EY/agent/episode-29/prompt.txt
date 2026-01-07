@@ -1,9 +1,0 @@
-New Terminal Output:
-
-root@7c1a788f300c:/app# echo "Choose exactly one option now by replying in this terminal:\n\n(A) Provide the exact question to answer AND MySQL connection detai
-ls: host, port, user, password, database. Say if you want the password hidden (I will use MYSQL_PWD or create ~/.my.cnf).\n\n(B) Reply START-LOCAL to have me in
-stall and initialize a local MySQL-compatible server in this container."
-Choose exactly one option now by replying in this terminal:\n\n(A) Provide the exact question to answer AND MySQL connection details: host, port, user, password
-, database. Say if you want the password hidden (I will use MYSQL_PWD or create ~/.my.cnf).\n\n(B) Reply START-LOCAL to have me install and initialize a local M
-ySQL-compatible server in this container.
-root@7c1a788f300c:/app#

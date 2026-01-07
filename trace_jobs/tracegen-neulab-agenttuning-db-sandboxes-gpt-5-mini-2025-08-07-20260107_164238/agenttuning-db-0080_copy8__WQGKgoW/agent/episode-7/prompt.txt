@@ -1,9 +1,0 @@
-New Terminal Output:
-
-root@e84cf06a0b94:/app# echo "Please choose one:\n1) Provide remote connection info (host, port optional, user, password or 'prompt', database) AND the exact qu
-estion you want answered.\n2) Reply exactly 'install local server' to have me install and start a local MariaDB/MySQL server in this container.\nI will wait for
- your choice before taking any further action."
-Please choose one:\n1) Provide remote connection info (host, port optional, user, password or 'prompt', database) AND the exact question you want answered.\n2)
-Reply exactly 'install local server' to have me install and start a local MariaDB/MySQL server in this container.\nI will wait for your choice before taking any
- further action.
-root@e84cf06a0b94:/app#

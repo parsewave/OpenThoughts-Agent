@@ -1,8 +1,0 @@
-New Terminal Output:
-
-root@eeb160092b05:/app# ss -ltnp | egrep '3306|mysqld' || true
-bash: ss: command not found
-root@eeb160092b05:/app# ls -la /var/run/mysqld || true
-ls: cannot access '/var/run/mysqld': No such file or directory
-root@eeb160092b05:/app# find / -maxdepth 4 -type s -name '*.sock' -o -name 'mysqld.sock' 2>/dev/null | head -n 50
-root@eeb160092b05:/app#

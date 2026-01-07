@@ -1,6 +1,0 @@
-New Terminal Output:
-
-root@8b2ee1eef226:/app# mysql -uroot -e "SHOW TABLES FROM mysql;"
-ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (111)
-[1]+  Killed                  mysqld --skip-networking --socket=/var/run/mysqld/mysqld.sock --datadir=/var/lib/mysql --user=mysql
-root@8b2ee1eef226:/app#

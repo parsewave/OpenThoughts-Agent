@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@7c1a788f300c:/app# echo "Please provide the question you want answered and the MySQL connection details (host, port, user, password, database). If you pref
-er not to expose the password on the command line, tell me and I'll use MYSQL_PWD or .my.cnf."
-Please provide the question you want answered and the MySQL connection details (host, port, user, password, database). If you prefer not to expose the password
-on the command line, tell me and I'll use MYSQL_PWD or .my.cnf.
-root@7c1a788f300c:/app#

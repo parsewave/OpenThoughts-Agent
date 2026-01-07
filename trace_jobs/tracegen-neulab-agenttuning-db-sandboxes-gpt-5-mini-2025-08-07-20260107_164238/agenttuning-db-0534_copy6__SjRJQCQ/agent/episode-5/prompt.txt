@@ -1,7 +1,0 @@
-New Terminal Output:
-
-echo "No MySQL server/client or SQL dump found in container. Provide DB connection details or a dump, or allow installing a client to proceed."
-apt-get update
-apt-get install -y default-mysql-client
-mysql --version
-

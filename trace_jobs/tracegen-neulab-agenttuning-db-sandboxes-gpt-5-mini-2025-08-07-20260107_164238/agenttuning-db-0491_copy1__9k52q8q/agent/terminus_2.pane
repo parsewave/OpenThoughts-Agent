@@ -1,474 +1,0 @@
-[?2004hroot@c8d9df6f9195:/app# which mysql
-[?2004l[?2004hroot@c8d9df6f9195:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@c8d9df6f9195:/app# ps aux | grep -E 'mysqld|mariad' | grep -v grep
-[?2004l[?2004hroot@c8d9df6f9195:/app# ls -la /var/run/mysqld
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-[?2004hroot@c8d9df6f9195:/app# ls -la /var/lib/mysql
-[?2004lls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@c8d9df6f9195:/app# cat /etc/mysql/debian.cnf
-[?2004lcat: /etc/mysql/debian.cnf: No such file or directory
-[?2004hroot@c8d9df6f9195:/app# apt-get update
-[?2004l0% [Working]            Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
-0% [Working]            Hit:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease
-0% [Working]            Hit:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease
-0% [Waiting for headers]0% [Waiting for headers]                        Hit:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease
-                        0% [Working]0% [Working]0% [Working]20% [Working]             Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-[?2004hroot@c8d9df6f9195:/app# DEBIAN_FRONTEND=noninteractive apt-get install -y mariadb-server mariadb-client
-[?2004lReading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 50%Building dependency tree... 50%Building dependency tree... Done
-Reading state information... 0% Reading state information... 0%Reading state information... Done
-The following additional packages will be installed:
-  galera-4 gawk iproute2 krb5-locales libatm1t64 libbpf1 libcap2-bin libcgi-fast-perl libcgi-pm-perl libclone-perl libconfig-inifiles-perl libdbd-mysql-perl
-  libdbi-perl libedit2 libelf1t64 libencode-locale-perl libfcgi-bin libfcgi-perl libfcgi0t64 libgpm2 libgssapi-krb5-2 libhtml-parser-perl libhtml-tagset-perl
-  libhtml-template-perl libhttp-date-perl libhttp-message-perl libio-html-perl libk5crypto3 libkeyutils1 libkrb5-3 libkrb5support0 liblwp-mediatypes-perl
-  liblzo2-2 libmariadb3 libmnl0 libmysqlclient21 libncurses6 libnuma1 libpam-cap libpopt0 libsigsegv2 libsnappy1v5 libterm-readkey-perl libtimedate-perl
-  libtirpc-common libtirpc3t64 liburi-perl liburing2 libwrap0 libxtables12 lsof mariadb-client-core mariadb-common mariadb-plugin-provider-bzip2
-  mariadb-plugin-provider-lz4 mariadb-plugin-provider-lzma mariadb-plugin-provider-lzo mariadb-plugin-provider-snappy mariadb-server-core mysql-common psmisc
-  pv rsync socat
-Suggested packages:
-  gawk-doc iproute2-doc libmldbm-perl libnet-daemon-perl libsql-statement-perl gpm krb5-doc krb5-user libdata-dump-perl libipc-sharedcache-perl
-  libio-compress-brotli-perl libbusiness-isbn-perl libregexp-ipv6-perl libwww-perl mailx mariadb-test netcat-openbsd doc-base openssh-client openssh-server
-  python3-braceexpand
-The following NEW packages will be installed:
-  galera-4 gawk iproute2 krb5-locales libatm1t64 libbpf1 libcap2-bin libcgi-fast-perl libcgi-pm-perl libclone-perl libconfig-inifiles-perl libdbd-mysql-perl
-  libdbi-perl libedit2 libelf1t64 libencode-locale-perl libfcgi-bin libfcgi-perl libfcgi0t64 libgpm2 libgssapi-krb5-2 libhtml-parser-perl libhtml-tagset-perl
-  libhtml-template-perl libhttp-date-perl libhttp-message-perl libio-html-perl libk5crypto3 libkeyutils1 libkrb5-3 libkrb5support0 liblwp-mediatypes-perl
-  liblzo2-2 libmariadb3 libmnl0 libmysqlclient21 libncurses6 libnuma1 libpam-cap libpopt0 libsigsegv2 libsnappy1v5 libterm-readkey-perl libtimedate-perl
-  libtirpc-common libtirpc3t64 liburi-perl liburing2 libwrap0 libxtables12 lsof mariadb-client mariadb-client-core mariadb-common
-  mariadb-plugin-provider-bzip2 mariadb-plugin-provider-lz4 mariadb-plugin-provider-lzma mariadb-plugin-provider-lzo mariadb-plugin-provider-snappy
-  mariadb-server mariadb-server-core mysql-common psmisc pv rsync socat
-0 upgraded, 66 newly installed, 0 to remove and 13 not upgraded.
-Need to get 23.5 MB of archives.
-After this operation, 218 MB of additional disk space will be used.
-0% [Working]            Get:1 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libpopt0 arm64 1.19+dfsg-1build1 [28.4 kB]
-0% [1 libpopt0 14.2 kB/28.4 kB 50%]                                   0% [Working]            Get:2 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 rsync arm64 3.2.7-1ubuntu1.2 [429 kB]
-0% [2 rsync 2604 B/429 kB 1%]                             2% [Waiting for headers]                        Get:3 http://ports.ubuntu.com/ubuntu-ports noble/universe arm64 galera-4 arm64 26.4.16-2build4 [690 kB]
-2% [3 galera-4 0 B/690 kB 0%]                             5% [Waiting for headers]                        Get:4 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libsigsegv2 arm64 2.14-1ubuntu2 [14.9 kB]
-5% [4 libsigsegv2 4386 B/14.9 kB 29%]                                     5% [Waiting for headers]                        Get:5 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 gawk arm64 1:5.2.1-2build3 [447 kB]
-5% [5 gawk 3648 B/447 kB 1%]                            7% [Waiting for headers]                        Get:6 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 mysql-common all 5.8+1.1.0build1 [6746 B]
-7% [6 mysql-common 2695 B/6746 B 40%]                                     Get:7 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 mariadb-common all 1:10.11.13-0ubuntu0.24.04.1 [28.3 kB]
-7% [7 mariadb-common 15.9 kB/28.3 kB 56%]                                         8% [Waiting for headers]                        Get:8 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libelf1t64 arm64 0.190-1.1ubuntu0.1 [58.4 kB]
-8% [8 libelf1t64 12.2 kB/58.4 kB 21%]                                     8% [Waiting for headers]                        Get:9 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libbpf1 arm64 1:1.3.0-2build2 [168 kB]
-8% [9 libbpf1 23.9 kB/168 kB 14%]                                 9% [Waiting for headers]                        Get:10 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libmnl0 arm64 1.0.5-2build1 [12.4 kB]
-9% [10 libmnl0 2314 B/12.4 kB 19%]                                  9% [Waiting for headers]                        Get:11 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libxtables12 arm64 1.8.10-3ubuntu2 [35.9 kB]
-9% [11 libxtables12 12.3 kB/35.9 kB 34%]                                        10% [Waiting for headers]                         Get:12 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libcap2-bin arm64 1:2.66-5ubuntu2.2 [33.5 kB]
-10% [12 libcap2-bin 10.8 kB/33.5 kB 32%]                                        10% [Waiting for headers]                         Get:13 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 iproute2 arm64 6.1.0-1ubuntu6.2 [1124 kB]
-10% [13 iproute2 10.2 kB/1124 kB 1%]                                    14% [Waiting for headers]                         Get:14 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libdbi-perl arm64 1.643-4build3 [719 kB]
-14% [14 libdbi-perl 16.0 kB/719 kB 2%]                                      17% [Waiting for headers]                         Get:15 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libkrb5support0 arm64 1.20.1-6ubuntu2.6 [34.8 kB]
-17% [15 libkrb5support0 7162 B/34.8 kB 21%]                                           18% [Waiting for headers]                         Get:16 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libk5crypto3 arm64 1.20.1-6ubuntu2.6 [85.8 kB]
-18% [16 libk5crypto3 8192 B/85.8 kB 10%]                                        18% [Waiting for headers]                         Get:17 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libkeyutils1 arm64 1.6.3-3build1 [9654 B]
-                         Get:18 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libkrb5-3 arm64 1.20.1-6ubuntu2.6 [349 kB]
-19% [18 libkrb5-3 1943 B/349 kB 1%]                                   20% [Waiting for headers]                         Get:19 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libgssapi-krb5-2 arm64 1.20.1-6ubuntu2.6 [142 kB]
-20% [19 libgssapi-krb5-2 8982 B/142 kB 6%]                                          21% [Waiting for headers]                         Get:20 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libtirpc-common all 1.3.4+ds-1.1build1 [8094 B]
-                         Get:21 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libtirpc3t64 arm64 1.3.4+ds-1.1build1 [83.6 kB]
-21% [21 libtirpc3t64 1968 B/83.6 kB 2%]                                       22% [Waiting for headers]                         Get:22 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 lsof arm64 4.95.0-1build3 [245 kB]
-22% [22 lsof 8010 B/245 kB 3%]                              23% [Waiting for headers]                         Get:23 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libconfig-inifiles-perl all 3.000003-2 [39.4 kB]
-23% [23 libconfig-inifiles-perl 38.8 kB/39.4 kB 99%]                                                    23% [Working]             Get:24 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 libmariadb3 arm64 1:10.11.13-0ubuntu0.24.04.1 [192 kB]
-23% [24 libmariadb3 50.1 kB/192 kB 26%]                                       24% [Waiting for headers]                         Get:25 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libedit2 arm64 3.1-20230828-1build1 [97.5 kB]
-24% [25 libedit2 40.3 kB/97.5 kB 41%]                                     25% [Waiting for headers]                         Get:26 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libncurses6 arm64 6.4+20240113-1ubuntu2 [110 kB]
-25% [26 libncurses6 65.2 kB/110 kB 59%]                                       Get:27 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 mariadb-client-core arm64 1:10.11.13-0ubuntu0.24.04.1 [1128 kB]
-26% [27 mariadb-client-core 43.3 kB/1128 kB 4%]                                               Get:28 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 mariadb-client arm64 1:10.11.13-0ubuntu0.24.04.1 [2474 kB]
-                                               30% [28 mariadb-client 3296 B/2474 kB 0%]                                         Get:29 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libnuma1 arm64 2.0.18-1build1 [23.6 kB]
-                                         39% [29 libnuma1 23.6 kB/23.6 kB 100%]                                      Get:30 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 liburing2 arm64 2.5-1build1 [21.7 kB]
-39% [30 liburing2 21.7 kB/21.7 kB 100%]                                       39% [Waiting for headers]                         Get:31 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 mariadb-server-core arm64 1:10.11.13-0ubuntu0.24.04.1 [8282 kB]
-39% [31 mariadb-server-core 47.8 kB/8282 kB 1%]                                               Get:32 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 psmisc arm64 23.7-1build1 [178 kB]
-                                               Get:33 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libwrap0 arm64 7.6.q-33 [48.5 kB]
-                                               69% [33 libwrap0 8070 B/48.5 kB 17%]                                    69% [Waiting for headers]                         Get:34 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 socat arm64 1.8.0.0-4build3 [372 kB]
-69% [34 socat 48.2 kB/372 kB 13%]                                 Get:35 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 mariadb-server arm64 1:10.11.13-0ubuntu0.24.04.1 [3440 kB]
-71% [35 mariadb-server 89.2 kB/3440 kB 3%]                                          83% [Waiting for headers]                         Get:36 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 krb5-locales all 1.20.1-6ubuntu2.6 [14.8 kB]
-83% [36 krb5-locales 13.7 kB/14.8 kB 93%]                                         83% [Waiting for headers]                         Get:37 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libatm1t64 arm64 1:2.5.1-5.1build1 [23.5 kB]
-83% [37 libatm1t64 23.5 kB/23.5 kB 100%]                                        83% [Working]             Get:38 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libpam-cap arm64 1:2.66-5ubuntu2.2 [12.5 kB]
-83% [38 libpam-cap 12.5 kB/12.5 kB 100%]                                        Get:39 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libgpm2 arm64 1.20.7-11 [14.7 kB]
-                                        Get:40 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhtml-tagset-perl all 3.20-6 [11.3 kB]
-                                        Get:41 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 liburi-perl all 5.27-1 [88.0 kB]
-85% [41 liburi-perl 21.4 kB/88.0 kB 24%]                                        85% [Waiting for headers]                         Get:42 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhtml-parser-perl arm64 3.81-1build3 [85.0 kB]
-85% [42 libhtml-parser-perl 27.5 kB/85.0 kB 32%]                                                86% [Waiting for headers]                         Get:43 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libcgi-pm-perl all 4.63-1 [185 kB]
-86% [43 libcgi-pm-perl 44.6 kB/185 kB 24%]                                          87% [Working]             Get:44 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libfcgi0t64 arm64 2.4.2-2.1ubuntu0.24.04.1 [27.2 kB]
-87% [44 libfcgi0t64 2606 B/27.2 kB 10%]                                       87% [Waiting for headers]                         Get:45 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libfcgi-perl arm64 0.82+ds-3build2 [20.8 kB]
-87% [45 libfcgi-perl 20.8 kB/20.8 kB 100%]                                          Get:46 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libcgi-fast-perl all 1:2.17-1 [10.3 kB]
-87% [46 libcgi-fast-perl 10.3 kB/10.3 kB 100%]                                              Get:47 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libclone-perl arm64 0.46-1build3 [10.5 kB]
-                                              Get:48 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libmysqlclient21 arm64 8.0.44-0ubuntu0.24.04.2 [1245 kB]
-                                              88% [48 libmysqlclient21 65.2 kB/1245 kB 5%]                                            93% [Waiting for headers]                         Get:49 http://ports.ubuntu.com/ubuntu-ports noble/universe arm64 libdbd-mysql-perl arm64 4.052-1ubuntu3 [83.3 kB]
-93% [49 libdbd-mysql-perl 45.0 kB/83.3 kB 54%]                                              93% [Waiting for headers]                         Get:50 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libencode-locale-perl all 1.05-3 [11.6 kB]
-94% [Waiting for headers]                         Get:51 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libfcgi-bin arm64 2.4.2-2.1ubuntu0.24.04.1 [10.7 kB]
-94% [51 libfcgi-bin 10.7 kB/10.7 kB 100%]                                         94% [Working]             Get:52 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhtml-template-perl all 2.97-2 [60.2 kB]
-94% [52 libhtml-template-perl 40.1 kB/60.2 kB 67%]                                                  94% [Waiting for headers]                         Get:53 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libtimedate-perl all 2.3300-2 [34.0 kB]
-94% [53 libtimedate-perl 24.3 kB/34.0 kB 72%]                                             95% [Waiting for headers]                         Get:54 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhttp-date-perl all 6.06-1 [10.2 kB]
-95% [54 libhttp-date-perl 10.2 kB/10.2 kB 100%]                                               95% [Waiting for headers]                         Get:55 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libio-html-perl all 1.004-3 [15.9 kB]
-95% [55 libio-html-perl 15.9 kB/15.9 kB 100%]                                             Get:56 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 liblwp-mediatypes-perl all 6.04-2 [20.1 kB]
-96% [56 liblwp-mediatypes-perl 20.1 kB/20.1 kB 100%]                                                    Get:57 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhttp-message-perl all 6.45-1ubuntu1 [78.2 kB]
-                                                    96% [57 libhttp-message-perl 8397 B/78.2 kB 11%]                                                96% [Waiting for headers]                         Get:58 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 liblzo2-2 arm64 2.10-2build4 [50.6 kB]
-97% [58 liblzo2-2 50.6 kB/50.6 kB 100%]                                       97% [Waiting for headers]                         Get:59 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libterm-readkey-perl arm64 2.38-2build4 [23.1 kB]
-                         Get:60 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 mariadb-plugin-provider-bzip2 arm64 1:10.11.13-0ubuntu0.24.04.1 [14.0 kB]
-                         Get:61 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 mariadb-plugin-provider-lz4 arm64 1:10.11.13-0ubuntu0.24.04.1 [13.9 kB]
-98% [61 mariadb-plugin-provider-lz4 2606 B/13.9 kB 19%]                                                       98% [Working]             Get:62 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 mariadb-plugin-provider-lzma arm64 1:10.11.13-0ubuntu0.24.04.1 [13.9 kB]
-98% [62 mariadb-plugin-provider-lzma 0 B/13.9 kB 0%]                                                    98% [Working]             Get:63 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 mariadb-plugin-provider-lzo arm64 1:10.11.13-0ubuntu0.24.04.1 [13.9 kB]
-98% [63 mariadb-plugin-provider-lzo 4054 B/13.9 kB 29%]                                                       99% [Waiting for headers]                         Get:64 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libsnappy1v5 arm64 1.1.10-1build1 [28.6 kB]
-99% [64 libsnappy1v5 28.6 kB/28.6 kB 100%]                                          99% [Waiting for headers]                         Get:65 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 mariadb-plugin-provider-snappy arm64 1:10.11.13-0ubuntu0.24.04.1 [13.9 kB]
-99% [65 mariadb-plugin-provider-snappy 13.9 kB/13.9 kB 100%]                                                            99% [Waiting for headers]                         Get:66 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 pv arm64 1.8.5-2build1 [82.4 kB]
-100% [66 pv 30.1 kB/82.4 kB 37%]                                100% [Working]              Fetched 23.5 MB in 2s (10.0 MB/s)
-debconf: delaying package configuration, since apt-utils is not installed
-Selecting previously unselected package libpopt0:arm64.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 17165 files and directories currently installed.)
-Preparing to unpack .../libpopt0_1.19+dfsg-1build1_arm64.deb ...
-Unpacking libpopt0:arm64 (1.19+dfsg-1build1) ...
-Selecting previously unselected package rsync.
-Preparing to unpack .../rsync_3.2.7-1ubuntu1.2_arm64.deb ...
-Unpacking rsync (3.2.7-1ubuntu1.2) ...
-Selecting previously unselected package galera-4.
-Preparing to unpack .../galera-4_26.4.16-2build4_arm64.deb ...
-info: The home dir /nonexistent you specified can't be accessed: No such file or directory
-
-info: Selecting UID from range 100 to 999 ...
-
-info: Adding system user `_galera' (UID 100) ...
-info: Adding new user `_galera' (UID 100) with group `nogroup' ...
-info: Not creating `/nonexistent'.
-Unpacking galera-4 (26.4.16-2build4) ...
-Selecting previously unselected package libsigsegv2:arm64.
-Preparing to unpack .../libsigsegv2_2.14-1ubuntu2_arm64.deb ...
-Unpacking libsigsegv2:arm64 (2.14-1ubuntu2) ...
-Setting up libsigsegv2:arm64 (2.14-1ubuntu2) ...
-Selecting previously unselected package gawk.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 17221 files and directories currently installed.)
-Preparing to unpack .../00-gawk_1%3a5.2.1-2build3_arm64.deb ...
-Unpacking gawk (1:5.2.1-2build3) ...
-Selecting previously unselected package mysql-common.
-Preparing to unpack .../01-mysql-common_5.8+1.1.0build1_all.deb ...
-Unpacking mysql-common (5.8+1.1.0build1) ...
-Selecting previously unselected package mariadb-common.
-Preparing to unpack .../02-mariadb-common_1%3a10.11.13-0ubuntu0.24.04.1_all.deb ...
-Unpacking mariadb-common (1:10.11.13-0ubuntu0.24.04.1) ...
-Selecting previously unselected package libelf1t64:arm64.
-Preparing to unpack .../03-libelf1t64_0.190-1.1ubuntu0.1_arm64.deb ...
-Unpacking libelf1t64:arm64 (0.190-1.1ubuntu0.1) ...
-Selecting previously unselected package libbpf1:arm64.
-Preparing to unpack .../04-libbpf1_1%3a1.3.0-2build2_arm64.deb ...
-Unpacking libbpf1:arm64 (1:1.3.0-2build2) ...
-Selecting previously unselected package libmnl0:arm64.
-Preparing to unpack .../05-libmnl0_1.0.5-2build1_arm64.deb ...
-Unpacking libmnl0:arm64 (1.0.5-2build1) ...
-Selecting previously unselected package libxtables12:arm64.
-Preparing to unpack .../06-libxtables12_1.8.10-3ubuntu2_arm64.deb ...
-Unpacking libxtables12:arm64 (1.8.10-3ubuntu2) ...
-Selecting previously unselected package libcap2-bin.
-Preparing to unpack .../07-libcap2-bin_1%3a2.66-5ubuntu2.2_arm64.deb ...
-Unpacking libcap2-bin (1:2.66-5ubuntu2.2) ...
-Selecting previously unselected package iproute2.
-Preparing to unpack .../08-iproute2_6.1.0-1ubuntu6.2_arm64.deb ...
-Unpacking iproute2 (6.1.0-1ubuntu6.2) ...
-Selecting previously unselected package libdbi-perl:arm64.
-Preparing to unpack .../09-libdbi-perl_1.643-4build3_arm64.deb ...
-Unpacking libdbi-perl:arm64 (1.643-4build3) ...
-Selecting previously unselected package libkrb5support0:arm64.
-Preparing to unpack .../10-libkrb5support0_1.20.1-6ubuntu2.6_arm64.deb ...
-Unpacking libkrb5support0:arm64 (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package libk5crypto3:arm64.
-Preparing to unpack .../11-libk5crypto3_1.20.1-6ubuntu2.6_arm64.deb ...
-Unpacking libk5crypto3:arm64 (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package libkeyutils1:arm64.
-Preparing to unpack .../12-libkeyutils1_1.6.3-3build1_arm64.deb ...
-Unpacking libkeyutils1:arm64 (1.6.3-3build1) ...
-Selecting previously unselected package libkrb5-3:arm64.
-Preparing to unpack .../13-libkrb5-3_1.20.1-6ubuntu2.6_arm64.deb ...
-Unpacking libkrb5-3:arm64 (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package libgssapi-krb5-2:arm64.
-Preparing to unpack .../14-libgssapi-krb5-2_1.20.1-6ubuntu2.6_arm64.deb ...
-Unpacking libgssapi-krb5-2:arm64 (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package libtirpc-common.
-Preparing to unpack .../15-libtirpc-common_1.3.4+ds-1.1build1_all.deb ...
-Unpacking libtirpc-common (1.3.4+ds-1.1build1) ...
-Selecting previously unselected package libtirpc3t64:arm64.
-Preparing to unpack .../16-libtirpc3t64_1.3.4+ds-1.1build1_arm64.deb ...
-Adding 'diversion of /lib/aarch64-linux-gnu/libtirpc.so.3 to /lib/aarch64-linux-gnu/libtirpc.so.3.usr-is-merged by libtirpc3t64'
-Adding 'diversion of /lib/aarch64-linux-gnu/libtirpc.so.3.0.0 to /lib/aarch64-linux-gnu/libtirpc.so.3.0.0.usr-is-merged by libtirpc3t64'
-Unpacking libtirpc3t64:arm64 (1.3.4+ds-1.1build1) ...
-Selecting previously unselected package lsof.
-Preparing to unpack .../17-lsof_4.95.0-1build3_arm64.deb ...
-Unpacking lsof (4.95.0-1build3) ...
-Selecting previously unselected package libconfig-inifiles-perl.
-Preparing to unpack .../18-libconfig-inifiles-perl_3.000003-2_all.deb ...
-Unpacking libconfig-inifiles-perl (3.000003-2) ...
-Selecting previously unselected package libmariadb3:arm64.
-Preparing to unpack .../19-libmariadb3_1%3a10.11.13-0ubuntu0.24.04.1_arm64.deb ...
-Unpacking libmariadb3:arm64 (1:10.11.13-0ubuntu0.24.04.1) ...
-Selecting previously unselected package libedit2:arm64.
-Preparing to unpack .../20-libedit2_3.1-20230828-1build1_arm64.deb ...
-Unpacking libedit2:arm64 (3.1-20230828-1build1) ...
-Selecting previously unselected package libncurses6:arm64.
-Preparing to unpack .../21-libncurses6_6.4+20240113-1ubuntu2_arm64.deb ...
-Unpacking libncurses6:arm64 (6.4+20240113-1ubuntu2) ...
-Selecting previously unselected package mariadb-client-core.
-Preparing to unpack .../22-mariadb-client-core_1%3a10.11.13-0ubuntu0.24.04.1_arm64.deb ...
-Unpacking mariadb-client-core (1:10.11.13-0ubuntu0.24.04.1) ...
-Selecting previously unselected package mariadb-client.
-Preparing to unpack .../23-mariadb-client_1%3a10.11.13-0ubuntu0.24.04.1_arm64.deb ...
-Unpacking mariadb-client (1:10.11.13-0ubuntu0.24.04.1) ...
-Selecting previously unselected package libnuma1:arm64.
-Preparing to unpack .../24-libnuma1_2.0.18-1build1_arm64.deb ...
-Unpacking libnuma1:arm64 (2.0.18-1build1) ...
-Selecting previously unselected package liburing2:arm64.
-Preparing to unpack .../25-liburing2_2.5-1build1_arm64.deb ...
-Unpacking liburing2:arm64 (2.5-1build1) ...
-Selecting previously unselected package mariadb-server-core.
-Preparing to unpack .../26-mariadb-server-core_1%3a10.11.13-0ubuntu0.24.04.1_arm64.deb ...
-Unpacking mariadb-server-core (1:10.11.13-0ubuntu0.24.04.1) ...
-Selecting previously unselected package psmisc.
-Preparing to unpack .../27-psmisc_23.7-1build1_arm64.deb ...
-Unpacking psmisc (23.7-1build1) ...
-Selecting previously unselected package libwrap0:arm64.
-Preparing to unpack .../28-libwrap0_7.6.q-33_arm64.deb ...
-Unpacking libwrap0:arm64 (7.6.q-33) ...
-Selecting previously unselected package socat.
-Preparing to unpack .../29-socat_1.8.0.0-4build3_arm64.deb ...
-Unpacking socat (1.8.0.0-4build3) ...
-Setting up mysql-common (5.8+1.1.0build1) ...
-update-alternatives: using /etc/mysql/my.cnf.fallback to provide /etc/mysql/my.cnf (my.cnf) in auto mode
-Setting up mariadb-common (1:10.11.13-0ubuntu0.24.04.1) ...
-update-alternatives: using /etc/mysql/mariadb.cnf to provide /etc/mysql/my.cnf (my.cnf) in auto mode
-Selecting previously unselected package mariadb-server.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 18270 files and directories currently installed.)
-Preparing to unpack .../00-mariadb-server_1%3a10.11.13-0ubuntu0.24.04.1_arm64.deb ...
-Unpacking mariadb-server (1:10.11.13-0ubuntu0.24.04.1) ...
-Selecting previously unselected package krb5-locales.
-Preparing to unpack .../01-krb5-locales_1.20.1-6ubuntu2.6_all.deb ...
-Unpacking krb5-locales (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package libatm1t64:arm64.
-Preparing to unpack .../02-libatm1t64_1%3a2.5.1-5.1build1_arm64.deb ...
-Unpacking libatm1t64:arm64 (1:2.5.1-5.1build1) ...
-Selecting previously unselected package libpam-cap:arm64.
-Preparing to unpack .../03-libpam-cap_1%3a2.66-5ubuntu2.2_arm64.deb ...
-Unpacking libpam-cap:arm64 (1:2.66-5ubuntu2.2) ...
-Selecting previously unselected package libgpm2:arm64.
-Preparing to unpack .../04-libgpm2_1.20.7-11_arm64.deb ...
-Unpacking libgpm2:arm64 (1.20.7-11) ...
-Selecting previously unselected package libhtml-tagset-perl.
-Preparing to unpack .../05-libhtml-tagset-perl_3.20-6_all.deb ...
-Unpacking libhtml-tagset-perl (3.20-6) ...
-Selecting previously unselected package liburi-perl.
-Preparing to unpack .../06-liburi-perl_5.27-1_all.deb ...
-Unpacking liburi-perl (5.27-1) ...
-Selecting previously unselected package libhtml-parser-perl:arm64.
-Preparing to unpack .../07-libhtml-parser-perl_3.81-1build3_arm64.deb ...
-Unpacking libhtml-parser-perl:arm64 (3.81-1build3) ...
-Selecting previously unselected package libcgi-pm-perl.
-Preparing to unpack .../08-libcgi-pm-perl_4.63-1_all.deb ...
-Unpacking libcgi-pm-perl (4.63-1) ...
-Selecting previously unselected package libfcgi0t64:arm64.
-Preparing to unpack .../09-libfcgi0t64_2.4.2-2.1ubuntu0.24.04.1_arm64.deb ...
-Unpacking libfcgi0t64:arm64 (2.4.2-2.1ubuntu0.24.04.1) ...
-Selecting previously unselected package libfcgi-perl.
-Preparing to unpack .../10-libfcgi-perl_0.82+ds-3build2_arm64.deb ...
-Unpacking libfcgi-perl (0.82+ds-3build2) ...
-Selecting previously unselected package libcgi-fast-perl.
-Preparing to unpack .../11-libcgi-fast-perl_1%3a2.17-1_all.deb ...
-Unpacking libcgi-fast-perl (1:2.17-1) ...
-Selecting previously unselected package libclone-perl:arm64.
-Preparing to unpack .../12-libclone-perl_0.46-1build3_arm64.deb ...
-Unpacking libclone-perl:arm64 (0.46-1build3) ...
-Selecting previously unselected package libmysqlclient21:arm64.
-Preparing to unpack .../13-libmysqlclient21_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-Unpacking libmysqlclient21:arm64 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package libdbd-mysql-perl:arm64.
-Preparing to unpack .../14-libdbd-mysql-perl_4.052-1ubuntu3_arm64.deb ...
-Unpacking libdbd-mysql-perl:arm64 (4.052-1ubuntu3) ...
-Selecting previously unselected package libencode-locale-perl.
-Preparing to unpack .../15-libencode-locale-perl_1.05-3_all.deb ...
-Unpacking libencode-locale-perl (1.05-3) ...
-Selecting previously unselected package libfcgi-bin.
-Preparing to unpack .../16-libfcgi-bin_2.4.2-2.1ubuntu0.24.04.1_arm64.deb ...
-Unpacking libfcgi-bin (2.4.2-2.1ubuntu0.24.04.1) ...
-Selecting previously unselected package libhtml-template-perl.
-Preparing to unpack .../17-libhtml-template-perl_2.97-2_all.deb ...
-Unpacking libhtml-template-perl (2.97-2) ...
-Selecting previously unselected package libtimedate-perl.
-Preparing to unpack .../18-libtimedate-perl_2.3300-2_all.deb ...
-Unpacking libtimedate-perl (2.3300-2) ...
-Selecting previously unselected package libhttp-date-perl.
-Preparing to unpack .../19-libhttp-date-perl_6.06-1_all.deb ...
-Unpacking libhttp-date-perl (6.06-1) ...
-Selecting previously unselected package libio-html-perl.
-Preparing to unpack .../20-libio-html-perl_1.004-3_all.deb ...
-Unpacking libio-html-perl (1.004-3) ...
-Selecting previously unselected package liblwp-mediatypes-perl.
-Preparing to unpack .../21-liblwp-mediatypes-perl_6.04-2_all.deb ...
-Unpacking liblwp-mediatypes-perl (6.04-2) ...
-Selecting previously unselected package libhttp-message-perl.
-Preparing to unpack .../22-libhttp-message-perl_6.45-1ubuntu1_all.deb ...
-Unpacking libhttp-message-perl (6.45-1ubuntu1) ...
-Selecting previously unselected package liblzo2-2:arm64.
-Preparing to unpack .../23-liblzo2-2_2.10-2build4_arm64.deb ...
-Unpacking liblzo2-2:arm64 (2.10-2build4) ...
-Selecting previously unselected package libterm-readkey-perl.
-Preparing to unpack .../24-libterm-readkey-perl_2.38-2build4_arm64.deb ...
-Unpacking libterm-readkey-perl (2.38-2build4) ...
-Selecting previously unselected package mariadb-plugin-provider-bzip2.
-Preparing to unpack .../25-mariadb-plugin-provider-bzip2_1%3a10.11.13-0ubuntu0.24.04.1_arm64.deb ...
-Unpacking mariadb-plugin-provider-bzip2 (1:10.11.13-0ubuntu0.24.04.1) ...
-Selecting previously unselected package mariadb-plugin-provider-lz4.
-Preparing to unpack .../26-mariadb-plugin-provider-lz4_1%3a10.11.13-0ubuntu0.24.04.1_arm64.deb ...
-Unpacking mariadb-plugin-provider-lz4 (1:10.11.13-0ubuntu0.24.04.1) ...
-Selecting previously unselected package mariadb-plugin-provider-lzma.
-Preparing to unpack .../27-mariadb-plugin-provider-lzma_1%3a10.11.13-0ubuntu0.24.04.1_arm64.deb ...
-Unpacking mariadb-plugin-provider-lzma (1:10.11.13-0ubuntu0.24.04.1) ...
-Selecting previously unselected package mariadb-plugin-provider-lzo.
-Preparing to unpack .../28-mariadb-plugin-provider-lzo_1%3a10.11.13-0ubuntu0.24.04.1_arm64.deb ...
-Unpacking mariadb-plugin-provider-lzo (1:10.11.13-0ubuntu0.24.04.1) ...
-Selecting previously unselected package libsnappy1v5:arm64.
-Preparing to unpack .../29-libsnappy1v5_1.1.10-1build1_arm64.deb ...
-Unpacking libsnappy1v5:arm64 (1.1.10-1build1) ...
-Selecting previously unselected package mariadb-plugin-provider-snappy.
-Preparing to unpack .../30-mariadb-plugin-provider-snappy_1%3a10.11.13-0ubuntu0.24.04.1_arm64.deb ...
-Unpacking mariadb-plugin-provider-snappy (1:10.11.13-0ubuntu0.24.04.1) ...
-Selecting previously unselected package pv.
-Preparing to unpack .../31-pv_1.8.5-2build1_arm64.deb ...
-Unpacking pv (1.8.5-2build1) ...
-Setting up libconfig-inifiles-perl (3.000003-2) ...
-Setting up galera-4 (26.4.16-2build4) ...
-Setting up libmysqlclient21:arm64 (8.0.44-0ubuntu0.24.04.2) ...
-Setting up libkeyutils1:arm64 (1.6.3-3build1) ...
-Setting up libgpm2:arm64 (1.20.7-11) ...
-Setting up libatm1t64:arm64 (1:2.5.1-5.1build1) ...
-Setting up gawk (1:5.2.1-2build3) ...
-Setting up psmisc (23.7-1build1) ...
-Setting up libclone-perl:arm64 (0.46-1build3) ...
-Setting up libfcgi0t64:arm64 (2.4.2-2.1ubuntu0.24.04.1) ...
-Setting up libtirpc-common (1.3.4+ds-1.1build1) ...
-Setting up libhtml-tagset-perl (3.20-6) ...
-Setting up libedit2:arm64 (3.1-20230828-1build1) ...
-Setting up liblwp-mediatypes-perl (6.04-2) ...
-Setting up libfcgi-bin (2.4.2-2.1ubuntu0.24.04.1) ...
-Setting up liblzo2-2:arm64 (2.10-2build4) ...
-Setting up libencode-locale-perl (1.05-3) ...
-Setting up krb5-locales (1.20.1-6ubuntu2.6) ...
-Setting up libelf1t64:arm64 (0.190-1.1ubuntu0.1) ...
-Setting up libsnappy1v5:arm64 (1.1.10-1build1) ...
-Setting up libkrb5support0:arm64 (1.20.1-6ubuntu2.6) ...
-Setting up libcap2-bin (1:2.66-5ubuntu2.2) ...
-Setting up libwrap0:arm64 (7.6.q-33) ...
-Setting up socat (1.8.0.0-4build3) ...
-Setting up libncurses6:arm64 (6.4+20240113-1ubuntu2) ...
-Setting up libmnl0:arm64 (1.0.5-2build1) ...
-Setting up libio-html-perl (1.004-3) ...
-Setting up libmariadb3:arm64 (1:10.11.13-0ubuntu0.24.04.1) ...
-Setting up libk5crypto3:arm64 (1.20.1-6ubuntu2.6) ...
-Setting up libxtables12:arm64 (1.8.10-3ubuntu2) ...
-Setting up libtimedate-perl (2.3300-2) ...
-Setting up libnuma1:arm64 (2.0.18-1build1) ...
-Setting up pv (1.8.5-2build1) ...
-Setting up libfcgi-perl (0.82+ds-3build2) ...
-Setting up libkrb5-3:arm64 (1.20.1-6ubuntu2.6) ...
-Setting up libterm-readkey-perl (2.38-2build4) ...
-Setting up liburing2:arm64 (2.5-1build1) ...
-Setting up libpam-cap:arm64 (1:2.66-5ubuntu2.2) ...
-Setting up liburi-perl (5.27-1) ...
-Setting up libbpf1:arm64 (1:1.3.0-2build2) ...
-Setting up libdbi-perl:arm64 (1.643-4build3) ...
-Setting up libpopt0:arm64 (1.19+dfsg-1build1) ...
-Setting up libhttp-date-perl (6.06-1) ...
-Setting up iproute2 (6.1.0-1ubuntu6.2) ...
-Setting up mariadb-client-core (1:10.11.13-0ubuntu0.24.04.1) ...
-Setting up libgssapi-krb5-2:arm64 (1.20.1-6ubuntu2.6) ...
-Setting up libdbd-mysql-perl:arm64 (4.052-1ubuntu3) ...
-Setting up libhtml-parser-perl:arm64 (3.81-1build3) ...
-Setting up mariadb-server-core (1:10.11.13-0ubuntu0.24.04.1) ...
-Setting up rsync (3.2.7-1ubuntu1.2) ...
-invoke-rc.d: could not determine current runlevel
-invoke-rc.d: policy-rc.d denied execution of start.
-Setting up libhttp-message-perl (6.45-1ubuntu1) ...
-Setting up mariadb-client (1:10.11.13-0ubuntu0.24.04.1) ...
-Setting up libtirpc3t64:arm64 (1.3.4+ds-1.1build1) ...
-Setting up libcgi-pm-perl (4.63-1) ...
-Setting up libhtml-template-perl (2.97-2) ...
-Setting up lsof (4.95.0-1build3) ...
-Setting up libcgi-fast-perl (1:2.17-1) ...
-Setting up mariadb-server (1:10.11.13-0ubuntu0.24.04.1) ...
-invoke-rc.d: could not determine current runlevel
-invoke-rc.d: policy-rc.d denied execution of stop.
-invoke-rc.d: could not determine current runlevel
-invoke-rc.d: policy-rc.d denied execution of start.
-Setting up mariadb-plugin-provider-bzip2 (1:10.11.13-0ubuntu0.24.04.1) ...
-Setting up mariadb-plugin-provider-lzma (1:10.11.13-0ubuntu0.24.04.1) ...
-Setting up mariadb-plugin-provider-lzo (1:10.11.13-0ubuntu0.24.04.1) ...
-Setting up mariadb-plugin-provider-lz4 (1:10.11.13-0ubuntu0.24.04.1) ...
-Setting up mariadb-plugin-provider-snappy (1:10.11.13-0ubuntu0.24.04.1) ...
-Processing triggers for libc-bin (2.39-0ubuntu8.6) ...
-Processing triggers for mariadb-server (1:10.11.13-0ubuntu0.24.04.1) ...
-invoke-rc.d: could not determine current runlevel
-invoke-rc.d: policy-rc.d denied execution of restart.
-[?2004hroot@c8d9df6f9195:/app# mkdir -p /var/run/mysqld
-[?2004l[?2004hroot@c8d9df6f9195:/app# chown mysql:mysql /var/run/mysqld || true
-[?2004l[?2004hroot@c8d9df6f9195:/app# mysql_install_db --user=mysql --ldata=/var/lib/mysql 2>/dev/null || mysqld --initialize-insecure --datadir=/var/lib/mysql --user=mysql 2>>/dev/null || true
-[?2004lmysql.user table already exists!
-Run mysql_upgrade, not mysql_install_db
-[?2004hroot@c8d9df6f9195:/app# nohup mysqld_safe --datadir=/var/lib/mysql > /var/log/mysqld.log 2>&1 &
-[?2004l[1] 1466
-[?2004hroot@c8d9df6f9195:/app# sleep 3
-[?2004l[?2004hroot@c8d9df6f9195:/app# mysql -u root -e "SELECT VERSION();"
-[?2004l+-----------------------------------+
-| VERSION()                         |
-+-----------------------------------+
-| 10.11.13-MariaDB-0ubuntu0.24.04.1 |
-+-----------------------------------+
-[?2004hroot@c8d9df6f9195:/app# mysql -u root -e "SHOW DATABASES;"
-[?2004l+--------------------+
-| Database           |
-+--------------------+
-| information_schema |
-| mysql              |
-| performance_schema |
-| sys                |
-+--------------------+
-[?2004hroot@c8d9df6f9195:/app# mysql -u root -e "SHOW TABLES FROM mysql;"
-[?2004l+---------------------------+
-| Tables_in_mysql           |
-+---------------------------+
-| column_stats              |
-| columns_priv              |
-| db                        |
-| event                     |
-| func                      |
-| general_log               |
-| global_priv               |
-| gtid_slave_pos            |
-| help_category             |
-| help_keyword              |
-| help_relation             |
-| help_topic                |
-| index_stats               |
-| innodb_index_stats        |
-| innodb_table_stats        |
-| plugin                    |
-| proc                      |
-| procs_priv                |
-| proxies_priv              |
-| roles_mapping             |
-| servers                   |
-| slow_log                  |
-| table_stats               |
-| tables_priv               |
-| time_zone                 |
-| time_zone_leap_second     |
-| time_zone_name            |
-| time_zone_transition      |
-| time_zone_transition_type |
-| transaction_registry      |
-| user                      |
-+---------------------------+
-[?2004hroot@c8d9df6f9195:/app# mysql -u root -e "SELECT User,Host,plugin FROM mysql.user;"
-[?2004l+-------------+-----------+-----------------------+
-| User        | Host      | plugin                |
-+-------------+-----------+-----------------------+
-| mariadb.sys | localhost | mysql_native_password |
-| root        | localhost | mysql_native_password |
-| mysql       | localhost | mysql_native_password |
-+-------------+-----------+-----------------------+
-[?2004hroot@c8d9df6f9195:/app# mysql -u root -e "SHOW GRANTS FOR 'root'@'localhost';"
-[?2004l+-----------------------------------------------------------------------------------------------------------------------------------------+
-| Grants for root@localhost                                                                                                               |
-+-----------------------------------------------------------------------------------------------------------------------------------------+
-| GRANT ALL PRIVILEGES ON *.* TO `root`@`localhost` IDENTIFIED VIA mysql_native_password USING 'invalid' OR unix_socket WITH GRANT OPTION |
-| GRANT PROXY ON ''@'%' TO 'root'@'localhost' WITH GRANT OPTION                                                                           |
-+-----------------------------------------------------------------------------------------------------------------------------------------+
-[?2004hroot@c8d9df6f9195:/app# 

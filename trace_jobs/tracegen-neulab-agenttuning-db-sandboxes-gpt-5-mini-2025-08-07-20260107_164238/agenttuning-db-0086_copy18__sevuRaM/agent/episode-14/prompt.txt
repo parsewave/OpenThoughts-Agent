@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@42a520661e86:/app# echo "Reply with one option:\n(A) Provide DB details: host=... port=... user=... password=... database=... question='...'\n(B) Reply 'in
-stall local server' to permit installing and configuring MySQL here."
-Reply with one option:\n(A) Provide DB details: host=... port=... user=... password=... database=... question='...'\n(B) Reply 'install local server' to permit
-installing and configuring MySQL here.
-root@42a520661e86:/app#

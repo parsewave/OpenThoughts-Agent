@@ -1,35 +1,0 @@
-[?2004hroot@834360b65b57:/app# ls -la
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:00 [01;34m..[0m
-[?2004hroot@834360b65b57:/app# ps aux | egrep 'mysql|mariadbd|mysqld' || true
-[?2004lroot       350  0.0  0.0   3124  1460 pts/1    S+   22:02   0:00 grep -E --color=auto [01;31m[Kmysql[m[K|[01;31m[Kmariadbd[m[K|[01;31m[Kmysqld[m[K
-[?2004hroot@834360b65b57:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@834360b65b57:/app# mysql -uroot -e "SHOW DATABASES;"
-[?2004lbash: mysql: command not found
-[?2004hroot@834360b65b57:/app# cat /etc/os-release
-[?2004lPRETTY_NAME="Ubuntu 24.04.3 LTS"
-NAME="Ubuntu"
-VERSION_ID="24.04"
-VERSION="24.04.3 LTS (Noble Numbat)"
-VERSION_CODENAME=noble
-ID=ubuntu
-ID_LIKE=debian
-HOME_URL="https://www.ubuntu.com/"
-SUPPORT_URL="https://help.ubuntu.com/"
-BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
-PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
-UBUNTU_CODENAME=noble
-LOGO=ubuntu-logo
-[?2004hroot@834360b65b57:/app# env | egrep -i 'mysql|mariadb|db' || true
-[?2004l[?2004hroot@834360b65b57:/app# ls -la /var/run/mysqld /var/lib/mysql || true
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-ls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@834360b65b57:/app# apt-get update
-[?2004l0% [Working]            Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
-0% [Working]            Hit:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease
-0% [Working]            Hit:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease
-0% [Working]0% [Waiting for headers]                        Hit:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease
-                        0% [Working]0% [Working]0% [Working]20% [Working]             Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-[?2004hroot@834360b65b57:/app# 

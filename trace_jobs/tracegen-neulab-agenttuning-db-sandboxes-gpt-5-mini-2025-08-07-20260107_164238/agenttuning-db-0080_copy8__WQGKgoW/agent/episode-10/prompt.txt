@@ -1,9 +1,0 @@
-New Terminal Output:
-
-root@e84cf06a0b94:/app# echo "Please reply with ONE of the following EXACTLY:\n\n1) Provide remote connection info AND the exact question to answer: host, port
-(optional), user, password or 'prompt', database, AND the precise query intent you want (e.g. \"count rows in table orders where status = 'shipped'\").\n\nOR\n\
-n2) Reply exactly: install local server\n\nI will wait for your reply and then proceed accordingly."
-Please reply with ONE of the following EXACTLY:\n\n1) Provide remote connection info AND the exact question to answer: host, port (optional), user, password or
-'prompt', database, AND the precise query intent you want (e.g. "count rows in table orders where status = 'shipped'").\n\nOR\n\n2) Reply exactly: install local
- server\n\nI will wait for your reply and then proceed accordingly.
-root@e84cf06a0b94:/app#

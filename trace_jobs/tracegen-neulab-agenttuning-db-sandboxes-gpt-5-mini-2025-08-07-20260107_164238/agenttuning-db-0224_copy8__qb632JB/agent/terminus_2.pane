@@ -1,23 +1,0 @@
-[?2004hroot@11dc50330668:/app# whoami
-[?2004lroot
-[?2004hroot@11dc50330668:/app# pwd
-[?2004l/app
-[?2004hroot@11dc50330668:/app# ls -la
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:01 [01;34m..[0m
-[?2004hroot@11dc50330668:/app# ls -la /var/lib/mysql
-[?2004lls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@11dc50330668:/app# ls -la /var/run/mysqld
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-[?2004hroot@11dc50330668:/app# which mysql
-[?2004l[?2004hroot@11dc50330668:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@11dc50330668:/app# ps aux | grep mysqld | grep -v grep
-[?2004l[?2004hroot@11dc50330668:/app# ss -ltnp | head -n 20
-[?2004lbash: ss: command not found
-[?2004hroot@11dc50330668:/app# env | grep -i MYSQL
-[?2004l[?2004hroot@11dc50330668:/app# env | egrep -i "DB|MYSQL|MYSQL_ROOT_PASSWORD|MYSQL_USER|MYSQL_PASSWORD|MYSQL_DATABASE"
-[?2004l[?2004hroot@11dc50330668:/app# cat ~/.my.cnf
-[?2004lcat: /root/.my.cnf: No such file or directory
-[?2004hroot@11dc50330668:/app# 

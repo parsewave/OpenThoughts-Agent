@@ -1,9 +1,0 @@
-New Terminal Output:
-
-mysql -uroot -e "SELECT VERSION();"
-mysqld will log errors to /var/log/mysql/error.log
-mysqld is running as pid 1882
-ps aux | grep -i mysqld | grep -v grep || true
-tail -n 200 /var/log/mysql_start.log || true
-mysql -uroot -e "SELECT VERSION();"
-

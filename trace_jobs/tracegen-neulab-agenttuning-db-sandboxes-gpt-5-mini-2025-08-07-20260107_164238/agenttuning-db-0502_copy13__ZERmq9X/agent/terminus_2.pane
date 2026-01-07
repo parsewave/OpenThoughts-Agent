@@ -1,7 +1,0 @@
-[?2004hroot@006c11459c00:/app# echo "Ready to help. Please provide your database question and connection details (host,port,user,password,database), or say 'use local'  to try the local MySQL instance." 
-[?2004lReady to help. Please provide your database question and connection details (host,port,user,password,database), or say 'use local' to try the local MySQL instance.
-[?2004hroot@006c11459c00:/app# which mysql
-[?2004l[?2004hroot@006c11459c00:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@006c11459c00:/app# ps aux | grep mysqld | grep -v grep
-[?2004l[?2004hroot@006c11459c00:/app# 

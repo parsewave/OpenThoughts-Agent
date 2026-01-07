@@ -1,5 +1,0 @@
-New Terminal Output:
-
-root@ab7bff23cbd3:/app# echo "MySQL client installed. Please provide DB host, port, user, password, database and the question to answer."
-MySQL client installed. Please provide DB host, port, user, password, database and the question to answer.
-root@ab7bff23cbd3:/app#

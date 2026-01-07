@@ -1,168 +1,0 @@
-[?2004hroot@62961ca66491:/app# env | grep -i mysql
-[?2004l[?2004hroot@62961ca66491:/app# ps aux | grep '[m]ysqld'
-[?2004l[?2004hroot@62961ca66491:/app# ls -la /var/run/mysqld
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-[?2004hroot@62961ca66491:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@62961ca66491:/app# apt-get update
-[?2004l0% [Working]            Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
-0% [Working]0% [Waiting for headers]                        Get:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease [126 kB]
-0% [2 InRelease 14.2 kB/126 kB 11%]                                   0% [Working]0% [Waiting for headers]                        Hit:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease
-                        0% [Working]0% [Waiting for headers]                        Hit:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease
-                        0% [Working]21% [Waiting for headers]                         Get:5 http://ports.ubuntu.com/ubuntu-ports noble-updates/universe arm64 Packages [1894 kB]
-21% [5 Packages 5551 B/1894 kB 0%]                                  57% [Working]             Get:6 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 Packages [2223 kB]
-58% [6 Packages 29.8 kB/2223 kB 1%]58% [5 Packages store 0 B] [6 Packages 29.8 kB/2223 kB 1%]                                                          72% [6 Packages 777 kB/2223 kB 35%]                                   99% [Working]99% [6 Packages store 0 B]                          100% [Working]              Fetched 4244 kB in 2s (2388 kB/s)
-Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-[?2004hroot@62961ca66491:/app# DEBIAN_FRONTEND=noninteractive apt-get install -y default-mysql-client
-[?2004lReading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 50%Building dependency tree... 50%Building dependency tree... 65%Building dependency tree... Done
-Reading state information... 0% Reading state information... 0%Reading state information... Done
-The following additional packages will be installed:
-  libedit2 mysql-client-8.0 mysql-client-core-8.0 mysql-common
-The following NEW packages will be installed:
-  default-mysql-client libedit2 mysql-client-8.0 mysql-client-core-8.0 mysql-common
-0 upgraded, 5 newly installed, 0 to remove and 13 not upgraded.
-Need to get 2937 kB of archives.
-After this operation, 62.1 MB of additional disk space will be used.
-0% [Working]            Get:1 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libedit2 arm64 3.1-20230828-1build1 [97.5 kB]
-0% [1 libedit2 14.2 kB/97.5 kB 15%]                                   7% [Waiting for headers]                        Get:2 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-client-core-8.0 arm64 8.0.44-0ubuntu0.24.04.2 [2807 kB]
-7% [2 mysql-client-core-8.0 5498 B/2807 kB 0%]64% [2 mysql-client-core-8.0 2122 kB/2807 kB 76%]                                                 Get:3 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 mysql-common all 5.8+1.1.0build1 [6746 B]
-                                                 91% [Waiting for headers]                         Get:4 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-client-8.0 arm64 8.0.44-0ubuntu0.24.04.2 [22.5 kB]
-91% [4 mysql-client-8.0 6911 B/22.5 kB 31%]                                           Get:5 http://ports.ubuntu.com/ubuntu-ports noble/universe arm64 default-mysql-client all 1.1.0build1 [2908 B]
-96% [5 default-mysql-client 1543 B/2908 B 53%]                                              100% [Working]              Fetched 2937 kB in 1s (2405 kB/s)
-debconf: delaying package configuration, since apt-utils is not installed
-Selecting previously unselected package libedit2:arm64.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 17165 files and directories currently installed.)
-Preparing to unpack .../libedit2_3.1-20230828-1build1_arm64.deb ...
-Unpacking libedit2:arm64 (3.1-20230828-1build1) ...
-Selecting previously unselected package mysql-client-core-8.0.
-Preparing to unpack .../mysql-client-core-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-Unpacking mysql-client-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package mysql-common.
-Preparing to unpack .../mysql-common_5.8+1.1.0build1_all.deb ...
-Unpacking mysql-common (5.8+1.1.0build1) ...
-Selecting previously unselected package mysql-client-8.0.
-Preparing to unpack .../mysql-client-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-Unpacking mysql-client-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package default-mysql-client.
-Preparing to unpack .../default-mysql-client_1.1.0build1_all.deb ...
-Unpacking default-mysql-client (1.1.0build1) ...
-Setting up mysql-common (5.8+1.1.0build1) ...
-update-alternatives: using /etc/mysql/my.cnf.fallback to provide /etc/mysql/my.cnf (my.cnf) in auto mode
-Setting up libedit2:arm64 (3.1-20230828-1build1) ...
-Setting up mysql-client-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Setting up mysql-client-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Setting up default-mysql-client (1.1.0build1) ...
-Processing triggers for libc-bin (2.39-0ubuntu8.6) ...
-[?2004hroot@62961ca66491:/app# mysql --version
-[?2004lmysql  Ver 8.0.44-0ubuntu0.24.04.2 for Linux on aarch64 ((Ubuntu))
-[?2004hroot@62961ca66491:/app# ls -la /etc/mysql/my.cnf
-[?2004llrwxrwxrwx 1 root root 24 Oct 20  2020 [0m[01;36m/etc/mysql/my.cnf[0m -> /etc/alternatives/my.cnf
-[?2004hroot@62961ca66491:/app# ls -la /root/.my.cnf
-[?2004lls: cannot access '/root/.my.cnf': No such file or directory
-[?2004hroot@62961ca66491:/app# ls -la /app
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 21:44 [01;34m..[0m
-[?2004hroot@62961ca66491:/app# grep -R -nI --exclude-dir={proc,sys,run,dev} -e 'mysql' /app /etc /root /home 2>/dev/null || true
-[?2004l[35m[K/etc/alternatives/my.cnf[m[K[36m[K:[m[K[32m[K5[m[K[36m[K:[m[K# - "/etc/[01;31m[Kmysql[m[K/my.cnf" to set global options,
-[35m[K/etc/alternatives/my.cnf[m[K[36m[K:[m[K[32m[K13[m[K[36m[K:[m[K# http://dev.[01;31m[Kmysql[m[K.com/doc/[01;31m[Kmysql[m[K/en/server-system-variables.html
-[35m[K/etc/alternatives/my.cnf[m[K[36m[K:[m[K[32m[K15[m[K[36m[K:[m[K# This will be passed to all [01;31m[Kmysql[m[K clients
-[35m[K/etc/alternatives/my.cnf[m[K[36m[K:[m[K[32m[K18[m[K[36m[K:[m[K# Remember to edit /etc/[01;31m[Kmysql[m[K/debian.cnf when changing the socket location.
-[35m[K/etc/alternatives/my.cnf[m[K[36m[K:[m[K[32m[K23[m[K[36m[K:[m[K!includedir /etc/[01;31m[Kmysql[m[K/conf.d/
-[35m[K/etc/mysql/conf.d/mysqldump.cnf[m[K[36m[K:[m[K[32m[K1[m[K[36m[K:[m[K[[01;31m[Kmysql[m[Kdump]
-[35m[K/etc/mysql/conf.d/mysql.cnf[m[K[36m[K:[m[K[32m[K1[m[K[36m[K:[m[K[[01;31m[Kmysql[m[K]
-[35m[K/etc/mysql/my.cnf.fallback[m[K[36m[K:[m[K[32m[K5[m[K[36m[K:[m[K# - "/etc/[01;31m[Kmysql[m[K/my.cnf" to set global options,
-[35m[K/etc/mysql/my.cnf.fallback[m[K[36m[K:[m[K[32m[K13[m[K[36m[K:[m[K# http://dev.[01;31m[Kmysql[m[K.com/doc/[01;31m[Kmysql[m[K/en/server-system-variables.html
-[35m[K/etc/mysql/my.cnf.fallback[m[K[36m[K:[m[K[32m[K15[m[K[36m[K:[m[K# This will be passed to all [01;31m[Kmysql[m[K clients
-[35m[K/etc/mysql/my.cnf.fallback[m[K[36m[K:[m[K[32m[K18[m[K[36m[K:[m[K# Remember to edit /etc/[01;31m[Kmysql[m[K/debian.cnf when changing the socket location.
-[35m[K/etc/mysql/my.cnf.fallback[m[K[36m[K:[m[K[32m[K23[m[K[36m[K:[m[K!includedir /etc/[01;31m[Kmysql[m[K/conf.d/
-[35m[K/etc/mysql/my.cnf[m[K[36m[K:[m[K[32m[K5[m[K[36m[K:[m[K# - "/etc/[01;31m[Kmysql[m[K/my.cnf" to set global options,
-[35m[K/etc/mysql/my.cnf[m[K[36m[K:[m[K[32m[K13[m[K[36m[K:[m[K# http://dev.[01;31m[Kmysql[m[K.com/doc/[01;31m[Kmysql[m[K/en/server-system-variables.html
-[35m[K/etc/mysql/my.cnf[m[K[36m[K:[m[K[32m[K15[m[K[36m[K:[m[K# This will be passed to all [01;31m[Kmysql[m[K clients
-[35m[K/etc/mysql/my.cnf[m[K[36m[K:[m[K[32m[K18[m[K[36m[K:[m[K# Remember to edit /etc/[01;31m[Kmysql[m[K/debian.cnf when changing the socket location.
-[35m[K/etc/mysql/my.cnf[m[K[36m[K:[m[K[32m[K23[m[K[36m[K:[m[K!includedir /etc/[01;31m[Kmysql[m[K/conf.d/
-[35m[K/etc/services[m[K[36m[K:[m[K[32m[K203[m[K[36m[K:[m[K[01;31m[Kmysql[m[K		3306/tcp
-[35m[K/etc/services[m[K[36m[K:[m[K[32m[K249[m[K[36m[K:[m[K[01;31m[Kmysql[m[K-proxy	6446/tcp			# MySQL Proxy
-[?2004hroot@62961ca66491:/app# grep -R -nI --exclude-dir={proc,sys,run,dev} -e 'MYSQL_' /app /etc /root /home 2>/dev/null || true
-[?2004l[?2004hroot@62961ca66491:/app# find /app /var/www /srv /etc /home /root /opt -maxdepth 5 -type f \( -iname ".env" -o -iname "docker-compose*.yml" -o -iname "docker-comppose*.yaml" -o -iname "*.env*" -o -iname "*.yml" -o -iname "*.yaml" -o -iname "*.cnf" -o -iname "*.ini" \) -print 2>/dev/null
-[?2004l/etc/mysql/conf.d/mysqldump.cnf
-/etc/mysql/conf.d/mysql.cnf
-/etc/ssl/openssl.cnf
-[?2004hroot@62961ca66491:/app# grep -R -nI --exclude-dir={proc,sys,run,dev,tmp} -e 'mysql://' -e 'mysql' -e 'DB_PASSWORD' -e 'DATABASE_URL' -e 'DB_USER' -e 'DB_USERNAMEE' -e 'password' /app /var/www /srv /etc /home /root /opt 2>/dev/null || true
-[?2004l[35m[K/etc/pam.d/chsh[m[K[36m[K:[m[K[32m[K11[m[K[36m[K:[m[K# prompted for a [01;31m[Kpassword[m[K
-[35m[K/etc/pam.d/su-l[m[K[36m[K:[m[K[32m[K4[m[K[36m[K:[m[K[01;31m[Kpassword[m[K	include		su
-[35m[K/etc/pam.d/su[m[K[36m[K:[m[K[32m[K5[m[K[36m[K:[m[K# This allows root to su without [01;31m[Kpassword[m[Ks (normal operation)
-[35m[K/etc/pam.d/su[m[K[36m[K:[m[K[32m[K18[m[K[36m[K:[m[K# su without a [01;31m[Kpassword[m[K.
-[35m[K/etc/pam.d/chfn[m[K[36m[K:[m[K[32m[K6[m[K[36m[K:[m[K# prompted for a [01;31m[Kpassword[m[K
-[35m[K/etc/pam.d/passwd[m[K[36m[K:[m[K[32m[K5[m[K[36m[K:[m[K@include common-[01;31m[Kpassword[m[K
-[35m[K/etc/pam.d/newusers[m[K[36m[K:[m[K[32m[K4[m[K[36m[K:[m[K@include common-[01;31m[Kpassword[m[K
-[35m[K/etc/pam.d/other[m[K[36m[K:[m[K[32m[K15[m[K[36m[K:[m[K@include common-[01;31m[Kpassword[m[K
-[35m[K/etc/pam.d/common-password[m[K[36m[K:[m[K[32m[K2[m[K[36m[K:[m[K# /etc/pam.d/common-[01;31m[Kpassword[m[K - [01;31m[Kpassword[m[K-related modules common to all services
-[35m[K/etc/pam.d/common-password[m[K[36m[K:[m[K[32m[K6[m[K[36m[K:[m[K# used to change user [01;31m[Kpassword[m[Ks.  The default is pam_unix.
-[35m[K/etc/pam.d/common-password[m[K[36m[K:[m[K[32m[K10[m[K[36m[K:[m[K#hashed [01;31m[Kpassword[m[Ks using the yescrypt algorithm, introduced in Debian
-[35m[K/etc/pam.d/common-password[m[K[36m[K:[m[K[32m[K12[m[K[36m[K:[m[K#used the option "sha512"; if a shadow [01;31m[Kpassword[m[K hash will be shared
-[35m[K/etc/pam.d/common-password[m[K[36m[K:[m[K[32m[K25[m[K[36m[K:[m[K[01;31m[Kpassword[m[K	[success=1 default=ignore]	pam_unix.so obscure yescrypt
-[35m[K/etc/pam.d/common-password[m[K[36m[K:[m[K[32m[K27[m[K[36m[K:[m[K[01;31m[Kpassword[m[K	requisite			pam_deny.so
-[35m[K/etc/pam.d/common-password[m[K[36m[K:[m[K[32m[K31[m[K[36m[K:[m[K[01;31m[Kpassword[m[K	required			pam_permit.so
-[35m[K/etc/pam.d/chpasswd[m[K[36m[K:[m[K[32m[K4[m[K[36m[K:[m[K@include common-[01;31m[Kpassword[m[K
-[35m[K/etc/pam.d/login[m[K[36m[K:[m[K[32m[K100[m[K[36m[K:[m[K@include common-[01;31m[Kpassword[m[K
-[35m[K/etc/default/useradd[m[K[36m[K:[m[K[32m[K22[m[K[36m[K:[m[K# The number of days after a [01;31m[Kpassword[m[K expires until the account 
-[35m[K/etc/security/pwhistory.conf[m[K[36m[K:[m[K[32m[K1[m[K[36m[K:[m[K# Configuration for remembering the last [01;31m[Kpassword[m[Ks used by a user.
-[35m[K/etc/security/pwhistory.conf[m[K[36m[K:[m[K[32m[K7[m[K[36m[K:[m[K# root account's [01;31m[Kpassword[m[Ks are also remembered.
-[35m[K/etc/security/pwhistory.conf[m[K[36m[K:[m[K[32m[K11[m[K[36m[K:[m[K# Number of [01;31m[Kpassword[m[Ks to remember.
-[35m[K/etc/security/pwhistory.conf[m[K[36m[K:[m[K[32m[K15[m[K[36m[K:[m[K# Number of times to prompt for the [01;31m[Kpassword[m[K.
-[35m[K/etc/security/pwhistory.conf[m[K[36m[K:[m[K[32m[K19[m[K[36m[K:[m[K# The directory where the last [01;31m[Kpassword[m[Ks are kept.
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K161[m[K[36m[K:[m[K#	PASS_MAX_DAYS	Maximum number of days a [01;31m[Kpassword[m[K may be used.
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K162[m[K[36m[K:[m[K#	PASS_MIN_DAYS	Minimum number of days allowed between [01;31m[Kpassword[m[K changes.
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K163[m[K[36m[K:[m[K#	PASS_WARN_AGE	Number of days warning given before a [01;31m[Kpassword[m[K expires.
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K196[m[K[36m[K:[m[K# Max number of login retries if [01;31m[Kpassword[m[K is bad. This will most likely be
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K272[m[K[36m[K:[m[K# If set to "yes", new [01;31m[Kpassword[m[Ks will be encrypted using the MD5-based
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K274[m[K[36m[K:[m[K# It supports [01;31m[Kpassword[m[Ks of unlimited length and longer salt strings.
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K275[m[K[36m[K:[m[K# Set to "no" if you need to copy encrypted [01;31m[Kpassword[m[Ks to other systems
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K283[m[K[36m[K:[m[K# If set to MD5, MD5-based algorithm will be used for encrypting [01;31m[Kpassword[m[K
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K284[m[K[36m[K:[m[K# If set to SHA256, SHA256-based algorithm will be used for encrypting [01;31m[Kpassword[m[K
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K285[m[K[36m[K:[m[K# If set to SHA512, SHA512-based algorithm will be used for encrypting [01;31m[Kpassword[m[K
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K286[m[K[36m[K:[m[K# If set to BCRYPT, BCRYPT-based algorithm will be used for encrypting [01;31m[Kpassword[m[K
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K287[m[K[36m[K:[m[K# If set to YESCRYPT, YESCRYPT-based algorithm will be used for encrypting [01;31m[Kpassword[m[K
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K288[m[K[36m[K:[m[K# If set to DES, DES-based algorithm will be used for encrypting [01;31m[Kpassword[m[K (default)
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K301[m[K[36m[K:[m[K# With a lot of rounds, it is more difficult to brute-force the [01;31m[Kpassword[m[K.
-[35m[K/etc/login.defs[m[K[36m[K:[m[K[32m[K318[m[K[36m[K:[m[K# With a higher cost factor, it is more difficult to brute-force the [01;31m[Kpassword[m[K.
-[35m[K/etc/alternatives/my.cnf[m[K[36m[K:[m[K[32m[K5[m[K[36m[K:[m[K# - "/etc/[01;31m[Kmysql[m[K/my.cnf" to set global options,
-[35m[K/etc/alternatives/my.cnf[m[K[36m[K:[m[K[32m[K13[m[K[36m[K:[m[K# http://dev.[01;31m[Kmysql[m[K.com/doc/[01;31m[Kmysql[m[K/en/server-system-variables.html
-[35m[K/etc/alternatives/my.cnf[m[K[36m[K:[m[K[32m[K15[m[K[36m[K:[m[K# This will be passed to all [01;31m[Kmysql[m[K clients
-[35m[K/etc/alternatives/my.cnf[m[K[36m[K:[m[K[32m[K16[m[K[36m[K:[m[K# It has been reported that [01;31m[Kpassword[m[Ks should be enclosed with ticks/quotes
-[35m[K/etc/alternatives/my.cnf[m[K[36m[K:[m[K[32m[K18[m[K[36m[K:[m[K# Remember to edit /etc/[01;31m[Kmysql[m[K/debian.cnf when changing the socket location.
-[35m[K/etc/alternatives/my.cnf[m[K[36m[K:[m[K[32m[K23[m[K[36m[K:[m[K!includedir /etc/[01;31m[Kmysql[m[K/conf.d/
-[35m[K/etc/debconf.conf[m[K[36m[K:[m[K[32m[K14[m[K[36m[K:[m[K# World-readable, and accepts everything but [01;31m[Kpassword[m[Ks.
-[35m[K/etc/debconf.conf[m[K[36m[K:[m[K[32m[K18[m[K[36m[K:[m[KReject-Type: [01;31m[Kpassword[m[K
-[35m[K/etc/debconf.conf[m[K[36m[K:[m[K[32m[K21[m[K[36m[K:[m[K# Not world readable (the default), and accepts only [01;31m[Kpassword[m[Ks.
-[35m[K/etc/debconf.conf[m[K[36m[K:[m[K[32m[K22[m[K[36m[K:[m[KName: [01;31m[Kpassword[m[Ks
-[35m[K/etc/debconf.conf[m[K[36m[K:[m[K[32m[K27[m[K[36m[K:[m[KAccept-Type: [01;31m[Kpassword[m[K
-[35m[K/etc/debconf.conf[m[K[36m[K:[m[K[32m[K28[m[K[36m[K:[m[KFilename: /var/cache/debconf/[01;31m[Kpassword[m[Ks.dat
-[35m[K/etc/debconf.conf[m[K[36m[K:[m[K[32m[K31[m[K[36m[K:[m[K# databases, one to hold [01;31m[Kpassword[m[Ks and one for everything else.
-[35m[K/etc/debconf.conf[m[K[36m[K:[m[K[32m[K34[m[K[36m[K:[m[KStack: config, [01;31m[Kpassword[m[Ks
-[35m[K/etc/debconf.conf[m[K[36m[K:[m[K[32m[K58[m[K[36m[K:[m[K# A remote LDAP database. It is also read-only. The [01;31m[Kpassword[m[K is really
-[35m[K/etc/mysql/conf.d/mysqldump.cnf[m[K[36m[K:[m[K[32m[K1[m[K[36m[K:[m[K[[01;31m[Kmysql[m[Kdump]
-[35m[K/etc/mysql/conf.d/mysql.cnf[m[K[36m[K:[m[K[32m[K1[m[K[36m[K:[m[K[[01;31m[Kmysql[m[K]
-[35m[K/etc/mysql/my.cnf.fallback[m[K[36m[K:[m[K[32m[K5[m[K[36m[K:[m[K# - "/etc/[01;31m[Kmysql[m[K/my.cnf" to set global options,
-[35m[K/etc/mysql/my.cnf.fallback[m[K[36m[K:[m[K[32m[K13[m[K[36m[K:[m[K# http://dev.[01;31m[Kmysql[m[K.com/doc/[01;31m[Kmysql[m[K/en/server-system-variables.html
-[35m[K/etc/mysql/my.cnf.fallback[m[K[36m[K:[m[K[32m[K15[m[K[36m[K:[m[K# This will be passed to all [01;31m[Kmysql[m[K clients
-[35m[K/etc/mysql/my.cnf.fallback[m[K[36m[K:[m[K[32m[K16[m[K[36m[K:[m[K# It has been reported that [01;31m[Kpassword[m[Ks should be enclosed with ticks/quotes
-[35m[K/etc/mysql/my.cnf.fallback[m[K[36m[K:[m[K[32m[K18[m[K[36m[K:[m[K# Remember to edit /etc/[01;31m[Kmysql[m[K/debian.cnf when changing the socket location.
-[35m[K/etc/mysql/my.cnf.fallback[m[K[36m[K:[m[K[32m[K23[m[K[36m[K:[m[K!includedir /etc/[01;31m[Kmysql[m[K/conf.d/
-[35m[K/etc/mysql/my.cnf[m[K[36m[K:[m[K[32m[K5[m[K[36m[K:[m[K# - "/etc/[01;31m[Kmysql[m[K/my.cnf" to set global options,
-[35m[K/etc/mysql/my.cnf[m[K[36m[K:[m[K[32m[K13[m[K[36m[K:[m[K# http://dev.[01;31m[Kmysql[m[K.com/doc/[01;31m[Kmysql[m[K/en/server-system-variables.html
-[35m[K/etc/mysql/my.cnf[m[K[36m[K:[m[K[32m[K15[m[K[36m[K:[m[K# This will be passed to all [01;31m[Kmysql[m[K clients
-[35m[K/etc/mysql/my.cnf[m[K[36m[K:[m[K[32m[K16[m[K[36m[K:[m[K# It has been reported that [01;31m[Kpassword[m[Ks should be enclosed with ticks/quotes
-[35m[K/etc/mysql/my.cnf[m[K[36m[K:[m[K[32m[K18[m[K[36m[K:[m[K# Remember to edit /etc/[01;31m[Kmysql[m[K/debian.cnf when changing the socket location.
-[35m[K/etc/mysql/my.cnf[m[K[36m[K:[m[K[32m[K23[m[K[36m[K:[m[K!includedir /etc/[01;31m[Kmysql[m[K/conf.d/
-[35m[K/etc/services[m[K[36m[K:[m[K[32m[K107[m[K[36m[K:[m[Kshell		514/tcp		cmd syslog	# no [01;31m[Kpassword[m[Ks used
-[35m[K/etc/services[m[K[36m[K:[m[K[32m[K203[m[K[36m[K:[m[K[01;31m[Kmysql[m[K		3306/tcp
-[35m[K/etc/services[m[K[36m[K:[m[K[32m[K249[m[K[36m[K:[m[K[01;31m[Kmysql[m[K-proxy	6446/tcp			# MySQL Proxy
-[35m[K/etc/ssl/openssl.cnf[m[K[36m[K:[m[K[32m[K152[m[K[36m[K:[m[K# input_[01;31m[Kpassword[m[K = secret
-[35m[K/etc/ssl/openssl.cnf[m[K[36m[K:[m[K[32m[K153[m[K[36m[K:[m[K# output_[01;31m[Kpassword[m[K = secret
-[35m[K/etc/ssl/openssl.cnf[m[K[36m[K:[m[K[32m[K196[m[K[36m[K:[m[KchallengePassword		= A challenge [01;31m[Kpassword[m[K
-[?2004hroot@62961ca66491:/app# find / -maxdepth 4 -type f -name ".my.cnf" 2>/dev/null || true
-[?2004l[?2004hroot@62961ca66491:/app# ls -la /var/lib/mysql 2>/dev/null || true
-[?2004l[?2004hroot@62961ca66491:/app# 

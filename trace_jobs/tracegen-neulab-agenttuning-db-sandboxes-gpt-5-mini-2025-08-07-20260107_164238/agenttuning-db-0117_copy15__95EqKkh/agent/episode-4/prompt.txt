@@ -1,8 +1,0 @@
-New Terminal Output:
-
-root@b3883a2f7756:/app# env | egrep -i 'DB_|DATABASE|MYSQL|MARIADB' || true
-root@b3883a2f7756:/app# mysql --connect-timeout=3 -h 127.0.0.1 -P 3306 -u root -e "SELECT 1;" 2>&1 || true
-ERROR 2003 (HY000): Can't connect to MySQL server on '127.0.0.1:3306' (111)
-root@b3883a2f7756:/app# ip -4 addr show || true
-bash: ip: command not found
-root@b3883a2f7756:/app#

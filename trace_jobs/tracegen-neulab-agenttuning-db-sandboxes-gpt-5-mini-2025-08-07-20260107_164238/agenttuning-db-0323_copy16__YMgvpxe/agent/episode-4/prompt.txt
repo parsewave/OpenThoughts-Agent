@@ -1,6 +1,0 @@
-New Terminal Output:
-
-root@44f21c166874:/app# mysql -uroot -e "SHOW DATABASES;"
-ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)
-root@44f21c166874:/app# ps aux | grep [m]ysqld || true
-root@44f21c166874:/app#

@@ -1,8 +1,0 @@
-New Terminal Output:
-
-root@8e5f81d47c77:/app# mysql -e "SHOW DATABASES;" 2>&1 || true
-ERROR 2002 (HY000): Can't connect to local server through socket '/run/mysqld/mysqld.sock' (2)
-root@8e5f81d47c77:/app# ls -la /var/run/mysqld /var/run/mysql /tmp/mysql* 2>/dev/null || true
-root@8e5f81d47c77:/app# ps aux | grep -E "mysqld|mysql" | grep -v grep || true
-root@8e5f81d47c77:/app# env | grep -i -E "mysql|mariadb|DATABASE_URL" || true
-root@8e5f81d47c77:/app#

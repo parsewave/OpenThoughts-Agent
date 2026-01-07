@@ -1,14 +1,0 @@
-[?2004hroot@e3560be26cb4:/app# pwd
-[?2004l/app
-[?2004hroot@e3560be26cb4:/app# ls -la
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:00 [01;34m..[0m
-[?2004hroot@e3560be26cb4:/app# ls -la /var/run/mysqld || true
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-[?2004hroot@e3560be26cb4:/app# ps aux | grep -i mysql | grep -v grep || true
-[?2004l[?2004hroot@e3560be26cb4:/app# ss -lntp 2>/dev/null | grep -E ":3306|mysql" || true
-[?2004l[?2004hroot@e3560be26cb4:/app# mysql --version 2>/dev/null || true
-[?2004l[?2004hroot@e3560be26cb4:/app# env | grep -i MYSQL || true
-[?2004l[?2004hroot@e3560be26cb4:/app# find / -maxdepth 3 -type f -name my.cnf -o -name mysqld.cnf 2>/dev/null || true
-[?2004l[?2004hroot@e3560be26cb4:/app# 

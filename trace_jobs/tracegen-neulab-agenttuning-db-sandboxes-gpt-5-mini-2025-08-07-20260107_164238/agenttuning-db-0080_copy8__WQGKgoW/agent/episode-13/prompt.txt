@@ -1,9 +1,0 @@
-New Terminal Output:
-
-root@e84cf06a0b94:/app# echo "Please choose one option now (reply in the terminal):\n\nA) Provide remote connection info AND the exact question to answer. Inclu
-de: host, port (optional), user, password or 'prompt', database, and the precise query intent.\n\nB) Reply exactly: install local server\n\nI will not proceed u
-ntil you explicitly choose one of these."
-Please choose one option now (reply in the terminal):\n\nA) Provide remote connection info AND the exact question to answer. Include: host, port (optional), use
-r, password or 'prompt', database, and the precise query intent.\n\nB) Reply exactly: install local server\n\nI will not proceed until you explicitly choose one
- of these.
-root@e84cf06a0b94:/app#

@@ -1,3 +1,0 @@
-New Terminal Output:
-
-root@aaca2c7a0a20:/app#

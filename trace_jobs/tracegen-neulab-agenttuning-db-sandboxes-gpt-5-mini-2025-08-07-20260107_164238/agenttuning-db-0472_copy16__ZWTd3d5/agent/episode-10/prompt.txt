@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@134f0e576ab7:/app# echo "Please choose: Option A (remote DB) + provide host,port,user,password,database and the exact question; Option B (upload .sql dump)
- + path and question; or Option C (allow local mysql-server install) + preferred root password and DB name."
-Please choose: Option A (remote DB) + provide host,port,user,password,database and the exact question; Option B (upload .sql dump) + path and question; or Optio
-n C (allow local mysql-server install) + preferred root password and DB name.
-root@134f0e576ab7:/app#

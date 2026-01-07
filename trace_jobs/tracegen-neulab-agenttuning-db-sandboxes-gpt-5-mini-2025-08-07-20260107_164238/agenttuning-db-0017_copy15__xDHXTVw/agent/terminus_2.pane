@@ -1,23 +1,0 @@
-[?2004hroot@320c976317ee:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@320c976317ee:/app# ps aux | grep -i mysqld | grep -v grep
-[?2004l[?2004hroot@320c976317ee:/app# ls -la /var/lib/mysql
-[?2004lls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@320c976317ee:/app# ls -la /etc/mysql
-[?2004lls: cannot access '/etc/mysql': No such file or directory
-[?2004hroot@320c976317ee:/app# env | grep -i mysql || true
-[?2004l[?2004hroot@320c976317ee:/app# ls -la /app
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:00 [01;34m..[0m
-[?2004hroot@320c976317ee:/app# find / -name 'mysql.sock' 2>/dev/null || true
-[?2004l[?2004hroot@320c976317ee:/app# find / -type f -name '*.sql' 2>/dev/null | head -n 200
-[?2004l[?2004hroot@320c976317ee:/app# find / -type f \( -name '*.sqlite' -o -name '*.sqlite3' -o -name '*.db' \) 2>/dev/null | head -n 200
-[?2004l[?2004hroot@320c976317ee:/app# grep -RIl "mysql" /app 2>/dev/null | head -n 200 || true
-[?2004l[?2004hroot@320c976317ee:/app# apt-get update
-[?2004l0% [Working]            Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
-0% [Working]0% [Waiting for headers]                        Hit:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease
-                        0% [Working]0% [Waiting for headers]                        Hit:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease
-                        0% [Working]0% [Waiting for headers]                        Hit:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease
-                        0% [Working]20% [Working]             Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-[?2004hroot@320c976317ee:/app# 

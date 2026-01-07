@@ -1,929 +1,0 @@
-[?2004hroot@b3883a2f7756:/app# ls -la
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 21:44 [01;34m..[0m
-[?2004hroot@b3883a2f7756:/app# ps aux | grep -i mysql | grep -v grep || true
-[?2004l[?2004hroot@b3883a2f7756:/app# mysql --version 2>&1 || true
-[?2004lbash: mysql: command not found
-[?2004hroot@b3883a2f7756:/app# ls -la /var/run/mysqld || true
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-[?2004hroot@b3883a2f7756:/app# cat /etc/mysql/debian.cnf 2>/dev/null || true
-[?2004l[?2004hroot@b3883a2f7756:/app# apt-get update
-[?2004l0% [Working]            Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
-0% [Working]            Hit:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease
-0% [Working]            Hit:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease
-0% [Working]0% [Waiting for headers]                        Hit:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease
-                        0% [Working]0% [Working]0% [Working]20% [Working]             Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-[?2004hroot@b3883a2f7756:/app# apt-get install -y default-mysql-client
-[?2004lReading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 50%Building dependency tree... 50%Building dependency tree... 82%Building dependency tree... Done
-Reading state information... 0% Reading state information... 0%Reading state information... Done
-The following additional packages will be installed:
-  libedit2 mysql-client-8.0 mysql-client-core-8.0 mysql-common
-The following NEW packages will be installed:
-  default-mysql-client libedit2 mysql-client-8.0 mysql-client-core-8.0 mysql-common
-0 upgraded, 5 newly installed, 0 to remove and 13 not upgraded.
-Need to get 2937 kB of archives.
-After this operation, 62.1 MB of additional disk space will be used.
-0% [Working]            Get:1 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libedit2 arm64 3.1-20230828-1build1 [97.5 kB]
-0% [1 libedit2 14.2 kB/97.5 kB 15%]                                   7% [Working]            Get:2 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-client-core-8.0 arm64 8.0.44-0ubuntu0.24.04.2 [2807 kB]
-7% [2 mysql-client-core-8.0 2602 B/2807 kB 0%]48% [2 mysql-client-core-8.0 1532 kB/2807 kB 55%]                                                 87% [Waiting for headers]                         Get:3 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 mysql-common all 5.8+1.1.0build1 [6746 B]
-91% [Waiting for headers]                         Get:4 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-client-8.0 arm64 8.0.44-0ubuntu0.24.04.2 [22.5 kB]
-92% [4 mysql-client-8.0 22.5 kB/22.5 kB 100%]                                             96% [Waiting for headers]                         Get:5 http://ports.ubuntu.com/ubuntu-ports noble/universe arm64 default-mysql-client all 1.1.0build1 [2908 B]
-                         100% [Working]              Fetched 2937 kB in 2s (1608 kB/s)
-debconf: delaying package configuration, since apt-utils is not installed
-Selecting previously unselected package libedit2:arm64.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 17165 files and directories currently installed.)
-Preparing to unpack .../libedit2_3.1-20230828-1build1_arm64.deb ...
-Unpacking libedit2:arm64 (3.1-20230828-1build1) ...
-Selecting previously unselected package mysql-client-core-8.0.
-Preparing to unpack .../mysql-client-core-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-Unpacking mysql-client-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package mysql-common.
-Preparing to unpack .../mysql-common_5.8+1.1.0build1_all.deb ...
-Unpacking mysql-common (5.8+1.1.0build1) ...
-Selecting previously unselected package mysql-client-8.0.
-Preparing to unpack .../mysql-client-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-Unpacking mysql-client-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package default-mysql-client.
-Preparing to unpack .../default-mysql-client_1.1.0build1_all.deb ...
-Unpacking default-mysql-client (1.1.0build1) ...
-Setting up mysql-common (5.8+1.1.0build1) ...
-update-alternatives: using /etc/mysql/my.cnf.fallback to provide /etc/mysql/my.cnf (my.cnf) in auto mode
-Setting up libedit2:arm64 (3.1-20230828-1build1) ...
-Setting up mysql-client-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Setting up mysql-client-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Setting up default-mysql-client (1.1.0build1) ...
-Processing triggers for libc-bin (2.39-0ubuntu8.6) ...
-[?2004hroot@b3883a2f7756:/app# mysql --version 2>&1 || true
-[?2004lmysql  Ver 8.0.44-0ubuntu0.24.04.2 for Linux on aarch64 ((Ubuntu))
-[?2004hroot@b3883a2f7756:/app# env | grep -i mysql || true
-[?2004l[?2004hroot@b3883a2f7756:/app# ls -la /root
-[?2004ltotal 16
-drwx------ 2 root root 4096 Sep 10 02:20 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 21:44 [01;34m..[0m
--rw-r--r-- 1 root root 3106 Apr 22  2024 .bashrc
--rw-r--r-- 1 root root  161 Apr 22  2024 .profile
-[?2004hroot@b3883a2f7756:/app# cat /root/.my.cnf 2>/dev/null || true
-[?2004l[?2004hroot@b3883a2f7756:/app# find / -type f \( -name 'my.cnf' -o -name '.my.cnf' -o -name '*.sql' -o -name '*.sql.gz' -o -name '*.db' \) 2>/dev/null | head -n 200
-[?2004l/var/lib/dpkg/alternatives/my.cnf
-[?2004hroot@b3883a2f7756:/app# ss -lntp | sed -n '1,200p'
-[?2004lbash: ss: command not found
-[?2004hroot@b3883a2f7756:/app# ls -la /etc/mysql || true
-[?2004ltotal 20
-drwxr-xr-x 3 root root 4096 Jan  7 21:46 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 21:46 [01;34m..[0m
-drwxr-xr-x 2 root root 4096 Jan  7 21:46 [01;34mconf.d[0m
-lrwxrwxrwx 1 root root   24 Oct 20  2020 [01;36mmy.cnf[0m -> /etc/alternatives/my.cnf
--rw-r--r-- 1 root root  839 Oct 20  2020 my.cnf.fallback
-[?2004hroot@b3883a2f7756:/app# cat /etc/mysql/my.cnf 2>/dev/null || true
-[?2004l#
-# The MySQL database server configuration file.
-#
-# You can copy this to one of:
-# - "/etc/mysql/my.cnf" to set global options,
-# - "~/.my.cnf" to set user-specific options.
-# 
-# One can use all long options that the program supports.
-# Run program with --help to get a list of available options and with
-# --print-defaults to see which it would actually understand and use.
-#
-# For explanations see
-# http://dev.mysql.com/doc/mysql/en/server-system-variables.html
-
-# This will be passed to all mysql clients
-# It has been reported that passwords should be enclosed with ticks/quotes
-# escpecially if they contain "#" chars...
-# Remember to edit /etc/mysql/debian.cnf when changing the socket location.
-
-# Here is entries for some specific programs
-# The following values assume you have at least 32M ram
-
-!includedir /etc/mysql/conf.d/
-[?2004hroot@b3883a2f7756:/app# cat /etc/mysql/my.cnf.fallback 2>/dev/null || true
-[?2004l#
-# The MySQL database server configuration file.
-#
-# You can copy this to one of:
-# - "/etc/mysql/my.cnf" to set global options,
-# - "~/.my.cnf" to set user-specific options.
-# 
-# One can use all long options that the program supports.
-# Run program with --help to get a list of available options and with
-# --print-defaults to see which it would actually understand and use.
-#
-# For explanations see
-# http://dev.mysql.com/doc/mysql/en/server-system-variables.html
-
-# This will be passed to all mysql clients
-# It has been reported that passwords should be enclosed with ticks/quotes
-# escpecially if they contain "#" chars...
-# Remember to edit /etc/mysql/debian.cnf when changing the socket location.
-
-# Here is entries for some specific programs
-# The following values assume you have at least 32M ram
-
-!includedir /etc/mysql/conf.d/
-[?2004hroot@b3883a2f7756:/app# cat /var/lib/dpkg/alternatives/my.cnf 2>/dev/null || true
-[?2004lauto
-/etc/mysql/my.cnf
-
-/etc/mysql/my.cnf.fallback
-100
-
-[?2004hroot@b3883a2f7756:/app# cat /proc/1/environ 2>/dev/null | tr '\0' '\n' | grep -i mysql || true
-[?2004l[?2004hroot@b3883a2f7756:/app# grep -RIn --exclude-dir={proc,sys,dev,tmp,run} -e 'mysql' -e 'MYSQL' /etc /root /home /app /var 2>/dev/null | head -n 200 || true
-[?2004l/etc/alternatives/my.cnf:5:# - "/etc/mysql/my.cnf" to set global options,
-/etc/alternatives/my.cnf:13:# http://dev.mysql.com/doc/mysql/en/server-system-variables.html
-/etc/alternatives/my.cnf:15:# This will be passed to all mysql clients
-/etc/alternatives/my.cnf:18:# Remember to edit /etc/mysql/debian.cnf when changing the socket location.
-/etc/alternatives/my.cnf:23:!includedir /etc/mysql/conf.d/
-/etc/mysql/conf.d/mysqldump.cnf:1:[mysqldump]
-/etc/mysql/conf.d/mysql.cnf:1:[mysql]
-/etc/mysql/my.cnf.fallback:5:# - "/etc/mysql/my.cnf" to set global options,
-/etc/mysql/my.cnf.fallback:13:# http://dev.mysql.com/doc/mysql/en/server-system-variables.html
-/etc/mysql/my.cnf.fallback:15:# This will be passed to all mysql clients
-/etc/mysql/my.cnf.fallback:18:# Remember to edit /etc/mysql/debian.cnf when changing the socket location.
-/etc/mysql/my.cnf.fallback:23:!includedir /etc/mysql/conf.d/
-/etc/mysql/my.cnf:5:# - "/etc/mysql/my.cnf" to set global options,
-/etc/mysql/my.cnf:13:# http://dev.mysql.com/doc/mysql/en/server-system-variables.html
-/etc/mysql/my.cnf:15:# This will be passed to all mysql clients
-/etc/mysql/my.cnf:18:# Remember to edit /etc/mysql/debian.cnf when changing the socket location.
-/etc/mysql/my.cnf:23:!includedir /etc/mysql/conf.d/
-/etc/services:203:mysql		3306/tcp
-/etc/services:249:mysql-proxy	6446/tcp			# MySQL Proxy
-/var/log/apt/history.log:480:Commandline: apt-get install -y default-mysql-client
-/var/log/apt/history.log:481:Install: mysql-client-8.0:arm64 (8.0.44-0ubuntu0.24.04.2, automatic), mysql-common:arm64 (5.8+1.1.0build1, automatic), default-mysql-client:arm64 (1.1.0build1), mysql-client-core-8.0:arm64 (8.0.44-0ubuntu0.24.04.2, automatic), libedit2:arm64 (3.1-20230828-1build1, automatic)
-/var/log/apt/term.log:696:Selecting previously unselected package mysql-client-core-8.0.
-/var/log/apt/term.log:697:Preparing to unpack .../mysql-client-core-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-/var/log/apt/term.log:698:Unpacking mysql-client-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-/var/log/apt/term.log:699:Selecting previously unselected package mysql-common.
-/var/log/apt/term.log:700:Preparing to unpack .../mysql-common_5.8+1.1.0build1_all.deb ...
-/var/log/apt/term.log:701:Unpacking mysql-common (5.8+1.1.0build1) ...
-/var/log/apt/term.log:702:Selecting previously unselected package mysql-client-8.0.
-/var/log/apt/term.log:703:Preparing to unpack .../mysql-client-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-/var/log/apt/term.log:704:Unpacking mysql-client-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-/var/log/apt/term.log:705:Selecting previously unselected package default-mysql-client.
-/var/log/apt/term.log:706:Preparing to unpack .../default-mysql-client_1.1.0build1_all.deb ...
-/var/log/apt/term.log:707:Unpacking default-mysql-client (1.1.0build1) ...
-/var/log/apt/term.log:708:Setting up mysql-common (5.8+1.1.0build1) ...
-/var/log/apt/term.log:709:update-alternatives: using /etc/mysql/my.cnf.fallback to provide /etc/mysql/my.cnf (my.cnf) in auto mode
-/var/log/apt/term.log:711:Setting up mysql-client-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-/var/log/apt/term.log:712:Setting up mysql-client-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-/var/log/apt/term.log:713:Setting up default-mysql-client (1.1.0build1) ...
-/var/log/alternatives.log:40:update-alternatives 2026-01-07 21:46:36: run with --install /etc/mysql/my.cnf my.cnf /etc/mysql/my.cnf.fallback 100
-/var/log/alternatives.log:41:update-alternatives 2026-01-07 21:46:36: link group my.cnf updated to point to /etc/mysql/my.cnf.fallback
-/var/log/dpkg.log:3734:2026-01-07 21:46:35 install mysql-client-core-8.0:arm64 <none> 8.0.44-0ubuntu0.24.04.2
-/var/log/dpkg.log:3735:2026-01-07 21:46:35 status half-installed mysql-client-core-8.0:arm64 8.0.44-0ubuntu0.24.04.2
-/var/log/dpkg.log:3736:2026-01-07 21:46:36 status unpacked mysql-client-core-8.0:arm64 8.0.44-0ubuntu0.24.04.2
-/var/log/dpkg.log:3737:2026-01-07 21:46:36 install mysql-common:all <none> 5.8+1.1.0build1
-/var/log/dpkg.log:3738:2026-01-07 21:46:36 status half-installed mysql-common:all 5.8+1.1.0build1
-/var/log/dpkg.log:3739:2026-01-07 21:46:36 status unpacked mysql-common:all 5.8+1.1.0build1
-/var/log/dpkg.log:3740:2026-01-07 21:46:36 install mysql-client-8.0:arm64 <none> 8.0.44-0ubuntu0.24.04.2
-/var/log/dpkg.log:3741:2026-01-07 21:46:36 status half-installed mysql-client-8.0:arm64 8.0.44-0ubuntu0.24.04.2
-/var/log/dpkg.log:3742:2026-01-07 21:46:36 status unpacked mysql-client-8.0:arm64 8.0.44-0ubuntu0.24.04.2
-/var/log/dpkg.log:3743:2026-01-07 21:46:36 install default-mysql-client:all <none> 1.1.0build1
-/var/log/dpkg.log:3744:2026-01-07 21:46:36 status half-installed default-mysql-client:all 1.1.0build1
-/var/log/dpkg.log:3745:2026-01-07 21:46:36 status unpacked default-mysql-client:all 1.1.0build1
-/var/log/dpkg.log:3747:2026-01-07 21:46:36 configure mysql-common:all 5.8+1.1.0build1 <none>
-/var/log/dpkg.log:3748:2026-01-07 21:46:36 status unpacked mysql-common:all 5.8+1.1.0build1
-/var/log/dpkg.log:3749:2026-01-07 21:46:36 status half-configured mysql-common:all 5.8+1.1.0build1
-/var/log/dpkg.log:3750:2026-01-07 21:46:36 status installed mysql-common:all 5.8+1.1.0build1
-/var/log/dpkg.log:3755:2026-01-07 21:46:36 configure mysql-client-core-8.0:arm64 8.0.44-0ubuntu0.24.04.2 <none>
-/var/log/dpkg.log:3756:2026-01-07 21:46:36 status unpacked mysql-client-core-8.0:arm64 8.0.44-0ubuntu0.24.04.2
-/var/log/dpkg.log:3757:2026-01-07 21:46:36 status half-configured mysql-client-core-8.0:arm64 8.0.44-0ubuntu0.24.04.2
-/var/log/dpkg.log:3758:2026-01-07 21:46:36 status installed mysql-client-core-8.0:arm64 8.0.44-0ubuntu0.24.04.2
-/var/log/dpkg.log:3759:2026-01-07 21:46:36 configure mysql-client-8.0:arm64 8.0.44-0ubuntu0.24.04.2 <none>
-/var/log/dpkg.log:3760:2026-01-07 21:46:36 status unpacked mysql-client-8.0:arm64 8.0.44-0ubuntu0.24.04.2
-/var/log/dpkg.log:3761:2026-01-07 21:46:36 status half-configured mysql-client-8.0:arm64 8.0.44-0ubuntu0.24.04.2
-/var/log/dpkg.log:3762:2026-01-07 21:46:36 status installed mysql-client-8.0:arm64 8.0.44-0ubuntu0.24.04.2
-/var/log/dpkg.log:3763:2026-01-07 21:46:36 configure default-mysql-client:all 1.1.0build1 <none>
-/var/log/dpkg.log:3764:2026-01-07 21:46:36 status unpacked default-mysql-client:all 1.1.0build1
-/var/log/dpkg.log:3765:2026-01-07 21:46:36 status half-configured default-mysql-client:all 1.1.0build1
-/var/log/dpkg.log:3766:2026-01-07 21:46:36 status installed default-mysql-client:all 1.1.0build1
-/var/lib/dpkg/info/libpam0g:arm64.postinst:137:	    check="$check kannel linesrv linesrv-mysql lsh-server"
-/var/lib/dpkg/info/libpam0g:arm64.postinst:141:	    check="$check pure-ftpd-ldap pure-ftpd-mysql"
-/var/lib/dpkg/info/libc6:arm64.preinst:213:			-e's/\bmysql-server\b/mysql/g' \
-/var/lib/dpkg/info/libc6:arm64.preinst:313:            check="$check lpr-ppd mysql-server nis openbsd-inetd"
-/var/lib/dpkg/info/libc6:arm64.preinst:335:			-e's/\bmysql-server\b/mysql/g' \
-/var/lib/dpkg/info/libc6:arm64.postinst:39:                        -e's/\bmysql\b/mysql-server/g' \
-/var/lib/dpkg/info/libc6:arm64.postinst:64:			-e's/\bmysql-server\b/mysql/g' \
-/var/lib/dpkg/info/mysql-common.md5sums:1:d5e079ce7f51078298c409a2f3e1b4b0  usr/share/doc/mysql-common/changelog.gz
-/var/lib/dpkg/info/mysql-common.md5sums:2:79eff57b1ca93dcd184100b1d4a58f8a  usr/share/doc/mysql-common/copyright
-/var/lib/dpkg/info/mysql-common.md5sums:3:92d3c248175d4d84ebb7a88d4d0b4606  usr/share/doc/mysql-common/frozen-mode/README
-/var/lib/dpkg/info/mysql-common.md5sums:4:9dda7711876d35632cbd908e530483dd  usr/share/doc/mysql-common/frozen-mode/downgrade
-/var/lib/dpkg/info/mysql-common.md5sums:5:344c33db08a0fc4f6441a35cd0166132  usr/share/lintian/overrides/mysql-common
-/var/lib/dpkg/info/mysql-common.md5sums:6:4e0715e047778648bca4fc74e26e36dc  usr/share/mysql-common/configure-symlinks
-/var/lib/dpkg/info/mysql-common.preinst:9:        if [ -L /etc/mysql/my.cnf ] && [ -f /etc/mysql/my.cnf.old ]; then
-/var/lib/dpkg/info/mysql-common.preinst:10:            if [ "$(readlink /etc/mysql/my.cnf)" = "mariadb.cnf" ]; then
-/var/lib/dpkg/info/mysql-common.preinst:12:                rm /etc/mysql/my.cnf
-/var/lib/dpkg/info/mysql-common.preinst:13:                mv /etc/mysql/my.cnf.old /etc/mysql/my.cnf
-/var/lib/dpkg/info/mysql-common.preinst:17:        # recover from mysql-common 5.6.25-2 turning this symlinked
-/var/lib/dpkg/info/mysql-common.preinst:19:        if [ -f /etc/mysql/my.cnf.migrated ]; then
-/var/lib/dpkg/info/mysql-common.preinst:20:            if [ "$(md5sum /etc/mysql/my.cnf.migrated | awk '{ print $1 }')" = "4720bbc1a03252fbb9eb83b55f0b6e10" ]; then
-/var/lib/dpkg/info/mysql-common.preinst:22:                # by mysql-common.postinst
-/var/lib/dpkg/info/mysql-common.preinst:23:                echo "Removing incorrect /etc/mysql/my.cnf.migrated that was actually mariadb.cnf"
-/var/lib/dpkg/info/mysql-common.preinst:24:                rm /etc/mysql/my.cnf.migrated
-/var/lib/dpkg/info/mysql-common.preinst:25:                if [ -f /etc/mysql/my.cnf.old ]; then
-/var/lib/dpkg/info/mysql-common.preinst:26:                    echo "Renaming (possibly unmodified) /etc/mysql/my.cnf.old to /etc/mysql/my.cnf.migrated"
-/var/lib/dpkg/info/mysql-common.preinst:27:                    mv /etc/mysql/my.cnf.old /etc/mysql/my.cnf.migrated
-/var/lib/dpkg/info/mysql-common.preinst:29:                    update-alternatives --remove my.cnf /etc/mysql/my.cnf.migrated
-/var/lib/dpkg/info/mysql-common.preinst:38:dpkg-maintscript-helper rm_conffile /etc/mysql/conf.d/.keepme 5.6.22-1\~ mysql-common -- "$@"
-/var/lib/dpkg/info/mysql-common.preinst:39:dpkg-maintscript-helper rm_conffile /etc/mysql/my.cnf 5.6.22-1\~ mysql-common -- "$@"
-/var/lib/dpkg/info/mysql-common.prerm:5:  update-alternatives --remove my.cnf /etc/mysql/my.cnf.fallback
-/var/lib/dpkg/info/mysql-common.prerm:9:dpkg-maintscript-helper rm_conffile /etc/mysql/conf.d/.keepme 5.6.22-1\~ mysql-common -- "$@"
-/var/lib/dpkg/info/mysql-common.prerm:10:dpkg-maintscript-helper rm_conffile /etc/mysql/my.cnf 5.6.22-1\~ mysql-common -- "$@"
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:2:342e996474e516137e843a85a39748d9  usr/bin/mysql
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:3:57dc586f2e9293f0b59a9db19ee4681e  usr/bin/mysql_config_editor
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:4:add659c90fa630ee7895b1d9cae1633d  usr/bin/mysqladmin
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:5:3517ea6c400fd864b3e25325d875ae05  usr/bin/mysqlcheck
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:6:e9daeec1abd41469286a704704280b44  usr/bin/mysqldump
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:7:f04dce3209958fb4660aed0b52af0446  usr/bin/mysqldumpslow
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:8:a99c956fbb03e48d9ffbc7585821b22f  usr/bin/mysqlimport
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:9:67a75e3c20586aaa0ccc0f20d9c1abc2  usr/bin/mysqlpump
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:10:16f5326ad8a25af50bc99bebaab7b58f  usr/bin/mysqlshow
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:11:cc7313d4f70fab498741b6b854c36bf1  usr/bin/mysqlslap
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:12:ea66182a7d1b890e50845e9c40007b44  usr/share/doc/mysql-client-core-8.0/changelog.Debian.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:13:10b2778731292822b69036ad0218cc04  usr/share/doc/mysql-client-core-8.0/copyright
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:15:c868f8cf8176523442f473dd4e2436ac  usr/share/man/man1/mysql.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:16:c9493a3a567ec7c48a23b12d6645ad94  usr/share/man/man1/mysql_config_editor.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:17:8549e1083cea5d7d57da9406096c7844  usr/share/man/man1/mysqladmin.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:18:ccb037b72ae4d93f71242fd08f539240  usr/share/man/man1/mysqlcheck.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:19:fd08d5500291b51c24b5c4975a9e77da  usr/share/man/man1/mysqldump.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:20:bfe6f57902510661ce6c7aae98f5f0b7  usr/share/man/man1/mysqldumpslow.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:21:d1a37f9c4a726e2849ce32943cbcc578  usr/share/man/man1/mysqlimport.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:22:ef9e47d9d301ce39482d8bcf303878ff  usr/share/man/man1/mysqlman.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:23:b734fa958026c73541ee63cc24f2c812  usr/share/man/man1/mysqlpump.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:24:0cc1f73f1de9909564a749c4450a89d7  usr/share/man/man1/mysqlshow.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.md5sums:25:ccd0a214639b61b40030a28ca92b397c  usr/share/man/man1/mysqlslap.1.gz
-/var/lib/dpkg/info/mysql-common.conffiles:1:/etc/mysql/conf.d/mysql.cnf
-/var/lib/dpkg/info/mysql-common.conffiles:2:/etc/mysql/conf.d/mysqldump.cnf
-/var/lib/dpkg/info/mysql-common.conffiles:3:/etc/mysql/my.cnf.fallback
-/var/lib/dpkg/info/mysql-client-8.0.list:4:/usr/bin/mysqlreport
-/var/lib/dpkg/info/mysql-client-8.0.list:7:/usr/share/doc/mysql-client-8.0
-/var/lib/dpkg/info/mysql-client-8.0.list:8:/usr/share/doc/mysql-client-8.0/README
-/var/lib/dpkg/info/mysql-client-8.0.list:9:/usr/share/doc/mysql-client-8.0/README.Debian
-/var/lib/dpkg/info/mysql-client-8.0.list:10:/usr/share/doc/mysql-client-8.0/copyright
-/var/lib/dpkg/info/mysql-client-8.0.list:13:/usr/share/lintian/overrides/mysql-client-8.0
-/var/lib/dpkg/info/mysql-client-8.0.list:16:/usr/share/man/man1/mysqlreport.1.gz
-/var/lib/dpkg/info/mysql-client-8.0.list:17:/usr/bin/mysqlanalyze
-/var/lib/dpkg/info/mysql-client-8.0.list:18:/usr/bin/mysqloptimize
-/var/lib/dpkg/info/mysql-client-8.0.list:19:/usr/bin/mysqlrepair
-/var/lib/dpkg/info/mysql-client-8.0.list:20:/usr/share/doc/mysql-client-8.0/changelog.Debian.gz
-/var/lib/dpkg/info/mysql-client-8.0.list:21:/usr/share/man/man1/mysqlanalyze.1.gz
-/var/lib/dpkg/info/mysql-client-8.0.list:22:/usr/share/man/man1/mysqloptimize.1.gz
-/var/lib/dpkg/info/mysql-client-8.0.list:23:/usr/share/man/man1/mysqlrepair.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.list:5:/usr/bin/mysql
-/var/lib/dpkg/info/mysql-client-core-8.0.list:6:/usr/bin/mysql_config_editor
-/var/lib/dpkg/info/mysql-client-core-8.0.list:7:/usr/bin/mysqladmin
-/var/lib/dpkg/info/mysql-client-core-8.0.list:8:/usr/bin/mysqlcheck
-/var/lib/dpkg/info/mysql-client-core-8.0.list:9:/usr/bin/mysqldump
-/var/lib/dpkg/info/mysql-client-core-8.0.list:10:/usr/bin/mysqldumpslow
-/var/lib/dpkg/info/mysql-client-core-8.0.list:11:/usr/bin/mysqlimport
-/var/lib/dpkg/info/mysql-client-core-8.0.list:12:/usr/bin/mysqlpump
-/var/lib/dpkg/info/mysql-client-core-8.0.list:13:/usr/bin/mysqlshow
-/var/lib/dpkg/info/mysql-client-core-8.0.list:14:/usr/bin/mysqlslap
-/var/lib/dpkg/info/mysql-client-core-8.0.list:17:/usr/share/doc/mysql-client-core-8.0
-/var/lib/dpkg/info/mysql-client-core-8.0.list:18:/usr/share/doc/mysql-client-core-8.0/changelog.Debian.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.list:19:/usr/share/doc/mysql-client-core-8.0/copyright
-/var/lib/dpkg/info/mysql-client-core-8.0.list:23:/usr/share/man/man1/mysql.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.list:24:/usr/share/man/man1/mysql_config_editor.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.list:25:/usr/share/man/man1/mysqladmin.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.list:26:/usr/share/man/man1/mysqlcheck.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.list:27:/usr/share/man/man1/mysqldump.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.list:28:/usr/share/man/man1/mysqldumpslow.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.list:29:/usr/share/man/man1/mysqlimport.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.list:30:/usr/share/man/man1/mysqlman.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.list:31:/usr/share/man/man1/mysqlpump.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.list:32:/usr/share/man/man1/mysqlshow.1.gz
-/var/lib/dpkg/info/mysql-client-core-8.0.list:33:/usr/share/man/man1/mysqlslap.1.gz
-/var/lib/dpkg/info/default-mysql-client.md5sums:1:743b913188a12e9a48129b7930b38b98  usr/share/doc/default-mysql-client/changelog.gz
-/var/lib/dpkg/info/default-mysql-client.md5sums:2:79eff57b1ca93dcd184100b1d4a58f8a  usr/share/doc/default-mysql-client/copyright
-/var/lib/dpkg/info/mysql-common.postinst:5:dpkg-maintscript-helper rm_conffile /etc/mysql/conf.d/.keepme 5.6.22-1\~ mysql-common -- "$@"
-/var/lib/dpkg/info/mysql-common.postinst:6:dpkg-maintscript-helper rm_conffile /etc/mysql/my.cnf 5.6.22-1\~ mysql-common -- "$@"
-/var/lib/dpkg/info/mysql-common.postinst:11:# dpkg-maintscript-helper rm_conffile on /etc/mysql/my.cnf. As a one off, if
-/var/lib/dpkg/info/mysql-common.postinst:13:# /etc/mysql/my.cnf.migrated, add an explanatory note to the top and add it is
-/var/lib/dpkg/info/mysql-common.postinst:15:# shipped by variants. The /etc/mysql/my.cnf.migrated file will not be owned by
-/var/lib/dpkg/info/mysql-common.postinst:16:# any package (just like /etc/mysql/my.cnf.dpkg-bak would have been) but we
-/var/lib/dpkg/info/mysql-common.postinst:20:if [ "$1" = "configure" ] && [ -f /etc/mysql/my.cnf.fallback ]; then
-/var/lib/dpkg/info/mysql-common.postinst:22:    update-alternatives --install /etc/mysql/my.cnf my.cnf /etc/mysql/my.cnf.fallback 100
-/var/lib/dpkg/info/mysql-common.postinst:25:if [ "$1" = "configure" -a -f /etc/mysql/my.cnf.dpkg-bak ] && dpkg --compare-versions "$2" le "5.6.19-1~exp1ubuntu2~"; then
-/var/lib/dpkg/info/mysql-common.postinst:26:    echo "Moving /etc/mysql/my.cnf.dpkg-bak to /etc/mysql/my.cnf.migrated"
-/var/lib/dpkg/info/mysql-common.postinst:27:    cat - /etc/mysql/my.cnf.dpkg-bak <<EOT > /etc/mysql/my.cnf.migrated
-/var/lib/dpkg/info/mysql-common.postinst:29:# /etc/mysql/my.cnf, with just this comment added at the top, to maintain MySQL
-/var/lib/dpkg/info/mysql-common.postinst:33:# /etc/mysql/my.cnf across multiple variants:
-/var/lib/dpkg/info/mysql-common.postinst:35:# 1. Move your customisations from this file to /etc/mysql/conf.d/ and
-/var/lib/dpkg/info/mysql-common.postinst:36:#    to /etc/mysql/<variant>.conf.d/ as appropriate.
-/var/lib/dpkg/info/mysql-common.postinst:37:# 2. Run "update-alternatives --remove my.cnf /etc/mysql/my.cnf.migrated"
-/var/lib/dpkg/info/mysql-common.postinst:38:# 3. Remove the file /etc/mysql/my.cnf.migrated
-/var/lib/dpkg/info/mysql-common.postinst:41:    rm /etc/mysql/my.cnf.dpkg-bak
-/var/lib/dpkg/info/mysql-common.postinst:42:    echo "Using your previous configuration through /etc/mysql/my.cnf.migrated"
-/var/lib/dpkg/info/mysql-common.postinst:43:    update-alternatives --install /etc/mysql/my.cnf my.cnf /etc/mysql/my.cnf.migrated 300
-/var/lib/dpkg/info/default-mysql-client.list:5:/usr/share/doc/default-mysql-client
-/var/lib/dpkg/info/default-mysql-client.list:6:/usr/share/doc/default-mysql-client/changelog.gz
-/var/lib/dpkg/info/default-mysql-client.list:7:/usr/share/doc/default-mysql-client/copyright
-/var/lib/dpkg/info/mysql-common.list:3:/etc/mysql
-/var/lib/dpkg/info/mysql-common.list:4:/etc/mysql/conf.d
-/var/lib/dpkg/info/mysql-common.list:5:/etc/mysql/conf.d/mysql.cnf
-/var/lib/dpkg/info/mysql-common.list:6:/etc/mysql/conf.d/mysqldump.cnf
-/var/lib/dpkg/info/mysql-common.list:7:/etc/mysql/my.cnf.fallback
-/var/lib/dpkg/info/mysql-common.list:11:/usr/share/doc/mysql-common
-/var/lib/dpkg/info/mysql-common.list:12:/usr/share/doc/mysql-common/changelog.gz
-/var/lib/dpkg/info/mysql-common.list:13:/usr/share/doc/mysql-common/copyright
-/var/lib/dpkg/info/mysql-common.list:14:/usr/share/doc/mysql-common/frozen-mode
-/var/lib/dpkg/info/mysql-common.list:15:/usr/share/doc/mysql-common/frozen-mode/README
-/var/lib/dpkg/info/mysql-common.list:16:/usr/share/doc/mysql-common/frozen-mode/downgrade
-[?2004hroot@b3883a2f7756:/app# env | egrep -i 'DB_|DATABASE|MYSQL|MARIADB' || true
-[?2004l[?2004hroot@b3883a2f7756:/app# mysql --connect-timeout=3 -h 127.0.0.1 -P 3306 -u root -e "SELECT 1;" 2>&1 || true
-[?2004lERROR 2003 (HY000): Can't connect to MySQL server on '127.0.0.1:3306' (111)
-[?2004hroot@b3883a2f7756:/app# ip -4 addr show || true
-[?2004lbash: ip: command not found
-[?2004hroot@b3883a2f7756:/app# hostname -I
-[?2004l172.17.0.37 
-[?2004hroot@b3883a2f7756:/app# cat /etc/hosts
-[?2004l127.0.0.1	localhost
-::1	localhost ip6-localhost ip6-loopback
-fe00::	ip6-localnet
-ff00::	ip6-mcastprefix
-ff02::1	ip6-allnodes
-ff02::2	ip6-allrouters
-172.17.0.37	b3883a2f7756
-[?2004hroot@b3883a2f7756:/app# apt-get update
-[?2004l0% [Working]0% [Working]0% [Working]0% [Waiting for headers]                        Hit:1 http://ports.ubuntu.com/ubuntu-ports noble InRelease
-                        0% [Working]            Hit:2 http://ports.ubuntu.com/ubuntu-ports noble-updates InRelease
-            Hit:3 http://ports.ubuntu.com/ubuntu-ports noble-backports InRelease
-0% [Waiting for headers]0% [Waiting for headers]                        Hit:4 http://ports.ubuntu.com/ubuntu-ports noble-security InRelease
-                        0% [Working]0% [Working]0% [Working]0% [Working]0% [Working]0% [Working]0% [Working]0% [Working]0% [Working]0% [Working]0% [Working]0% [Working]0% [Working]0% [Working]0% [Working]20% [Working]             Reading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 65%Reading package lists... 76%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 78%Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 87%Reading package lists... 94%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-[?2004hroot@b3883a2f7756:/app# apt-get install -y default-mysql-server
-[?2004lReading package lists... 0%Reading package lists... 0%Reading package lists... 0%Reading package lists... 4%Reading package lists... 4%Reading package lists... 9%Reading package lists... 47%Reading package lists... 48%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 51%Reading package lists... 52%Reading package lists... 52%Reading package lists... 58%Reading package lists... 58%Reading package lists... 64%Reading package lists... 64%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%Reading package lists... 77%service mysql start || true
-Reading package lists... 83%Reading package lists... 83%Reading package lists... 87%Reading package lists... 87%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... 99%Reading package lists... Done
-Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 0%Building dependency tree... 50%Building dependency tree... 50%Building dependency tree... Done
-Reading state information... 0% Reading state information... 0%Reading state information... Done
-The following additional packages will be installed:
-  krb5-locales libaio1t64 libcgi-fast-perl libcgi-pm-perl libclone-perl libencode-locale-perl libevent-pthreads-2.1-7t64 libfcgi-bin libfcgi-perl libfcgi0t64
-  libgssapi-krb5-2 libhtml-parser-perl libhtml-tagset-perl libhtml-template-perl libhttp-date-perl libhttp-message-perl libicu74 libio-html-perl libk5crypto3
-  libkeyutils1 libkrb5-3 libkrb5support0 liblwp-mediatypes-perl libmecab2 libnuma1 libprotobuf-lite32t64 libtimedate-perl libtirpc-common libtirpc3t64
-  liburi-perl mecab-ipadic mecab-ipadic-utf8 mecab-utils mysql-server-8.0 mysql-server-core-8.0 psmisc
-Suggested packages:
-  krb5-doc krb5-user libdata-dump-perl libipc-sharedcache-perl libio-compress-brotli-perl libbusiness-isbn-perl libregexp-ipv6-perl libwww-perl mailx tinyca
-The following NEW packages will be installed:
-  default-mysql-server krb5-locales libaio1t64 libcgi-fast-perl libcgi-pm-perl libclone-perl libencode-locale-perl libevent-pthreads-2.1-7t64 libfcgi-bin
-  libfcgi-perl libfcgi0t64 libgssapi-krb5-2 libhtml-parser-perl libhtml-tagset-perl libhtml-template-perl libhttp-date-perl libhttp-message-perl libicu74
-  libio-html-perl libk5crypto3 libkeyutils1 libkrb5-3 libkrb5support0 liblwp-mediatypes-perl libmecab2 libnuma1 libprotobuf-lite32t64 libtimedate-perl
-  libtirpc-common libtirpc3t64 liburi-perl mecab-ipadic mecab-ipadic-utf8 mecab-utils mysql-server-8.0 mysql-server-core-8.0 psmisc
-0 upgraded, 37 newly installed, 0 to remove and 13 not upgraded.
-Need to get 38.2 MB of archives.
-After this operation, 222 MB of additional disk space will be used.
-0% [Working]            Get:1 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libaio1t64 arm64 0.3.113-6build1.1 [7192 B]
-0% [1 libaio1t64 7192 B/7192 B 100%]                                    1% [Working]            Get:2 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libevent-pthreads-2.1-7t64 arm64 2.1.12-stable-9ubuntu2 [7932 B]
-1% [2 libevent-pthreads-2.1-7t64 7932 B/7932 B 100%]                                                    1% [Waiting for headers]                        Get:3 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libicu74 arm64 74.2-1ubuntu3.1 [10.8 MB]
-1% [3 libicu74 2601 B/10.8 MB 0%]2% [3 libicu74 315 kB/10.8 MB 3%]4% [3 libicu74 1344 kB/10.8 MB 12%]4% [3 libicu74 1475 kB/10.8 MB 14%]4% [3 libicu74 1606 kB/10.8 MB 15%]5% [3 libicu74 1819 kB/10.8 MB 17%]5% [3 libicu74 1950 kB/10.8 MB 18%]                                                                                                           311 kB/s 1min 56s6% [3 libicu74 2130 kB/10.8 MB 20%]                                                                                                           311 kB/s 1min 56s6% [3 libicu74 2278 kB/10.8 MB 21%]                                                                                                           311 kB/s 1min 55s6% [3 libicu74 2392 kB/10.8 MB 22%]                                                                                                          31.2 kB/s 19min 6s24% [Waiting for headers]                                                                                                                   31.2 kB/s 14min 37s                                                                                                                                                               Get:4 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libmecab2 arm64 0.996-14ubuntu4 [188 kB]
-                                                                                                                                                               Get:5 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libnuma1 arm64 2.0.18-1build1 [23.6 kB]
-                                                                                                                                                               Get:6 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libprotobuf-lite32t64 arm64 3.21.12-8.2ubuntu0.2 [221 kB]
-26% [6 libprotobuf-lite32t64 0 B/221 kB 0%]                                                                                                 31.2 kB/s 14min 30s                                                                                                                                                               Get:7 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libkrb5support0 arm64 1.20.1-6ubuntu2.6 [34.8 kB]
-                                                                                                                                                               Get:8 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libk5crypto3 arm64 1.20.1-6ubuntu2.6 [85.8 kB]
-28% [8 libk5crypto3 65.2 kB/85.8 kB 76%]                                                                                                    31.2 kB/s 14min 20s28% [Working]                                                                                                                               31.2 kB/s 14min 19s                                                                                                                                                               Get:9 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libkeyutils1 arm64 1.6.3-3build1 [9654 B]
-28% [9 libkeyutils1 0 B/9654 B 0%]                                                                                                          31.2 kB/s 14min 19s29% [Working]                                                                                                                               31.2 kB/s 14min 19s                                                                                                                                                               Get:10 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libkrb5-3 arm64 1.20.1-6ubuntu2.6 [349 kB]
-29% [10 libkrb5-3 0 B/349 kB 0%]                                                                                                            31.2 kB/s 14min 19s30% [Working]                                                                                                                                31.2 kB/s 14min 7s                                                                                                                                                               Get:11 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libgssapi-krb5-2 arm64 1.20.1-6ubuntu2.6 [142 kB]
-30% [11 libgssapi-krb5-2 43.3 kB/142 kB 31%]                                                                                                 31.2 kB/s 14min 6s                                                                                                                                                               Get:12 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libtirpc-common all 1.3.4+ds-1.1build1 [8094 B]
-31% [Connecting to ports.ubuntu.com (91.189.92.19)]                                                                                          31.2 kB/s 14min 3s                                                                                                                                                               Get:13 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libtirpc3t64 arm64 1.3.4+ds-1.1build1 [83.6 kB]
-31% [13 libtirpc3t64 14.2 kB/83.6 kB 17%]                                                                                                    31.2 kB/s 14min 2sps aux | grep -i mysqld | grep -v grep || true
-32% [Waiting for headers]                                                                                                                    31.2 kB/s 14min 0s                                                                                                                                                               Get:14 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-server-core-8.0 arm64 8.0.44-0ubuntu0.24.04.2 [17.4 MB]
-32% [14 mysql-server-core-8.0 1259 B/17.4 MB 0%]                                                                                             31.2 kB/s 14min 0s39% [14 mysql-server-core-8.0 3124 kB/17.4 MB 18%]                                                                                          31.2 kB/s 12min 20s69% [Working]                                                                                                                                31.2 kB/s 4min 43s                                                                                                                                                               Get:15 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 psmisc arm64 23.7-1build1 [178 kB]
-                                                                                                                                                               Get:16 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 mysql-server-8.0 arm64 8.0.44-0ubuntu0.24.04.2 [1241 kB]
-72% [16 mysql-server-8.0 748 kB/1241 kB 60%]                                                                                                 31.2 kB/s 4min 13s73% [Waiting for headers]                                                                                                                    31.2 kB/s 3min 57s                                                                                                                                                               Get:17 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 krb5-locales all 1.20.1-6ubuntu2.6 [14.8 kB]
-73% [17 krb5-locales 14.8 kB/14.8 kB 100%]                                                                                                   31.2 kB/s 3min 57s74% [Waiting for headers]                                                                                                                    31.2 kB/s 3min 57s                                                                                                                                                               Get:18 http://ports.ubuntu.com/ubuntu-ports noble/universe arm64 default-mysql-server all 1.1.0build1 [2920 B]
-74% [18 default-mysql-server 2920 B/2920 B 100%]                                                                                             31.2 kB/s 3min 57s74% [Working]                                                                                                                                31.2 kB/s 3min 57s                                                                                                                                                               Get:19 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhtml-tagset-perl all 3.20-6 [11.3 kB]
-74% [19 libhtml-tagset-perl 11.3 kB/11.3 kB 100%]                                                                                            31.2 kB/s 3min 56s                                                                                                                                                               Get:20 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 liburi-perl all 5.27-1 [88.0 kB]
-75% [20 liburi-perl 65.2 kB/88.0 kB 74%]                                                                                                     31.2 kB/s 3min 54s76% [Working]                                                                                                                                31.2 kB/s 3min 53s                                                                                                                                                               Get:21 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhtml-parser-perl arm64 3.81-1build3 [85.0 kB]
-76% [21 libhtml-parser-perl 42.5 kB/85.0 kB 50%]                                                                                             31.2 kB/s 3min 52s76% [Waiting for headers]                                                                                                                    31.2 kB/s 3min 51s                                                                                                                                                               Get:22 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libcgi-pm-perl all 4.63-1 [185 kB]
-76% [22 libcgi-pm-perl 22.7 kB/185 kB 12%]                                                                                                   31.2 kB/s 3min 50s77% [Waiting for headers]                                                                                                                    31.2 kB/s 3min 45s                                                                                                                                                               Get:23 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libfcgi0t64 arm64 2.4.2-2.1ubuntu0.24.04.1 [27.2 kB]
-77% [23 libfcgi0t64 27.2 kB/27.2 kB 100%]                                                                                                    31.2 kB/s 3min 44s78% [Waiting for headers]                                                                                                                    31.2 kB/s 3min 44s                                                                                                                                                               Get:24 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libfcgi-perl arm64 0.82+ds-3build2 [20.8 kB]
-78% [24 libfcgi-perl 8111 B/20.8 kB 39%]                                                                                                     31.2 kB/s 3min 44s78% [Working]                                                                                                                                31.2 kB/s 3min 43s                                                                                                                                                               Get:25 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libcgi-fast-perl all 1:2.17-1 [10.3 kB]
-                                                                                                                                                               Get:26 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libclone-perl arm64 0.46-1build3 [10.5 kB]
-                                                                                                                                                               Get:27 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libencode-locale-perl all 1.05-3 [11.6 kB]
-                                                                                                                                                               Get:28 http://ports.ubuntu.com/ubuntu-ports noble-updates/main arm64 libfcgi-bin arm64 2.4.2-2.1ubuntu0.24.04.1 [10.7 kB]
-                                                                                                                                                               Get:29 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhtml-template-perl all 2.97-2 [60.2 kB]
-                                                                                                                                                               Get:30 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libtimedate-perl all 2.3300-2 [34.0 kB]
-                                                                                                                                                               Get:31 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhttp-date-perl all 6.06-1 [10.2 kB]
-                                                                                                                                                               Get:32 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libio-html-perl all 1.004-3 [15.9 kB]
-                                                                                                                                                               Get:33 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 liblwp-mediatypes-perl all 6.04-2 [20.1 kB]
-84% [Working]                                                                                                                                31.2 kB/s 3min 37s                                                                                                                                                               Get:34 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 libhttp-message-perl all 6.45-1ubuntu1 [78.2 kB]
-84% [34 libhttp-message-perl 78.2 kB/78.2 kB 100%]                                                                                           31.2 kB/s 3min 35s84% [Waiting for headers]                                                                                                                    31.2 kB/s 3min 35s                                                                                                                                                               Get:35 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 mecab-utils arm64 0.996-14ubuntu4 [4892 B]
-84% [35 mecab-utils 4892 B/4892 B 100%]                                                                                                      31.2 kB/s 3min 35s85% [Waiting for headers]                                                                                                                    31.2 kB/s 3min 35s                                                                                                                                                               Get:36 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 mecab-ipadic all 2.7.0-20070801+main-3 [6718 kB]
-85% [36 mecab-ipadic 45.0 kB/6718 kB 1%]                                                                                                     31.2 kB/s 3min 33s88% [36 mecab-ipadic 1704 kB/6718 kB 25%]                                                                                                    31.2 kB/s 2min 40s89% [36 mecab-ipadic 1880 kB/6718 kB 28%]                                                                                                    31.2 kB/s 2min 35s90% [36 mecab-ipadic 2535 kB/6718 kB 38%]                                                                                                    31.2 kB/s 2min 14s91% [36 mecab-ipadic 2994 kB/6718 kB 45%]                                                                                                    31.2 kB/s 1min 59s92% [36 mecab-ipadic 3650 kB/6718 kB 54%]                                                                                                    31.2 kB/s 1min 38s94% [36 mecab-ipadic 4174 kB/6718 kB 62%]                                                                                                    31.2 kB/s 1min 21s94% [36 mecab-ipadic 4501 kB/6718 kB 67%]                                                                                                          5161 kB/s 0s96% [36 mecab-ipadic 5177 kB/6718 kB 77%]                                                                                                          5161 kB/s 0s99% [Working]                                                                                                                                      5161 kB/s 0s                                                                                                                                                               Get:37 http://ports.ubuntu.com/ubuntu-ports noble/main arm64 mecab-ipadic-utf8 all 2.7.0-20070801+main-3 [4384 B]
-99% [37 mecab-ipadic-utf8 0 B/4384 B 0%]                                                                                                           5161 kB/s 0s100% [Working]                                                                                                                                     5161 kB/s 0s                                                                                                                                                               Fetched 38.2 MB in 28s (1357 kB/s)
-debconf: delaying package configuration, since apt-utils is not installed
-mysqladmin --version 2>&1 || true
-Selecting previously unselected package libaio1t64:arm64.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 17231 files and directories currently installed.)
-Preparing to unpack .../00-libaio1t64_0.3.113-6build1.1_arm64.deb ...
-Unpacking libaio1t64:arm64 (0.3.113-6build1.1) ...
-Selecting previously unselected package libevent-pthreads-2.1-7t64:arm64.
-Preparing to unpack .../01-libevent-pthreads-2.1-7t64_2.1.12-stable-9ubuntu2_arm64.deb ...
-Unpacking libevent-pthreads-2.1-7t64:arm64 (2.1.12-stable-9ubuntu2) ...
-Selecting previously unselected package libicu74:arm64.
-Preparing to unpack .../02-libicu74_74.2-1ubuntu3.1_arm64.deb ...
-Unpacking libicu74:arm64 (74.2-1ubuntu3.1) ...
-Selecting previously unselected package libmecab2:arm64.
-Preparing to unpack .../03-libmecab2_0.996-14ubuntu4_arm64.deb ...
-Unpacking libmecab2:arm64 (0.996-14ubuntu4) ...
-Selecting previously unselected package libnuma1:arm64.
-Preparing to unpack .../04-libnuma1_2.0.18-1build1_arm64.deb ...
-Unpacking libnuma1:arm64 (2.0.18-1build1) ...
-Selecting previously unselected package libprotobuf-lite32t64:arm64.
-Preparing to unpack .../05-libprotobuf-lite32t64_3.21.12-8.2ubuntu0.2_arm64.deb ...
-Unpacking libprotobuf-lite32t64:arm64 (3.21.12-8.2ubuntu0.2) ...
-mysql --connect-timeout=5 -uroot -e "SHOW DATABASES;" 2>&1 || true
-Selecting previously unselected package libkrb5support0:arm64.
-Preparing to unpack .../06-libkrb5support0_1.20.1-6ubuntu2.6_arm64.deb ...
-Unpacking libkrb5support0:arm64 (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package libk5crypto3:arm64.
-Preparing to unpack .../07-libk5crypto3_1.20.1-6ubuntu2.6_arm64.deb ...
-Unpacking libk5crypto3:arm64 (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package libkeyutils1:arm64.
-Preparing to unpack .../08-libkeyutils1_1.6.3-3build1_arm64.deb ...
-Unpacking libkeyutils1:arm64 (1.6.3-3build1) ...
-Selecting previously unselected package libkrb5-3:arm64.
-Preparing to unpack .../09-libkrb5-3_1.20.1-6ubuntu2.6_arm64.deb ...
-Unpacking libkrb5-3:arm64 (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package libgssapi-krb5-2:arm64.
-Preparing to unpack .../10-libgssapi-krb5-2_1.20.1-6ubuntu2.6_arm64.deb ...
-Unpacking libgssapi-krb5-2:arm64 (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package libtirpc-common.
-Preparing to unpack .../11-libtirpc-common_1.3.4+ds-1.1build1_all.deb ...
-Unpacking libtirpc-common (1.3.4+ds-1.1build1) ...
-Selecting previously unselected package libtirpc3t64:arm64.
-Preparing to unpack .../12-libtirpc3t64_1.3.4+ds-1.1build1_arm64.deb ...
-mysql --connect-timeout=5 -uroot -e "CREATE DATABASE IF NOT EXISTS testdb; CREATE USER IF NOT EXISTS 'tester'@'%' IDENTIFIED BY 'tester'; GRANT ALL PRIVILEGES ON testdb.* TO 'tester'@'%'; FLUSH PRIVILEGES;" 2>&1 || true
-Adding 'diversion of /lib/aarch64-linux-gnu/libtirpc.so.3 to /lib/aarch64-linux-gnu/libtirpc.so.3.usr-is-merged by libtirpc3t64'
-Adding 'diversion of /lib/aarch64-linux-gnu/libtirpc.so.3.0.0 to /lib/aarch64-linux-gnu/libtirpc.so.3.0.0.usr-is-merged by libtirpc3t64'
-Unpacking libtirpc3t64:arm64 (1.3.4+ds-1.1build1) ...
-Selecting previously unselected package mysql-server-core-8.0.
-Preparing to unpack .../13-mysql-server-core-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-Unpacking mysql-server-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package psmisc.
-Preparing to unpack .../14-psmisc_23.7-1build1_arm64.deb ...
-Unpacking psmisc (23.7-1build1) ...
-mysql --connect-timeout=5 -utester -ptester -e "SHOW DATABASES;" 2>&1 || true
-Selecting previously unselected package mysql-server-8.0.
-Preparing to unpack .../15-mysql-server-8.0_8.0.44-0ubuntu0.24.04.2_arm64.deb ...
-debconf: unable to initialize frontend: Dialog
-debconf: (No usable dialog-like program is installed, so the dialog based frontend cannot be used. at /usr/share/perl5/Debconf/FrontEnd/Dialog.pm line 79.)
-debconf: falling back to frontend: Readline
-Unpacking mysql-server-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Selecting previously unselected package krb5-locales.
-Preparing to unpack .../16-krb5-locales_1.20.1-6ubuntu2.6_all.deb ...
-Unpacking krb5-locales (1.20.1-6ubuntu2.6) ...
-Selecting previously unselected package default-mysql-server.
-Preparing to unpack .../17-default-mysql-server_1.1.0build1_all.deb ...
-Unpacking default-mysql-server (1.1.0build1) ...
-Selecting previously unselected package libhtml-tagset-perl.
-Preparing to unpack .../18-libhtml-tagset-perl_3.20-6_all.deb ...
-Unpacking libhtml-tagset-perl (3.20-6) ...
-Selecting previously unselected package liburi-perl.
-Preparing to unpack .../19-liburi-perl_5.27-1_all.deb ...
-Unpacking liburi-perl (5.27-1) ...
-Selecting previously unselected package libhtml-parser-perl:arm64.
-Preparing to unpack .../20-libhtml-parser-perl_3.81-1build3_arm64.deb ...
-Unpacking libhtml-parser-perl:arm64 (3.81-1build3) ...
-Selecting previously unselected package libcgi-pm-perl.
-Preparing to unpack .../21-libcgi-pm-perl_4.63-1_all.deb ...
-Unpacking libcgi-pm-perl (4.63-1) ...
-Selecting previously unselected package libfcgi0t64:arm64.
-Preparing to unpack .../22-libfcgi0t64_2.4.2-2.1ubuntu0.24.04.1_arm64.deb ...
-Unpacking libfcgi0t64:arm64 (2.4.2-2.1ubuntu0.24.04.1) ...
-Selecting previously unselected package libfcgi-perl.
-Preparing to unpack .../23-libfcgi-perl_0.82+ds-3build2_arm64.deb ...
-Unpacking libfcgi-perl (0.82+ds-3build2) ...
-Selecting previously unselected package libcgi-fast-perl.
-Preparing to unpack .../24-libcgi-fast-perl_1%3a2.17-1_all.deb ...
-Unpacking libcgi-fast-perl (1:2.17-1) ...
-Selecting previously unselected package libclone-perl:arm64.
-Preparing to unpack .../25-libclone-perl_0.46-1build3_arm64.deb ...
-Unpacking libclone-perl:arm64 (0.46-1build3) ...
-Selecting previously unselected package libencode-locale-perl.
-Preparing to unpack .../26-libencode-locale-perl_1.05-3_all.deb ...
-Unpacking libencode-locale-perl (1.05-3) ...
-Selecting previously unselected package libfcgi-bin.
-Preparing to unpack .../27-libfcgi-bin_2.4.2-2.1ubuntu0.24.04.1_arm64.deb ...
-Unpacking libfcgi-bin (2.4.2-2.1ubuntu0.24.04.1) ...
-Selecting previously unselected package libhtml-template-perl.
-Preparing to unpack .../28-libhtml-template-perl_2.97-2_all.deb ...
-Unpacking libhtml-template-perl (2.97-2) ...
-Selecting previously unselected package libtimedate-perl.
-Preparing to unpack .../29-libtimedate-perl_2.3300-2_all.deb ...
-Unpacking libtimedate-perl (2.3300-2) ...
-Selecting previously unselected package libhttp-date-perl.
-Preparing to unpack .../30-libhttp-date-perl_6.06-1_all.deb ...
-Unpacking libhttp-date-perl (6.06-1) ...
-Selecting previously unselected package libio-html-perl.
-Preparing to unpack .../31-libio-html-perl_1.004-3_all.deb ...
-Unpacking libio-html-perl (1.004-3) ...
-Selecting previously unselected package liblwp-mediatypes-perl.
-Preparing to unpack .../32-liblwp-mediatypes-perl_6.04-2_all.deb ...
-Unpacking liblwp-mediatypes-perl (6.04-2) ...
-Selecting previously unselected package libhttp-message-perl.
-Preparing to unpack .../33-libhttp-message-perl_6.45-1ubuntu1_all.deb ...
-Unpacking libhttp-message-perl (6.45-1ubuntu1) ...
-Selecting previously unselected package mecab-utils.
-Preparing to unpack .../34-mecab-utils_0.996-14ubuntu4_arm64.deb ...
-Unpacking mecab-utils (0.996-14ubuntu4) ...
-Selecting previously unselected package mecab-ipadic.
-Preparing to unpack .../35-mecab-ipadic_2.7.0-20070801+main-3_all.deb ...
-Unpacking mecab-ipadic (2.7.0-20070801+main-3) ...
-Selecting previously unselected package mecab-ipadic-utf8.
-Preparing to unpack .../36-mecab-ipadic-utf8_2.7.0-20070801+main-3_all.deb ...
-Unpacking mecab-ipadic-utf8 (2.7.0-20070801+main-3) ...
-Setting up libprotobuf-lite32t64:arm64 (3.21.12-8.2ubuntu0.2) ...
-Setting up libmecab2:arm64 (0.996-14ubuntu4) ...
-Setting up libkeyutils1:arm64 (1.6.3-3build1) ...
-Setting up psmisc (23.7-1build1) ...
-Setting up libclone-perl:arm64 (0.46-1build3) ...
-Setting up libevent-pthreads-2.1-7t64:arm64 (2.1.12-stable-9ubuntu2) ...
-Setting up libfcgi0t64:arm64 (2.4.2-2.1ubuntu0.24.04.1) ...
-Setting up libtirpc-common (1.3.4+ds-1.1build1) ...
-Setting up libhtml-tagset-perl (3.20-6) ...
-Setting up liblwp-mediatypes-perl (6.04-2) ...
-Setting up libfcgi-bin (2.4.2-2.1ubuntu0.24.04.1) ...
-Setting up libencode-locale-perl (1.05-3) ...
-Setting up krb5-locales (1.20.1-6ubuntu2.6) ...
-Setting up libkrb5support0:arm64 (1.20.1-6ubuntu2.6) ...
-Setting up mecab-utils (0.996-14ubuntu4) ...
-Setting up libio-html-perl (1.004-3) ...
-Setting up libk5crypto3:arm64 (1.20.1-6ubuntu2.6) ...
-Setting up libtimedate-perl (2.3300-2) ...
-Setting up libicu74:arm64 (74.2-1ubuntu3.1) ...
-Setting up libnuma1:arm64 (2.0.18-1build1) ...
-Setting up libaio1t64:arm64 (0.3.113-6build1.1) ...
-Setting up libfcgi-perl (0.82+ds-3build2) ...
-Setting up libkrb5-3:arm64 (1.20.1-6ubuntu2.6) ...
-Setting up liburi-perl (5.27-1) ...
-Setting up libhttp-date-perl (6.06-1) ...
-Setting up mecab-ipadic (2.7.0-20070801+main-3) ...
-Compiling IPA dictionary for Mecab.  This takes long time...
-reading /usr/share/mecab/dic/ipadic/unk.def ... 40
-emitting double-array:   9% |###                                        | emitting double-array:  18% |#######                                    | emitting double-array:  27% |###########                                | emitting double-array:  36% |###############                            | emitting double-array:  45% |###################                        | emitting double-array:  54% |#######################                    | emitting double-array:  63% |###########################                | emitting double-array:  72% |###############################            | emitting double-array:  81% |###################################        | emitting double-array:  90% |#######################################    | emitting double-array: 100% |###########################################| 
-/usr/share/mecab/dic/ipadic/model.def is not found. skipped.
-reading /usr/share/mecab/dic/ipadic/Noun.number.csv ... 42
-reading /usr/share/mecab/dic/ipadic/Noun.demonst.csv ... 120
-reading /usr/share/mecab/dic/ipadic/Postp.csv ... 146
-reading /usr/share/mecab/dic/ipadic/Noun.others.csv ... 151
-reading /usr/share/mecab/dic/ipadic/Noun.csv ... 60477
-reading /usr/share/mecab/dic/ipadic/Noun.proper.csv ... 27328
-reading /usr/share/mecab/dic/ipadic/Adj.csv ... 27210
-reading /usr/share/mecab/dic/ipadic/Adnominal.csv ... 135
-reading /usr/share/mecab/dic/ipadic/Auxil.csv ... 199
-reading /usr/share/mecab/dic/ipadic/Noun.name.csv ... 34202
-reading /usr/share/mecab/dic/ipadic/Noun.adverbal.csv ... 795
-reading /usr/share/mecab/dic/ipadic/Filler.csv ... 19
-reading /usr/share/mecab/dic/ipadic/Adverb.csv ... 3032
-reading /usr/share/mecab/dic/ipadic/Interjection.csv ... 252
-reading /usr/share/mecab/dic/ipadic/Postp-col.csv ... 91
-reading /usr/share/mecab/dic/ipadic/Suffix.csv ... 1393
-reading /usr/share/mecab/dic/ipadic/Noun.org.csv ... 16668
-reading /usr/share/mecab/dic/ipadic/Noun.verbal.csv ... 12146
-reading /usr/share/mecab/dic/ipadic/Verb.csv ... 130750
-reading /usr/share/mecab/dic/ipadic/Prefix.csv ... 221
-reading /usr/share/mecab/dic/ipadic/Conjunction.csv ... 171
-reading /usr/share/mecab/dic/ipadic/Others.csv ... 2
-reading /usr/share/mecab/dic/ipadic/Noun.adjv.csv ... 3328
-reading /usr/share/mecab/dic/ipadic/Noun.place.csv ... 72999
-reading /usr/share/mecab/dic/ipadic/Noun.nai.csv ... 42
-reading /usr/share/mecab/dic/ipadic/Symbol.csv ... 208
-emitting double-array:   0% |                                           | emitting double-array:   1% |                                           | emitting double-array:   2% |                                           | emitting double-array:   3% |#                                          | emitting double-array:   4% |#                                          | emitting double-array:   5% |##                                         | emitting double-array:   6% |##                                         | emitting double-array:   7% |###                                        | emitting double-array:   8% |###                                        | emitting double-array:   9% |###                                        | emitting double-array:  10% |####                                       | emitting double-array:  11% |####                                       | emitting double-array:  12% |#####                                      | emitting double-array:  13% |#####                                      | emitting double-array:  14% |######                                     | emitting double-array:  15% |######                                     | emitting double-array:  16% |######                                     | emitting double-array:  17% |#######                                    | emitting double-array:  18% |#######                                    | emitting double-array:  19% |########                                   | emitting double-array:  20% |########                                   | emitting double-array:  21% |#########                                  | emitting double-array:  22% |#########                                  | emitting double-array:  23% |#########                                  | emitting double-array:  24% |##########                                 | emitting double-array:  25% |##########                                 | emitting double-array:  26% |###########                                | emitting double-array:  27% |###########                                | emitting double-array:  28% |############                               | emitting double-array:  29% |############                               | emitting double-array:  30% |############                               | emitting double-array:  31% |#############                              | emitting double-array:  32% |#############                              | emitting double-array:  33% |##############                             | emitting double-array:  34% |##############                             | emitting double-array:  35% |###############                            | emitting double-array:  36% |###############                            | emitting double-array:  37% |###############                            | emitting double-array:  38% |################                           | emitting double-array:  39% |################                           | emitting double-array:  40% |#################                          | emitting double-array:  41% |#################                          | emitting double-array:  42% |##################                         | emitting double-array:  43% |##################                         | emitting double-array:  44% |##################                         | emitting double-array:  45% |###################                        | emitting double-array:  46% |###################                        | emitting double-array:  47% |####################                       | emitting double-array:  48% |####################                       | emitting double-array:  49% |#####################                      | emitting double-array:  50% |#####################                      | emitting double-array:  51% |#####################                      | emitting double-array:  52% |######################                     | emitting double-array:  53% |######################                     | emitting double-array:  54% |#######################                    | emitting double-array:  55% |#######################                    | emitting double-array:  56% |########################                   | emitting double-array:  57% |########################                   | emitting double-array:  58% |########################                   | emitting double-array:  59% |#########################                  | emitting double-array:  60% |#########################                  | emitting double-array:  61% |##########################                 | emitting double-array:  62% |##########################                 | emitting double-array:  63% |###########################                | emitting double-array:  64% |###########################                | emitting double-array:  65% |###########################                | emitting double-array:  66% |############################               | emitting double-array:  67% |############################               | emitting double-array:  68% |#############################              | emitting double-array:  69% |#############################              | emitting double-array:  70% |##############################             | emitting double-array:  71% |##############################             | emitting double-array:  72% |##############################             | emitting double-array:  73% |###############################            | emitting double-array:  74% |###############################            | emitting double-array:  75% |################################           | emitting double-array:  76% |################################           | emitting double-array:  77% |#################################          | emitting double-array:  78% |#################################          | emitting double-array:  79% |#################################          | emitting double-array:  80% |##################################         | emitting double-array:  81% |##################################         | emitting double-array:  82% |###################################        | emitting double-array:  83% |###################################        | emitting double-array:  84% |####################################       | emitting double-array:  85% |####################################       | emitting double-array:  86% |####################################       | emitting double-array:  87% |#####################################      | emitting double-array:  88% |#####################################      | emitting double-array:  89% |######################################     | emitting double-array:  90% |######################################     | emitting double-array:  91% |#######################################    | emitting double-array:  92% |#######################################    | emitting double-array:  93% |#######################################    | emitting double-array:  94% |########################################   | emitting double-array:  95% |########################################   | emitting double-array:  96% |#########################################  | emitting double-array:  97% |#########################################  | emitting double-array:  98% |########################################## | emitting double-array:  99% |########################################## | emitting double-array: 100% |###########################################| 
-reading /usr/share/mecab/dic/ipadic/matrix.def ... 1316x1316
-emitting matrix      :   0% |                                           | emitting matrix      :   1% |                                           | emitting matrix      :   2% |                                           | emitting matrix      :   3% |#                                          | emitting matrix      :   4% |#                                          | emitting matrix      :   5% |##                                         | emitting matrix      :   6% |##                                         | emitting matrix      :   7% |###                                        | emitting matrix      :   8% |###                                        | emitting matrix      :   9% |###                                        | emitting matrix      :  10% |####                                       | emitting matrix      :  11% |####                                       | emitting matrix      :  12% |#####                                      | emitting matrix      :  13% |#####                                      | emitting matrix      :  14% |######                                     | emitting matrix      :  15% |######                                     | emitting matrix      :  16% |######                                     | emitting matrix      :  17% |#######                                    | emitting matrix      :  18% |#######                                    | emitting matrix      :  19% |########                                   | emitting matrix      :  20% |########                                   | emitting matrix      :  21% |#########                                  | emitting matrix      :  22% |#########                                  | emitting matrix      :  23% |#########                                  | emitting matrix      :  24% |##########                                 | emitting matrix      :  25% |##########                                 | emitting matrix      :  26% |###########                                | emitting matrix      :  27% |###########                                | emitting matrix      :  28% |############                               | emitting matrix      :  29% |############                               | emitting matrix      :  30% |############                               | emitting matrix      :  31% |#############                              | emitting matrix      :  32% |#############                              | emitting matrix      :  33% |##############                             | emitting matrix      :  34% |##############                             | emitting matrix      :  35% |###############                            | emitting matrix      :  36% |###############                            | emitting matrix      :  37% |###############                            | emitting matrix      :  38% |################                           | emitting matrix      :  39% |################                           | emitting matrix      :  40% |#################                          | emitting matrix      :  41% |#################                          | emitting matrix      :  42% |##################                         | emitting matrix      :  43% |##################                         | emitting matrix      :  44% |##################                         | emitting matrix      :  45% |###################                        | emitting matrix      :  46% |###################                        | emitting matrix      :  47% |####################                       | emitting matrix      :  48% |####################                       | emitting matrix      :  49% |#####################                      | emitting matrix      :  50% |#####################                      | emitting matrix      :  51% |#####################                      | emitting matrix      :  52% |######################                     | emitting matrix      :  53% |######################                     | emitting matrix      :  54% |#######################                    | emitting matrix      :  55% |#######################                    | emitting matrix      :  56% |########################                   | emitting matrix      :  57% |########################                   | emitting matrix      :  58% |########################                   | emitting matrix      :  59% |#########################                  | emitting matrix      :  60% |#########################                  | emitting matrix      :  61% |##########################                 | emitting matrix      :  62% |##########################                 | emitting matrix      :  63% |###########################                | emitting matrix      :  64% |###########################                | emitting matrix      :  65% |###########################                | emitting matrix      :  66% |############################               | emitting matrix      :  67% |############################               | emitting matrix      :  68% |#############################              | emitting matrix      :  69% |#############################              | emitting matrix      :  70% |##############################             | emitting matrix      :  71% |##############################             | emitting matrix      :  72% |##############################             | emitting matrix      :  73% |###############################            | emitting matrix      :  74% |###############################            | emitting matrix      :  75% |################################           | emitting matrix      :  76% |################################           | emitting matrix      :  77% |#################################          | emitting matrix      :  78% |#################################          | emitting matrix      :  79% |#################################          | emitting matrix      :  80% |##################################         | emitting matrix      :  81% |##################################         | emitting matrix      :  82% |###################################        | emitting matrix      :  83% |###################################        | emitting matrix      :  84% |####################################       | emitting matrix      :  85% |####################################       | emitting matrix      :  86% |####################################       | emitting matrix      :  87% |#####################################      | emitting matrix      :  88% |#####################################      | emitting matrix      :  89% |######################################     | emitting matrix      :  90% |######################################     | emitting matrix      :  91% |#######################################    | emitting matrix      :  92% |#######################################    | emitting matrix      :  93% |#######################################    | emitting matrix      :  94% |########################################   | emitting matrix      :  95% |########################################   | emitting matrix      :  96% |#########################################  | emitting matrix      :  97% |#########################################  | emitting matrix      :  98% |########################################## | emitting matrix      :  99% |########################################## | emitting matrix      : 100% |###########################################| 
-
-done!
-update-alternatives: using /var/lib/mecab/dic/ipadic to provide /var/lib/mecab/dic/debian (mecab-dictionary) in auto mode
-Setting up libgssapi-krb5-2:arm64 (1.20.1-6ubuntu2.6) ...
-Setting up mecab-ipadic-utf8 (2.7.0-20070801+main-3) ...
-Compiling IPA dictionary for Mecab.  This takes long time...
-reading /usr/share/mecab/dic/ipadic/unk.def ... 40
-emitting double-array:   9% |###                                        | emitting double-array:  18% |#######                                    | emitting double-array:  27% |###########                                | emitting double-array:  36% |###############                            | emitting double-array:  45% |###################                        | emitting double-array:  54% |#######################                    | emitting double-array:  63% |###########################                | emitting double-array:  72% |###############################            | emitting double-array:  81% |###################################        | emitting double-array:  90% |#######################################    | emitting double-array: 100% |###########################################| 
-/usr/share/mecab/dic/ipadic/model.def is not found. skipped.
-reading /usr/share/mecab/dic/ipadic/Noun.number.csv ... 42
-reading /usr/share/mecab/dic/ipadic/Noun.demonst.csv ... 120
-reading /usr/share/mecab/dic/ipadic/Postp.csv ... 146
-reading /usr/share/mecab/dic/ipadic/Noun.others.csv ... 151
-reading /usr/share/mecab/dic/ipadic/Noun.csv ... 60477
-reading /usr/share/mecab/dic/ipadic/Noun.proper.csv ... 27328
-reading /usr/share/mecab/dic/ipadic/Adj.csv ... 27210
-reading /usr/share/mecab/dic/ipadic/Adnominal.csv ... 135
-reading /usr/share/mecab/dic/ipadic/Auxil.csv ... 199
-reading /usr/share/mecab/dic/ipadic/Noun.name.csv ... 34202
-reading /usr/share/mecab/dic/ipadic/Noun.adverbal.csv ... 795
-reading /usr/share/mecab/dic/ipadic/Filler.csv ... 19
-reading /usr/share/mecab/dic/ipadic/Adverb.csv ... 3032
-reading /usr/share/mecab/dic/ipadic/Interjection.csv ... 252
-reading /usr/share/mecab/dic/ipadic/Postp-col.csv ... 91
-reading /usr/share/mecab/dic/ipadic/Suffix.csv ... 1393
-reading /usr/share/mecab/dic/ipadic/Noun.org.csv ... 16668
-reading /usr/share/mecab/dic/ipadic/Noun.verbal.csv ... 12146
-reading /usr/share/mecab/dic/ipadic/Verb.csv ... 130750
-reading /usr/share/mecab/dic/ipadic/Prefix.csv ... 221
-reading /usr/share/mecab/dic/ipadic/Conjunction.csv ... 171
-reading /usr/share/mecab/dic/ipadic/Others.csv ... 2
-reading /usr/share/mecab/dic/ipadic/Noun.adjv.csv ... 3328
-reading /usr/share/mecab/dic/ipadic/Noun.place.csv ... 72999
-reading /usr/share/mecab/dic/ipadic/Noun.nai.csv ... 42
-reading /usr/share/mecab/dic/ipadic/Symbol.csv ... 208
-emitting double-array:   0% |                                           | emitting double-array:   1% |                                           | emitting double-array:   2% |                                           | emitting double-array:   3% |#                                          | emitting double-array:   4% |#                                          | emitting double-array:   5% |##                                         | emitting double-array:   6% |##                                         | emitting double-array:   7% |###                                        | emitting double-array:   8% |###                                        | emitting double-array:   9% |###                                        | emitting double-array:  10% |####                                       | emitting double-array:  11% |####                                       | emitting double-array:  12% |#####                                      | emitting double-array:  13% |#####                                      | emitting double-array:  14% |######                                     | emitting double-array:  15% |######                                     | emitting double-array:  16% |######                                     | emitting double-array:  17% |#######                                    | emitting double-array:  18% |#######                                    | emitting double-array:  19% |########                                   | emitting double-array:  20% |########                                   | emitting double-array:  21% |#########                                  | emitting double-array:  22% |#########                                  | emitting double-array:  23% |#########                                  | emitting double-array:  24% |##########                                 | emitting double-array:  25% |##########                                 | emitting double-array:  26% |###########                                | emitting double-array:  27% |###########                                | emitting double-array:  28% |############                               | emitting double-array:  29% |############                               | emitting double-array:  30% |############                               | emitting double-array:  31% |#############                              | emitting double-array:  32% |#############                              | emitting double-array:  33% |##############                             | emitting double-array:  34% |##############                             | emitting double-array:  35% |###############                            | emitting double-array:  36% |###############                            | emitting double-array:  37% |###############                            | emitting double-array:  38% |################                           | emitting double-array:  39% |################                           | emitting double-array:  40% |#################                          | emitting double-array:  41% |#################                          | emitting double-array:  42% |##################                         | emitting double-array:  43% |##################                         | emitting double-array:  44% |##################                         | emitting double-array:  45% |###################                        | emitting double-array:  46% |###################                        | emitting double-array:  47% |####################                       | emitting double-array:  48% |####################                       | emitting double-array:  49% |#####################                      | emitting double-array:  50% |#####################                      | emitting double-array:  51% |#####################                      | emitting double-array:  52% |######################                     | emitting double-array:  53% |######################                     | emitting double-array:  54% |#######################                    | emitting double-array:  55% |#######################                    | emitting double-array:  56% |########################                   | emitting double-array:  57% |########################                   | emitting double-array:  58% |########################                   | emitting double-array:  59% |#########################                  | emitting double-array:  60% |#########################                  | emitting double-array:  61% |##########################                 | emitting double-array:  62% |##########################                 | emitting double-array:  63% |###########################                | emitting double-array:  64% |###########################                | emitting double-array:  65% |###########################                | emitting double-array:  66% |############################               | emitting double-array:  67% |############################               | emitting double-array:  68% |#############################              | emitting double-array:  69% |#############################              | emitting double-array:  70% |##############################             | emitting double-array:  71% |##############################             | emitting double-array:  72% |##############################             | emitting double-array:  73% |###############################            | emitting double-array:  74% |###############################            | emitting double-array:  75% |################################           | emitting double-array:  76% |################################           | emitting double-array:  77% |#################################          | emitting double-array:  78% |#################################          | emitting double-array:  79% |#################################          | emitting double-array:  80% |##################################         | emitting double-array:  81% |##################################         | emitting double-array:  82% |###################################        | emitting double-array:  83% |###################################        | emitting double-array:  84% |####################################       | emitting double-array:  85% |####################################       | emitting double-array:  86% |####################################       | emitting double-array:  87% |#####################################      | emitting double-array:  88% |#####################################      | emitting double-array:  89% |######################################     | emitting double-array:  90% |######################################     | emitting double-array:  91% |#######################################    | emitting double-array:  92% |#######################################    | emitting double-array:  93% |#######################################    | emitting double-array:  94% |########################################   | emitting double-array:  95% |########################################   | emitting double-array:  96% |#########################################  | emitting double-array:  97% |#########################################  | emitting double-array:  98% |########################################## | emitting double-array:  99% |########################################## | emitting double-array: 100% |###########################################| 
-reading /usr/share/mecab/dic/ipadic/matrix.def ... 1316x1316
-emitting matrix      :   0% |                                           | emitting matrix      :   1% |                                           | emitting matrix      :   2% |                                           | emitting matrix      :   3% |#                                          | emitting matrix      :   4% |#                                          | emitting matrix      :   5% |##                                         | emitting matrix      :   6% |##                                         | emitting matrix      :   7% |###                                        | emitting matrix      :   8% |###                                        | emitting matrix      :   9% |###                                        | emitting matrix      :  10% |####                                       | emitting matrix      :  11% |####                                       | emitting matrix      :  12% |#####                                      | emitting matrix      :  13% |#####                                      | emitting matrix      :  14% |######                                     | emitting matrix      :  15% |######                                     | emitting matrix      :  16% |######                                     | emitting matrix      :  17% |#######                                    | emitting matrix      :  18% |#######                                    | emitting matrix      :  19% |########                                   | emitting matrix      :  20% |########                                   | emitting matrix      :  21% |#########                                  | emitting matrix      :  22% |#########                                  | emitting matrix      :  23% |#########                                  | emitting matrix      :  24% |##########                                 | emitting matrix      :  25% |##########                                 | emitting matrix      :  26% |###########                                | emitting matrix      :  27% |###########                                | emitting matrix      :  28% |############                               | emitting matrix      :  29% |############                               | emitting matrix      :  30% |############                               | emitting matrix      :  31% |#############                              | emitting matrix      :  32% |#############                              | emitting matrix      :  33% |##############                             | emitting matrix      :  34% |##############                             | emitting matrix      :  35% |###############                            | emitting matrix      :  36% |###############                            | emitting matrix      :  37% |###############                            | emitting matrix      :  38% |################                           | emitting matrix      :  39% |################                           | emitting matrix      :  40% |#################                          | emitting matrix      :  41% |#################                          | emitting matrix      :  42% |##################                         | emitting matrix      :  43% |##################                         | emitting matrix      :  44% |##################                         | emitting matrix      :  45% |###################                        | emitting matrix      :  46% |###################                        | emitting matrix      :  47% |####################                       | emitting matrix      :  48% |####################                       | emitting matrix      :  49% |#####################                      | emitting matrix      :  50% |#####################                      | emitting matrix      :  51% |#####################                      | emitting matrix      :  52% |######################                     | emitting matrix      :  53% |######################                     | emitting matrix      :  54% |#######################                    | emitting matrix      :  55% |#######################                    | emitting matrix      :  56% |########################                   | emitting matrix      :  57% |########################                   | emitting matrix      :  58% |########################                   | emitting matrix      :  59% |#########################                  | emitting matrix      :  60% |#########################                  | emitting matrix      :  61% |##########################                 | emitting matrix      :  62% |##########################                 | emitting matrix      :  63% |###########################                | emitting matrix      :  64% |###########################                | emitting matrix      :  65% |###########################                | emitting matrix      :  66% |############################               | emitting matrix      :  67% |############################               | emitting matrix      :  68% |#############################              | emitting matrix      :  69% |#############################              | emitting matrix      :  70% |##############################             | emitting matrix      :  71% |##############################             | emitting matrix      :  72% |##############################             | emitting matrix      :  73% |###############################            | emitting matrix      :  74% |###############################            | emitting matrix      :  75% |################################           | emitting matrix      :  76% |################################           | emitting matrix      :  77% |#################################          | emitting matrix      :  78% |#################################          | emitting matrix      :  79% |#################################          | emitting matrix      :  80% |##################################         | emitting matrix      :  81% |##################################         | emitting matrix      :  82% |###################################        | emitting matrix      :  83% |###################################        | emitting matrix      :  84% |####################################       | emitting matrix      :  85% |####################################       | emitting matrix      :  86% |####################################       | emitting matrix      :  87% |#####################################      | emitting matrix      :  88% |#####################################      | emitting matrix      :  89% |######################################     | emitting matrix      :  90% |######################################     | emitting matrix      :  91% |#######################################    | emitting matrix      :  92% |#######################################    | emitting matrix      :  93% |#######################################    | emitting matrix      :  94% |########################################   | emitting matrix      :  95% |########################################   | emitting matrix      :  96% |#########################################  | emitting matrix      :  97% |#########################################  | emitting matrix      :  98% |########################################## | emitting matrix      :  99% |########################################## | emitting matrix      : 100% |###########################################| 
-
-done!
-update-alternatives: using /var/lib/mecab/dic/ipadic-utf8 to provide /var/lib/mecab/dic/debian (mecab-dictionary) in auto mode
-Setting up libhtml-parser-perl:arm64 (3.81-1build3) ...
-Setting up libhttp-message-perl (6.45-1ubuntu1) ...
-Setting up libtirpc3t64:arm64 (1.3.4+ds-1.1build1) ...
-Setting up libcgi-pm-perl (4.63-1) ...
-Setting up libhtml-template-perl (2.97-2) ...
-Setting up mysql-server-core-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-Setting up mysql-server-8.0 (8.0.44-0ubuntu0.24.04.2) ...
-debconf: unable to initialize frontend: Dialog
-debconf: (No usable dialog-like program is installed, so the dialog based frontend cannot be used. at /usr/share/perl5/Debconf/FrontEnd/Dialog.pm line 79.)
-debconf: falling back to frontend: Readline
-invoke-rc.d: could not determine current runlevel
-invoke-rc.d: policy-rc.d denied execution of stop.
-update-alternatives: using /etc/mysql/mysql.cnf to provide /etc/mysql/my.cnf (my.cnf) in auto mode
-Renaming removed key_buffer and myisam-recover options (if present)
-service mysql start || true
-mysqld will log errors to /var/log/mysql/error.log
-ps aux | grep -i mysqld | grep -v grep || true
-mysqladmin --version 2>&1 || true
-mysqld is running as pid 1680
-mysql --connect-timeout=5 -uroot -e "SHOW DATABASES;" 2>&1 || true
-mysql --connect-timeout=5 -uroot -e "CREATE DATABASE IF NOT EXISTS testdb; CREATE USER IF NOT EXISTS 'tester'@'%' IDENTIFIED BY 'tester'; GRANT ALL PRIVILEGES ON testdb.* TO 'tester'@'%'; FLUSH PRIVILEGES;" 2>&1 || true
-mysql --connect-timeout=5 -utester -ptester -e "SHOW DATABASES;" 2>&1 || true
-invoke-rc.d: could not determine current runlevel
-invoke-rc.d: policy-rc.d denied execution of start.
-Setting up libcgi-fast-perl (1:2.17-1) ...
-Setting up default-mysql-server (1.1.0build1) ...
-Processing triggers for libc-bin (2.39-0ubuntu8.6) ...
-[?2004hroot@b3883a2f7756:/app# mysqladmin --version
-[?2004lmysqladmin  Ver 8.0.44-0ubuntu0.24.04.2 for Linux on aarch64 ((Ubuntu))
-[?2004hroot@b3883a2f7756:/app# mysql --connect-timeout=5 -uroot -e "SHOW DATABASES;"
-[?2004lERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)
-[?2004hroot@b3883a2f7756:/app# mysql --connect-timeout=5 -uroot -e "SELECT User,Host FROM mysql.user;"
-[?2004lERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)
-[?2004hroot@b3883a2f7756:/app# mysql --connect-timeout=5 -utester -ptester -e "SHOW DATABASES;"
-[?2004lmysql: [Warning] Using a password on the command line interface can be insecure.
-ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)
-[?2004hroot@b3883a2f7756:/app# ps aux | grep -i mysqld | grep -v grep || true
-[?2004l[?2004hroot@b3883a2f7756:/app# ls -la /var/run/mysqld || true
-[?2004ltotal 8
-drwx------ 2 mysql mysql 4096 Jan  7 21:54 [0m[01;34m.[0m
-drwxr-xr-x 1 root  root  4096 Jan  7 21:54 [01;34m..[0m
-[?2004hroot@b3883a2f7756:/app# ls -la /var/lib/mysql || true
-[?2004ltotal 79320
--rw-r----- 1 mysql mysql   196608 Jan  7 21:54 '#ib_16384_0.dblwr'
--rw-r----- 1 mysql mysql  8585216 Jan  7 21:54 '#ib_16384_1.dblwr'
-drwxr-x--- 2 mysql mysql     4096 Jan  7 21:54 [0m[01;34m'#innodb_redo'[0m
-drwxr-x--- 2 mysql mysql     4096 Jan  7 21:54 [01;34m'#innodb_temp'[0m
-drwx------ 7 mysql mysql     4096 Jan  7 21:54  [01;34m.[0m
-drwxr-xr-x 1 root  root      4096 Jan  7 21:54  [01;34m..[0m
--rw-r----- 1 mysql mysql       56 Jan  7 21:54  auto.cnf
--rw-r----- 1 mysql mysql      180 Jan  7 21:54  binlog.000001
--rw-r----- 1 mysql mysql      404 Jan  7 21:54  binlog.000002
--rw-r----- 1 mysql mysql       32 Jan  7 21:54  binlog.index
--rw------- 1 mysql mysql     1705 Jan  7 21:54  ca-key.pem
--rw-r--r-- 1 mysql mysql     1112 Jan  7 21:54  ca.pem
--rw-r--r-- 1 mysql mysql     1112 Jan  7 21:54  client-cert.pem
--rw------- 1 mysql mysql     1705 Jan  7 21:54  client-key.pem
--rw-r--r-- 1 root  root         0 Jan  7 21:54  debian-5.7.flag
--rw-r----- 1 mysql mysql     3453 Jan  7 21:54  ib_buffer_pool
--rw-r----- 1 mysql mysql 12582912 Jan  7 21:54  ibdata1
-drwxr-x--- 2 mysql mysql     4096 Jan  7 21:54  [01;34mmysql[0m
--rw-r----- 1 mysql mysql 26214400 Jan  7 21:54  mysql.ibd
-drwxr-x--- 2 mysql mysql     4096 Jan  7 21:54  [01;34mperformance_schema[0m
--rw------- 1 mysql mysql     1705 Jan  7 21:54  private_key.pem
--rw-r--r-- 1 mysql mysql      452 Jan  7 21:54  public_key.pem
--rw-r--r-- 1 mysql mysql     1112 Jan  7 21:54  server-cert.pem
--rw------- 1 mysql mysql     1705 Jan  7 21:54  server-key.pem
-drwxr-x--- 2 mysql mysql     4096 Jan  7 21:54  [01;34msys[0m
--rw-r----- 1 mysql mysql 16777216 Jan  7 21:54  undo_001
--rw-r----- 1 mysql mysql 16777216 Jan  7 21:54  undo_002
-[?2004hroot@b3883a2f7756:/app# grep -RIn "socket" /etc/mysql 2>/dev/null || true
-[?2004l[35m[K/etc/mysql/debian.cnf[m[K[36m[K:[m[K[32m[K6[m[K[36m[K:[m[K[01;31m[Ksocket[m[K   = /var/run/mysqld/mysqld.sock
-[35m[K/etc/mysql/debian.cnf[m[K[36m[K:[m[K[32m[K11[m[K[36m[K:[m[K[01;31m[Ksocket[m[K   = /var/run/mysqld/mysqld.sock
-[35m[K/etc/mysql/my.cnf.fallback[m[K[36m[K:[m[K[32m[K18[m[K[36m[K:[m[K# Remember to edit /etc/mysql/debian.cnf when changing the [01;31m[Ksocket[m[K location.
-[35m[K/etc/mysql/mysql.conf.d/mysqld.cnf[m[K[36m[K:[m[K[32m[K20[m[K[36m[K:[m[K# [01;31m[Ksocket[m[K	= /var/run/mysqld/mysqld.sock
-[?2004hroot@b3883a2f7756:/app# tail -n 200 /var/log/mysql/error.log 2>/dev/null || true
-[?2004l2026-01-07T21:54:15.078906Z 0 [System] [MY-013169] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) initializing of server in progress as process 1624
-2026-01-07T21:54:15.085870Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:54:15.376872Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:54:16.414961Z 6 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option.
-2026-01-07T21:54:21.215957Z 6 [System] [MY-013172] [Server] Received SHUTDOWN from user boot. Shutting down mysqld (Version: 8.0.44-0ubuntu0.24.04.2).
-2026-01-07T21:54:43.550500Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 1671
-2026-01-07T21:54:43.637194Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:54:44.236463Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:54:44.771986Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2026-01-07T21:54:44.772538Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2026-01-07T21:54:44.780539Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/tmp' in the path is accessible to all OS users. Consider choosing a different directory.
-2026-01-07T21:54:44.841453Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Socket: /var/run/mysqld/mysqlx.sock
-2026-01-07T21:54:44.841677Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.44-0ubuntu0.24.04.2'  socket: '/tmp/tmp.KbNcMGkrHx/mysqld.sock'  port: 0  (Ubuntu).
-2026-01-07T21:54:44.919766Z 0 [System] [MY-013172] [Server] Received SHUTDOWN from user <via user signal>. Shutting down mysqld (Version: 8.0.44-0ubuntu0.24.04.2).
-2026-01-07T21:54:46.390432Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.44-0ubuntu0.24.04.2)  (Ubuntu).
-2026-01-07T21:54:47.227213Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 1790
-2026-01-07T21:54:47.232460Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:54:47.311405Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:54:47.425032Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2026-01-07T21:54:47.425049Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2026-01-07T21:54:47.427824Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/tmp' in the path is accessible to all OS users. Consider choosing a different directory.
-2026-01-07T21:54:47.434567Z 7 [System] [MY-013172] [Server] Received SHUTDOWN from user boot. Shutting down mysqld (Version: 8.0.44-0ubuntu0.24.04.2).
-2026-01-07T21:54:47.435532Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '127.0.0.1' port: 33060, socket: /var/run/mysqld/mysqlx.sock
-2026-01-07T21:54:48.889290Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.44-0ubuntu0.24.04.2)  (Ubuntu).
-[?2004hroot@b3883a2f7756:/app# service mysql start 2>&1 || true
-[?2004l * Starting MySQL database server mysqld       [160G su: warning: cannot change directory to /nonexistent: No such file or directory
-ps aux | grep -i mysqld | grep -v grep || true
-[154G[ OK ]
-[?2004hroot@b3883a2f7756:/app# ps aux | grep -i mysqld | grep -v grep || true
-[?2004lmysql     2016  0.0  0.0   2380   668 ?        S    21:56   0:00 /bin/sh /usr/bin/mysqld_safe
-mysql     2163 41.2  4.6 2378204 370228 ?      Sl   21:56   0:02 /usr/sbin/mysqld --basedir=/usr --datadir=/var/lib/mysql --plugin-dir=/usr/lib/mysql/plugin --log-error=/var/log/mysql/error.log --pid-file=b3883a2f7756.pid
-[?2004hroot@b3883a2f7756:/app# tail -n 200 /var/log/mysql/error.log
-[?2004l2026-01-07T21:54:15.078906Z 0 [System] [MY-013169] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) initializing of server in progress as process 1624
-2026-01-07T21:54:15.085870Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:54:15.376872Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:54:16.414961Z 6 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option.
-2026-01-07T21:54:21.215957Z 6 [System] [MY-013172] [Server] Received SHUTDOWN from user boot. Shutting down mysqld (Version: 8.0.44-0ubuntu0.24.04.2).
-2026-01-07T21:54:43.550500Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 1671
-2026-01-07T21:54:43.637194Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:54:44.236463Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:54:44.771986Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2026-01-07T21:54:44.772538Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2026-01-07T21:54:44.780539Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/tmp' in the path is accessible to all OS users. Consider choosing a different directory.
-2026-01-07T21:54:44.841453Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Socket: /var/run/mysqld/mysqlx.sock
-2026-01-07T21:54:44.841677Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.44-0ubuntu0.24.04.2'  socket: '/tmp/tmp.KbNcMGkrHx/mysqld.sock'  port: 0  (Ubuntu).
-2026-01-07T21:54:44.919766Z 0 [System] [MY-013172] [Server] Received SHUTDOWN from user <via user signal>. Shutting down mysqld (Version: 8.0.44-0ubuntu0.24.04.2).
-2026-01-07T21:54:46.390432Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.44-0ubuntu0.24.04.2)  (Ubuntu).
-2026-01-07T21:54:47.227213Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 1790
-2026-01-07T21:54:47.232460Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:54:47.311405Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:54:47.425032Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2026-01-07T21:54:47.425049Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2026-01-07T21:54:47.427824Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/tmp' in the path is accessible to all OS users. Consider choosing a different directory.
-2026-01-07T21:54:47.434567Z 7 [System] [MY-013172] [Server] Received SHUTDOWN from user boot. Shutting down mysqld (Version: 8.0.44-0ubuntu0.24.04.2).
-2026-01-07T21:54:47.435532Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '127.0.0.1' port: 33060, socket: /var/run/mysqld/mysqlx.sock
-2026-01-07T21:54:48.889290Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.44-0ubuntu0.24.04.2)  (Ubuntu).
-2026-01-07T21:56:17.083313Z mysqld_safe Logging to '/var/log/mysql/error.log'.
-2026-01-07T21:56:17.093032Z mysqld_safe Starting mysqld daemon with databases from /var/lib/mysql
-2026-01-07T21:56:17.902102Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 2163
-2026-01-07T21:56:17.922026Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:56:18.135810Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:56:19.266711Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2026-01-07T21:56:19.266737Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2026-01-07T21:56:19.312139Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '127.0.0.1' port: 33060, socket: /var/run/mysqld/mysqlx.sock
-2026-01-07T21:56:19.319629Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.44-0ubuntu0.24.04.2'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  (Ubuntu).
-[?2004hroot@b3883a2f7756:/app# getent passwd mysql || true
-[?2004lmysql:x:100:101:MySQL Server,,,:/nonexistent:/bin/false
-[?2004hroot@b3883a2f7756:/app# df -h . /var/lib/mysql /tmp || true
-[?2004lFilesystem      Size  Used Avail Use% Mounted on
-overlay         911G  135G  730G  16% /
-overlay         911G  135G  730G  16% /
-overlay         911G  135G  730G  16% /
-[?2004hroot@b3883a2f7756:/app# /usr/sbin/mysqld --user=mysql --datadir=/var/lib/mysql --socket=/var/run/mysqld/mysqld.sock --pid-file=/var/run/mysqld/mysqld.pid --consoole &
-[?2004l[1] 2308
-[?2004hroot@b3883a2f7756:/app# ps aux | grep -i mysqld | grep -v grep || true
-[?2004lmysql     2016  0.0  0.0   2380   660 ?        S    21:56   0:00 /bin/sh /usr/bin/mysqld_safe
-mysql     2308  7.4  3.9 769472 319632 pts/1   Sl   21:58   0:00 /usr/sbin/mysqld --user=mysql --datadir=/var/lib/mysql --socket=/var/run/mysqld/mysqld.sock --pid-file=/var/run/mysqld/mysqld.pid --console
-mysql     2327  7.6  2.9 335520 236076 ?       D    21:58   0:00 /usr/sbin/mysqld --basedir=/usr --datadir=/var/lib/mysql --plugin-dir=/usr/lib/mysql/plugin --log-error=/var/log/mysql/error.log --pid-file=b3883a2f7756.pid
-[?2004hroot@b3883a2f7756:/app# tail -n 200 /var/log/mysql/error.log
-[?2004l2026-01-07T21:54:15.078906Z 0 [System] [MY-013169] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) initializing of server in progress as process 1624
-2026-01-07T21:54:15.085870Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:54:15.376872Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:54:16.414961Z 6 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option.
-2026-01-07T21:54:21.215957Z 6 [System] [MY-013172] [Server] Received SHUTDOWN from user boot. Shutting down mysqld (Version: 8.0.44-0ubuntu0.24.04.2).
-2026-01-07T21:54:43.550500Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 1671
-2026-01-07T21:54:43.637194Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:54:44.236463Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:54:44.771986Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2026-01-07T21:54:44.772538Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2026-01-07T21:54:44.780539Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/tmp' in the path is accessible to all OS users. Consider choosing a different directory.
-2026-01-07T21:54:44.841453Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Socket: /var/run/mysqld/mysqlx.sock
-2026-01-07T21:54:44.841677Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.44-0ubuntu0.24.04.2'  socket: '/tmp/tmp.KbNcMGkrHx/mysqld.sock'  port: 0  (Ubuntu).
-2026-01-07T21:54:44.919766Z 0 [System] [MY-013172] [Server] Received SHUTDOWN from user <via user signal>. Shutting down mysqld (Version: 8.0.44-0ubuntu0.24.04.2).
-2026-01-07T21:54:46.390432Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.44-0ubuntu0.24.04.2)  (Ubuntu).
-2026-01-07T21:54:47.227213Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 1790
-2026-01-07T21:54:47.232460Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:54:47.311405Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:54:47.425032Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2026-01-07T21:54:47.425049Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2026-01-07T21:54:47.427824Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/tmp' in the path is accessible to all OS users. Consider choosing a different directory.
-2026-01-07T21:54:47.434567Z 7 [System] [MY-013172] [Server] Received SHUTDOWN from user boot. Shutting down mysqld (Version: 8.0.44-0ubuntu0.24.04.2).
-2026-01-07T21:54:47.435532Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '127.0.0.1' port: 33060, socket: /var/run/mysqld/mysqlx.sock
-2026-01-07T21:54:48.889290Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.44-0ubuntu0.24.04.2)  (Ubuntu).
-2026-01-07T21:56:17.083313Z mysqld_safe Logging to '/var/log/mysql/error.log'.
-2026-01-07T21:56:17.093032Z mysqld_safe Starting mysqld daemon with databases from /var/lib/mysql
-2026-01-07T21:56:17.902102Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 2163
-2026-01-07T21:56:17.922026Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:56:18.135810Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:56:19.266711Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2026-01-07T21:56:19.266737Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2026-01-07T21:56:19.312139Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '127.0.0.1' port: 33060, socket: /var/run/mysqld/mysqlx.sock
-2026-01-07T21:56:19.319629Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.44-0ubuntu0.24.04.2'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  (Ubuntu).
-Killed
-2026-01-07T21:58:05.349010Z mysqld_safe Number of processes running now: 0
-2026-01-07T21:58:05.354967Z mysqld_safe mysqld restarted
-2026-01-07T21:58:05.359023Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 2308
-2026-01-07T21:58:05.427863Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:58:15.625683Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 2327
-2026-01-07T21:58:35.622019Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:58:35.677557Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:35.920646Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:58:39.511565Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-[?2004hroot@b3883a2f7756:/app# ps aux | egrep -i 'mysqld|mysql' | sed -n '1,200p'
-[?2004lmysql     2016  0.0  0.0   2380   660 ?        S    21:56   0:00 /bin/sh /usr/bin/mysqld_safe
-mysql     2327  5.3  3.2 736700 257520 ?       Sl   21:58   0:04 /usr/sbin/mysqld --basedir=/usr --datadir=/var/lib/mysql --plugin-dir=/usr/lib/mysql/plugin --log-error=/var/log/mysql/error.log --pid-file=b3883a2f7756.pid
-root      2431  0.0  0.0   3124  1432 pts/1    S+   21:59   0:00 grep -E --color=auto -i mysqld|mysql
-[1]+  Killed                  /usr/sbin/mysqld --user=mysql --datadir=/var/lib/mysql --socket=/var/run/mysqld/mysqld.sock --pid-file=/var/run/mysqld/mysqld.pid --console
-[?2004hroot@b3883a2f7756:/app# fuser -v /var/lib/mysql/ibdata1 2>/dev/null || true
-[?2004l[?2004hroot@b3883a2f7756:/app# lsof /var/lib/mysql/ibdata1 2>/dev/null || true
-[?2004l[?2004hroot@b3883a2f7756:/app# fuser -k /var/lib/mysql/ibdata1 2>/dev/null || true
-[?2004l[?2004hroot@b3883a2f7756:/app# service mysql start 2>&1 || true
-[?2004l * Starting MySQL database server mysqld       [160G [154G[ OK ]
-[?2004hroot@b3883a2f7756:/app# ps aux | egrep -i 'mysqld|mysql' | sed -n '1,200p'
-[?2004lmysql     2016  0.0  0.0   2380   660 ?        S    21:56   0:00 /bin/sh /usr/bin/mysqld_safe
-mysql     2327  5.7  4.3 2443792 352940 ?      Sl   21:58   0:05 /usr/sbin/mysqld --basedir=/usr --datadir=/var/lib/mysql --plugin-dir=/usr/lib/mysql/plugin --log-error=/var/log/mysql/error.log --pid-file=b3883a2f7756.pid
-root      2541  0.0  0.0   3124  1252 pts/1    S+   21:59   0:00 grep -E --color=auto -i mysqld|mysql
-[?2004hroot@b3883a2f7756:/app# tail -n 200 /var/log/mysql/error.log
-[?2004l2026-01-07T21:54:15.078906Z 0 [System] [MY-013169] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) initializing of server in progress as process 1624
-2026-01-07T21:54:15.085870Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:54:15.376872Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:54:16.414961Z 6 [Warning] [MY-010453] [Server] root@localhost is created with an empty password ! Please consider switching off the --initialize-insecure option.
-2026-01-07T21:54:21.215957Z 6 [System] [MY-013172] [Server] Received SHUTDOWN from user boot. Shutting down mysqld (Version: 8.0.44-0ubuntu0.24.04.2).
-2026-01-07T21:54:43.550500Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 1671
-2026-01-07T21:54:43.637194Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:54:44.236463Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:54:44.771986Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2026-01-07T21:54:44.772538Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2026-01-07T21:54:44.780539Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/tmp' in the path is accessible to all OS users. Consider choosing a different directory.
-2026-01-07T21:54:44.841453Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Socket: /var/run/mysqld/mysqlx.sock
-2026-01-07T21:54:44.841677Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.44-0ubuntu0.24.04.2'  socket: '/tmp/tmp.KbNcMGkrHx/mysqld.sock'  port: 0  (Ubuntu).
-2026-01-07T21:54:44.919766Z 0 [System] [MY-013172] [Server] Received SHUTDOWN from user <via user signal>. Shutting down mysqld (Version: 8.0.44-0ubuntu0.24.04.2).
-2026-01-07T21:54:46.390432Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.44-0ubuntu0.24.04.2)  (Ubuntu).
-2026-01-07T21:54:47.227213Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 1790
-2026-01-07T21:54:47.232460Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:54:47.311405Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:54:47.425032Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2026-01-07T21:54:47.425049Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2026-01-07T21:54:47.427824Z 0 [Warning] [MY-011810] [Server] Insecure configuration for --pid-file: Location '/tmp' in the path is accessible to all OS users. Consider choosing a different directory.
-2026-01-07T21:54:47.434567Z 7 [System] [MY-013172] [Server] Received SHUTDOWN from user boot. Shutting down mysqld (Version: 8.0.44-0ubuntu0.24.04.2).
-2026-01-07T21:54:47.435532Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '127.0.0.1' port: 33060, socket: /var/run/mysqld/mysqlx.sock
-2026-01-07T21:54:48.889290Z 0 [System] [MY-010910] [Server] /usr/sbin/mysqld: Shutdown complete (mysqld 8.0.44-0ubuntu0.24.04.2)  (Ubuntu).
-2026-01-07T21:56:17.083313Z mysqld_safe Logging to '/var/log/mysql/error.log'.
-2026-01-07T21:56:17.093032Z mysqld_safe Starting mysqld daemon with databases from /var/lib/mysql
-2026-01-07T21:56:17.902102Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 2163
-2026-01-07T21:56:17.922026Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:56:18.135810Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:56:19.266711Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2026-01-07T21:56:19.266737Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2026-01-07T21:56:19.312139Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '127.0.0.1' port: 33060, socket: /var/run/mysqld/mysqlx.sock
-2026-01-07T21:56:19.319629Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.44-0ubuntu0.24.04.2'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  (Ubuntu).
-Killed
-2026-01-07T21:58:05.349010Z mysqld_safe Number of processes running now: 0
-2026-01-07T21:58:05.354967Z mysqld_safe mysqld restarted
-2026-01-07T21:58:05.359023Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 2308
-2026-01-07T21:58:05.427863Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:58:15.625683Z 0 [System] [MY-010116] [Server] /usr/sbin/mysqld (mysqld 8.0.44-0ubuntu0.24.04.2) starting as process 2327
-2026-01-07T21:58:35.622019Z 1 [System] [MY-013576] [InnoDB] InnoDB initialization has started.
-2026-01-07T21:58:35.677557Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:35.920646Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:58:39.511565Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:40.784838Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:44.394800Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:44.678078Z 0 [System] [MY-010229] [Server] Starting XA crash recovery...
-2026-01-07T21:58:44.691514Z 0 [System] [MY-010232] [Server] XA crash recovery finished.
-2026-01-07T21:58:46.414058Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:47.817718Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:48.111575Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2026-01-07T21:58:48.111611Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2026-01-07T21:58:48.218897Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '127.0.0.1' port: 33060, socket: /var/run/mysqld/mysqlx.sock
-2026-01-07T21:58:48.218953Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.44-0ubuntu0.24.04.2'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  (Ubuntu).
-2026-01-07T21:58:49.376331Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:50.397117Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:51.476157Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:52.760802Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:54.582783Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:55.973064Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:57.140721Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:58.406214Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:58:59.948952Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:59:10.474469Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:59:19.059205Z 1 [ERROR] [MY-012574] [InnoDB] Unable to lock ./ibdata1 error: 11
-2026-01-07T21:59:27.858030Z 1 [System] [MY-013577] [InnoDB] InnoDB initialization has ended.
-2026-01-07T21:59:28.838778Z 0 [Warning] [MY-010068] [Server] CA certificate ca.pem is self signed.
-2026-01-07T21:59:28.840854Z 0 [System] [MY-013602] [Server] Channel mysql_main configured to support TLS. Encrypted connections are now supported for this channel.
-2026-01-07T21:59:29.168505Z 0 [System] [MY-011323] [Server] X Plugin ready for connections. Bind-address: '127.0.0.1' port: 33060, socket: /var/run/mysqld/mysqlx.sock
-2026-01-07T21:59:29.171346Z 0 [System] [MY-010931] [Server] /usr/sbin/mysqld: ready for connections. Version: '8.0.44-0ubuntu0.24.04.2'  socket: '/var/run/mysqld/mysqld.sock'  port: 3306  (Ubuntu).
-[?2004hroot@b3883a2f7756:/app# mysql --connect-timeout=5 -uroot -e "SHOW DATABASES;" 2>&1 || true
-[?2004l+--------------------+
-| Database           |
-+--------------------+
-| information_schema |
-| mysql              |
-| performance_schema |
-| sys                |
-+--------------------+
-[?2004hroot@b3883a2f7756:/app# 

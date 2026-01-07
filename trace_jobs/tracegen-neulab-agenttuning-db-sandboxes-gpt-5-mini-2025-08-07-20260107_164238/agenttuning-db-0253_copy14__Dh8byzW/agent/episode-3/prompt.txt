@@ -1,8 +1,0 @@
-New Terminal Output:
-
-root@0716088d4fbb:/app# ls -la /var/run/mysqld 2>/dev/null || true
-root@0716088d4fbb:/app# test -S /var/run/mysqld/mysqld.sock && echo SOCKET_EXISTS || echo NO_SOCKET
-NO_SOCKET
-root@0716088d4fbb:/app# mysql -uroot -e "SELECT VERSION();" 2>&1 || true
-ERROR 2002 (HY000): Can't connect to local MySQL server through socket '/var/run/mysqld/mysqld.sock' (2)
-root@0716088d4fbb:/app#

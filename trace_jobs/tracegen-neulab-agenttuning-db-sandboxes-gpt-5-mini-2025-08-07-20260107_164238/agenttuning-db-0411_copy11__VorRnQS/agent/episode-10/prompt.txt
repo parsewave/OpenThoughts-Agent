@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@96737c1658aa:/app# echo "Please provide DB connection details: host, port (if not 3306), user, password, database, and the exact SQL question you want answ
-ered; or reply 'attempt localhost' to try a default local connection."
-Please provide DB connection details: host, port (if not 3306), user, password, database, and the exact SQL question you want answered; or reply 'attempt localh
-ost' to try a default local connection.
-root@96737c1658aa:/app#

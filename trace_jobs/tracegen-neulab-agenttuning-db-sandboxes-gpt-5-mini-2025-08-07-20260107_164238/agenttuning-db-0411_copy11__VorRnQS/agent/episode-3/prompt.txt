@@ -1,6 +1,0 @@
-New Terminal Output:
-
-root@96737c1658aa:/app# echo "MySQL client installed. Please provide DB connection details (host, port, user, password, database) or tell me to attempt default
-localhost connection."
-MySQL client installed. Please provide DB connection details (host, port, user, password, database) or tell me to attempt default localhost connection.
-root@96737c1658aa:/app#

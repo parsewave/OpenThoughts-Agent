@@ -1,13 +1,0 @@
-[?2004hroot@67869b14352a:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@67869b14352a:/app# ps aux | grep -E 'mysqld' | grep -v grep
-[?2004l[?2004hroot@67869b14352a:/app# ls -la /var/run/mysqld /etc/mysql /var/lib/mysql
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-ls: cannot access '/etc/mysql': No such file or directory
-ls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@67869b14352a:/app# env | grep -i mysql || true
-[?2004l[?2004hroot@67869b14352a:/app# ss -ltnp | grep -i mysql || true
-[?2004lbash: ss: command not found
-[?2004hroot@67869b14352a:/app# echo "Ready: please provide the MySQL question you want answered (or the credentials/connection info)."
-[?2004lReady: please provide the MySQL question you want answered (or the credentials/connection info).
-[?2004hroot@67869b14352a:/app# 

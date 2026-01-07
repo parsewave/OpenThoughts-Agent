@@ -1,9 +1,0 @@
-[?2004hroot@1d310946eda9:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@1d310946eda9:/app# ps aux | grep -E 'mysqld|mysql' | sed -n '1,200p'
-[?2004lroot       353  0.0  0.0   3124  1460 pts/1    S+   22:02   0:00 grep --color=auto -E mysqld|mysql
-[?2004hroot@1d310946eda9:/app# ls -la /var/lib/mysql || true
-[?2004lls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@1d310946eda9:/app# cat /etc/mysql/debian.cnf 2>/dev/null || true
-[?2004l[?2004hroot@1d310946eda9:/app# env | grep -i mysql || true
-[?2004l[?2004hroot@1d310946eda9:/app# 

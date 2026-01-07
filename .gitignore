@@ -346,6 +346,7 @@ eval/tacc/jobs/
 eval/tacc/runs/
 cloud_runs/
 trace_runs/
+trace_jobs/
 
 # HF cache
 .hf_cloud_cache/

@@ -1,4 +1,0 @@
-New Terminal Output:
-
-root@b51587ff93f4:/app# mysql -uroot -e "CREATE DATABASE IF NOT EXISTS test_db;"
-root@b51587ff93f4:/app#

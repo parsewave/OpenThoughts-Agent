@@ -1,5 +1,0 @@
-New Terminal Output:
-
-root@134f0e576ab7:/app# echo "Ready for DB connection details or instruction: provide remote credentials, upload a dump, or allow local mysql-server install."
-Ready for DB connection details or instruction: provide remote credentials, upload a dump, or allow local mysql-server install.
-root@134f0e576ab7:/app#

@@ -1,3 +1,0 @@
-New Terminal Output:
-
-root@8e6f78b6f414:/app#

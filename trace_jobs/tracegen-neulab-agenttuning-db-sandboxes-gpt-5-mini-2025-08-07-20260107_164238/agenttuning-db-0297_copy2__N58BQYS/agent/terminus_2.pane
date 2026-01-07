@@ -1,14 +1,0 @@
-[?2004hroot@6d27f0bb26c4:/app# ls -la
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:00 [01;34m..[0m
-[?2004hroot@6d27f0bb26c4:/app# ps aux | grep -E 'mysql|mariad' | grep -v grep
-[?2004l[?2004hroot@6d27f0bb26c4:/app# ss -ltnp | grep -E ':3306\b|mysql' || true
-[?2004lbash: ss: command not found
-[?2004hroot@6d27f0bb26c4:/app# which mysql
-[?2004l[?2004hroot@6d27f0bb26c4:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@6d27f0bb26c4:/app# env | egrep -i 'MYSQL_|DB_|MYSQLUSER|MYSQL_ROOT|MYSQL_PASSWORD|MYSQL_HOST|DB_USER|DB_PASS|DB_HOST' || true
-[?2004l[?2004hroot@6d27f0bb26c4:/app# find / -maxdepth 3 -type f \( -name 'my.cnf' -o -name '*.cnf' -o -name '.my.cnf' \) 2>/dev/null | head -n 50
-[?2004l/etc/ssl/openssl.cnf
-[?2004hroot@6d27f0bb26c4:/app# 

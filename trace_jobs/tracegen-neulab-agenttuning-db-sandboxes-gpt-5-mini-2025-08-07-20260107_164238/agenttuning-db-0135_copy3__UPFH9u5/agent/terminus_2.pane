@@ -1,14 +1,0 @@
-[?2004hroot@d0c384f747f7:/app# which mysql
-[?2004l[?2004hroot@d0c384f747f7:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@d0c384f747f7:/app# ps aux | grep -E "mysqld" | grep -v grep
-[?2004l[?2004hroot@d0c384f747f7:/app# ls -la /var/lib/mysql
-[?2004lls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@d0c384f747f7:/app# mysql -uroot -e "SELECT VERSION();"
-[?2004lbash: mysql: command not found
-[?2004hroot@d0c384f747f7:/app# which apt-get
-[?2004l/usr/bin/apt-get
-[?2004hroot@d0c384f747f7:/app# which apk
-[?2004l[?2004hroot@d0c384f747f7:/app# which yum
-[?2004l[?2004hroot@d0c384f747f7:/app# which dnf
-[?2004l[?2004hroot@d0c384f747f7:/app# 

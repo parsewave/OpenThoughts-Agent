@@ -1,5 +1,0 @@
-New Terminal Output:
-
-find / -type s -name 'mysql.sock' -print 2>/dev/null || true
-echo "No MySQL server/client or SQL dump found in container. Provide DB connection details or a dump, or allow installing a client to proceed."
-

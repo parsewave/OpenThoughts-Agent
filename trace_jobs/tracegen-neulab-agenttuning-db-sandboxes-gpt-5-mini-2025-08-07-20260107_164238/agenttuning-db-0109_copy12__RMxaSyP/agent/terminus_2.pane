@@ -1,45 +1,0 @@
-[?2004hroot@1d34474061b2:/app# whoami
-[?2004lroot
-[?2004hroot@1d34474061b2:/app# pwd
-[?2004l/app
-[?2004hroot@1d34474061b2:/app# ls -la
-[?2004ltotal 8
-drwxr-xr-x 2 root root 4096 Sep 17 18:16 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:00 [01;34m..[0m
-[?2004hroot@1d34474061b2:/app# ls -la /etc/mysql
-[?2004lls: cannot access '/etc/mysql': No such file or directory
-[?2004hroot@1d34474061b2:/app# cat /etc/mysql/debian.cnf
-[?2004lcat: /etc/mysql/debian.cnf: No such file or directory
-[?2004hroot@1d34474061b2:/app# env | grep -i mysql
-[?2004l[?2004hroot@1d34474061b2:/app# env | grep -i MYSQL
-[?2004l[?2004hroot@1d34474061b2:/app# ls -la ~
-[?2004ltotal 16
-drwx------ 2 root root 4096 Sep 10 02:20 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:00 [01;34m..[0m
--rw-r--r-- 1 root root 3106 Apr 22  2024 .bashrc
--rw-r--r-- 1 root root  161 Apr 22  2024 .profile
-[?2004hroot@1d34474061b2:/app# ls -la /root
-[?2004ltotal 16
-drwx------ 2 root root 4096 Sep 10 02:20 [0m[01;34m.[0m
-drwxr-xr-x 1 root root 4096 Jan  7 22:00 [01;34m..[0m
--rw-r--r-- 1 root root 3106 Apr 22  2024 .bashrc
--rw-r--r-- 1 root root  161 Apr 22  2024 .profile
-[?2004hroot@1d34474061b2:/app# which mysql
-[?2004l[?2004hroot@1d34474061b2:/app# mysql --version
-[?2004lbash: mysql: command not found
-[?2004hroot@1d34474061b2:/app# ss -ltnp 2>/dev/null || netstat -tlnp 2>/dev/null
-[?2004l[?2004hroot@1d34474061b2:/app# ps aux | grep mysqld | grep -v grep
-[?2004l[?2004hroot@1d34474061b2:/app# find . -maxdepth 2 -type f \( -name '*.sql' -o -name '.my.cnf' -o -name '*.cnf' \) 2>/dev/null
-[?2004l[?2004hroot@1d34474061b2:/app# ls -la /usr/bin | grep mysql
-[?2004l[?2004hroot@1d34474061b2:/app# ls -la /usr/sbin | grep mysql
-[?2004l[?2004hroot@1d34474061b2:/app# ls -la /usr/lib | grep -i mysql
-[?2004l[?2004hroot@1d34474061b2:/app# ls -la /var/run/mysqld
-[?2004lls: cannot access '/var/run/mysqld': No such file or directory
-[?2004hroot@1d34474061b2:/app# ls -la /var/lib/mysql
-[?2004lls: cannot access '/var/lib/mysql': No such file or directory
-[?2004hroot@1d34474061b2:/app# find / -xdev -type s -name '*.sock' 2>/dev/null
-[?2004l[?2004hroot@1d34474061b2:/app# dpkg -l | grep -i mysql || true
-[?2004l[?2004hroot@1d34474061b2:/app# rpm -qa | grep -i mysql || true
-[?2004lbash: rpm: command not found
-[?2004hroot@1d34474061b2:/app# ss -x -a 2>/dev/null | head -n 100
-[?2004l[?2004hroot@1d34474061b2:/app# 

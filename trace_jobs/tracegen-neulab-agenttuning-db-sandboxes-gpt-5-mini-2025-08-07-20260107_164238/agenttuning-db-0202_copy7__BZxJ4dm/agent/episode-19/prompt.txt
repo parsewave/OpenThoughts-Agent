@@ -1,5 +1,0 @@
-New Terminal Output:
-
-root@3d31d3568545:/app# mysql -uroot -e "SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT IN ('mysql','information_schema','performance
-_schema','sys');"
-root@3d31d3568545:/app#

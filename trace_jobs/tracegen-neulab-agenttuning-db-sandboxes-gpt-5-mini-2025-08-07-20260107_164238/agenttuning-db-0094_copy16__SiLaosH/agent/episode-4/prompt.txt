@@ -1,5 +1,0 @@
-New Terminal Output:
-
-root@3bb7aeb36b74:/app# which mysql
-/usr/bin/mysql
-root@3bb7aeb36b74:/app#

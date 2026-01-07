@@ -1,4 +1,0 @@
-New Terminal Output:
-
-root@3ac0e9a84838:/app# mysql -uroot -e "SELECT User,Host,authentication_string,plugin FROM mysql.user;"
-

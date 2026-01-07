@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@42a520661e86:/app# echo "Please provide DB connection details (host, port, user, password, database) and the question to run. Example format: host=127.0.0.
-1 port=3306 user=root password=secret database=mydb question='SELECT ...'"
-Please provide DB connection details (host, port, user, password, database) and the question to run. Example format: host=127.0.0.1 port=3306 user=root password
-=secret database=mydb question='SELECT ...'
-root@42a520661e86:/app#

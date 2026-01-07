@@ -1,6 +1,0 @@
-New Terminal Output:
-
-root@42a520661e86:/app# echo "Please choose now: (A) provide DB details: host=... port=... user=... password=... database=... question='...' OR (B) reply exactl
-y: install local server"
-Please choose now: (A) provide DB details: host=... port=... user=... password=... database=... question='...' OR (B) reply exactly: install local server
-root@42a520661e86:/app#

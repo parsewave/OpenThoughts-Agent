@@ -1,9 +1,0 @@
-New Terminal Output:
-
-root@96737c1658aa:/app# echo "Please choose one option now:\nA) Provide remote DB details: host, port (if not 3306), user, password, database, and the exact SQL
- question to answer.\nB) Authorize installing a local server: reply 'install local default-mysql-server' or 'install local mariadb-server' and optionally provid
-e root password and any initial DB/user to create."
-Please choose one option now:\nA) Provide remote DB details: host, port (if not 3306), user, password, database, and the exact SQL question to answer.\nB) Autho
-rize installing a local server: reply 'install local default-mysql-server' or 'install local mariadb-server' and optionally provide root password and any initia
-l DB/user to create.
-root@96737c1658aa:/app#

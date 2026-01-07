@@ -1,7 +1,0 @@
-New Terminal Output:
-
-root@e84cf06a0b94:/app# echo "Please provide the MySQL host, port (optional), user, password (or tell me to prompt), database name, and the question you want an
-swered. I will then prepare a single SQL statement to run."
-Please provide the MySQL host, port (optional), user, password (or tell me to prompt), database name, and the question you want answered. I will then prepare a
-single SQL statement to run.
-root@e84cf06a0b94:/app#
