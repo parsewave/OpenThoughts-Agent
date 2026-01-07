@@ -101,53 +101,53 @@ class EvalCloudLauncher(CloudLauncher):
         """Build the run_eval.py command."""
         cmd: List[str] = [
             "python", "eval/local/run_eval.py",
-            "--harbor-config", args.harbor_config,
+            "--harbor_config", args.harbor_config,
             "--model", args.model,
         ]
 
         if args.datagen_config:
-            cmd.extend(["--datagen-config", args.datagen_config])
+            cmd.extend(["--datagen_config", args.datagen_config])
         if args.dataset:
             cmd.extend(["--dataset", args.dataset])
         elif args.dataset_path:
-            cmd.extend(["--dataset-path", args.dataset_path])
+            cmd.extend(["--dataset_path", args.dataset_path])
 
         cmd.extend([
             "--agent", args.agent,
-            "--harbor-env", args.harbor_env,
-            "--n-concurrent", str(args.n_concurrent),
-            "--n-attempts", str(args.n_attempts),
+            "--harbor_env", args.harbor_env,
+            "--n_concurrent", str(args.n_concurrent),
+            "--n_attempts", str(args.n_attempts),
             "--gpus", str(args.gpus),
-            "--experiments-dir", remote_output_dir,
+            "--experiments_dir", remote_output_dir,
         ])
 
         if args.job_name:
-            cmd.extend(["--job-name", args.job_name])
+            cmd.extend(["--job_name", args.job_name])
         if args.dry_run:
-            cmd.append("--dry-run")
+            cmd.append("--dry_run")
 
         for kwarg in args.agent_kwarg:
-            cmd.extend(["--agent-kwarg", kwarg])
+            cmd.extend(["--agent_kwarg", kwarg])
         for extra in args.harbor_extra_arg:
-            cmd.extend(["--harbor-extra-arg", extra])
+            cmd.extend(["--harbor_extra_arg", extra])
 
         # Upload options
         if args.upload_to_database:
-            cmd.append("--upload-to-database")
+            cmd.append("--upload_to_database")
         if args.upload_username:
-            cmd.extend(["--upload-username", args.upload_username])
+            cmd.extend(["--upload_username", args.upload_username])
         if args.upload_error_mode:
-            cmd.extend(["--upload-error-mode", args.upload_error_mode])
+            cmd.extend(["--upload_error_mode", args.upload_error_mode])
         if args.upload_hf_repo:
-            cmd.extend(["--upload-hf-repo", args.upload_hf_repo])
+            cmd.extend(["--upload_hf_repo", args.upload_hf_repo])
         if args.upload_hf_token:
-            cmd.extend(["--upload-hf-token", args.upload_hf_token])
+            cmd.extend(["--upload_hf_token", args.upload_hf_token])
         if args.upload_hf_private:
-            cmd.append("--upload-hf-private")
+            cmd.append("--upload_hf_private")
         if args.upload_hf_episodes:
-            cmd.extend(["--upload-hf-episodes", args.upload_hf_episodes])
+            cmd.extend(["--upload_hf_episodes", args.upload_hf_episodes])
         if args.upload_forced_update:
-            cmd.append("--upload-forced-update")
+            cmd.append("--upload_forced_update")
 
         return cmd
 

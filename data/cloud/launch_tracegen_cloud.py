@@ -89,9 +89,9 @@ class TracegenCloudLauncher(CloudLauncher):
         """Build the run_tracegen.py command."""
         cmd: List[str] = [
             "python", "data/local/run_tracegen.py",
-            "--harbor-config", args.harbor_config,
-            "--datagen-config", args.datagen_config,
-            "--tasks-input-path", args.tasks_input_path,
+            "--harbor_config", args.harbor_config,
+            "--datagen_config", args.datagen_config,
+            "--tasks_input_path", args.tasks_input_path,
         ]
 
         if args.model:
@@ -99,30 +99,30 @@ class TracegenCloudLauncher(CloudLauncher):
 
         cmd.extend([
             "--agent", args.agent,
-            "--harbor-env", args.harbor_env,
-            "--n-concurrent", str(args.n_concurrent),
-            "--n-attempts", str(args.n_attempts),
+            "--harbor_env", args.harbor_env,
+            "--n_concurrent", str(args.n_concurrent),
+            "--n_attempts", str(args.n_attempts),
             "--gpus", str(args.gpus),
-            "--experiments-dir", remote_output_dir,
+            "--experiments_dir", remote_output_dir,
         ])
 
         if args.job_name:
-            cmd.extend(["--job-name", args.job_name])
+            cmd.extend(["--job_name", args.job_name])
         if args.dry_run:
-            cmd.append("--dry-run")
+            cmd.append("--dry_run")
 
         for kwarg in args.agent_kwarg:
-            cmd.extend(["--agent-kwarg", kwarg])
+            cmd.extend(["--agent_kwarg", kwarg])
         for extra in args.harbor_extra_arg:
-            cmd.extend(["--harbor-extra-arg", extra])
+            cmd.extend(["--harbor_extra_arg", extra])
 
         # Upload options
         if args.upload_hf_repo:
-            cmd.extend(["--upload-hf-repo", args.upload_hf_repo])
+            cmd.extend(["--upload_hf_repo", args.upload_hf_repo])
         if args.upload_hf_token:
-            cmd.extend(["--upload-hf-token", args.upload_hf_token])
+            cmd.extend(["--upload_hf_token", args.upload_hf_token])
         if args.upload_hf_private:
-            cmd.append("--upload-hf-private")
+            cmd.append("--upload_hf_private")
 
         return cmd
 
