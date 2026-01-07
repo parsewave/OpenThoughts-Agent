@@ -90,11 +90,18 @@ class TracegenRunner(LocalHarborRunner):
 
     def print_banner(self) -> None:
         """Print startup banner for tracegen."""
+        args = self.args
+        needs_local_vllm = getattr(args, "_needs_local_vllm", True)
+        engine_type = getattr(args, "_engine_type", "vllm_local")
+
         print("=== Local Trace Generation ===")
-        print(f"  Model: {self.args.model}")
-        print(f"  Tasks: {self.args.tasks_input_path}")
-        print(f"  TP/PP/DP: {self.args.tensor_parallel_size}/{self.args.pipeline_parallel_size}/{self.args.data_parallel_size}")
-        print(f"  GPUs: {self.args.gpus}")
+        print(f"  Model: {args.model}")
+        print(f"  Tasks: {args.tasks_input_path}")
+        if needs_local_vllm:
+            print(f"  TP/PP/DP: {args.tensor_parallel_size}/{args.pipeline_parallel_size}/{args.data_parallel_size}")
+            print(f"  GPUs: {args.gpus}")
+        else:
+            print(f"  Engine: {engine_type} (API)")
         print("==============================")
 
     def post_harbor_hook(self) -> None:

@@ -74,6 +74,13 @@ class PeriodicRemoteSync:
                 synced_files = list(local_path.glob("**/*"))
                 if synced_files:
                     print(f"[sync] Synced {len(synced_files)} file(s) to {self.local_dir}")
+            elif result.returncode == 23:
+                # rsync code 23: partial transfer due to error (often "file/directory not found")
+                stderr_lower = (result.stderr or "").lower()
+                if "no such file" in stderr_lower or "does not exist" in stderr_lower or "change_dir" in stderr_lower:
+                    pass  # Remote directory doesn't exist yet - expected early in job
+                else:
+                    print(f"[sync] Warning: rsync partial transfer (code 23): {result.stderr}", file=sys.stderr)
             elif "No such file" in result.stderr or "does not exist" in result.stderr.lower():
                 pass  # Remote directory doesn't exist yet
             else:

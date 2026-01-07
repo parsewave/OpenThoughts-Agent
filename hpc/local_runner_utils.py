@@ -354,7 +354,7 @@ def build_harbor_command(
     env_type: str,
     n_concurrent: int,
     n_attempts: int,
-    endpoint_meta: dict,
+    endpoint_meta: Optional[dict],
     agent_kwarg_overrides: List[str],
     harbor_extra_args: List[str],
     dataset_slug: Optional[str] = None,
@@ -364,7 +364,7 @@ def build_harbor_command(
 
     The Harbor YAML is the ground truth for agent configuration. This function:
     1. Extracts ALL kwargs from the Harbor YAML for the specified agent
-    2. Overrides with endpoint-specific values (api_base, metrics_endpoint)
+    2. Overrides with endpoint-specific values (api_base, metrics_endpoint) if using local vLLM
     3. Applies CLI --agent-kwarg overrides with highest precedence
 
     Args:
@@ -377,7 +377,7 @@ def build_harbor_command(
         env_type: Environment type for --env flag (daytona, docker, modal)
         n_concurrent: Number of concurrent trials
         n_attempts: Number of attempts per task
-        endpoint_meta: Dict with api_base and metrics_endpoint from vLLM
+        endpoint_meta: Dict with api_base and metrics_endpoint from vLLM (None for API engines)
         agent_kwarg_overrides: Raw --agent-kwarg strings from CLI
         harbor_extra_args: Additional args to pass through to harbor
         dataset_slug: Harbor dataset slug (mutually exclusive with dataset_path)
@@ -389,11 +389,12 @@ def build_harbor_command(
     # Build agent kwargs - start with ALL kwargs from Harbor YAML as ground truth
     agent_kwargs = extract_agent_kwargs_from_config(harbor_config_data, agent_name)
 
-    # Override with endpoint-specific values
-    if endpoint_meta.get("metrics_endpoint"):
-        agent_kwargs["metrics_endpoint"] = endpoint_meta["metrics_endpoint"]
-    if endpoint_meta.get("api_base"):
-        agent_kwargs["api_base"] = endpoint_meta["api_base"]
+    # Override with endpoint-specific values (only for local vLLM, not API engines)
+    if endpoint_meta:
+        if endpoint_meta.get("metrics_endpoint"):
+            agent_kwargs["metrics_endpoint"] = endpoint_meta["metrics_endpoint"]
+        if endpoint_meta.get("api_base"):
+            agent_kwargs["api_base"] = endpoint_meta["api_base"]
 
     # CLI --agent-kwarg flags take highest precedence (supports dotted keys)
     override_kwargs, passthrough = parse_agent_kwarg_strings(agent_kwarg_overrides)
@@ -554,12 +555,16 @@ def apply_datagen_defaults(args: argparse.Namespace) -> None:
     - args.tensor_parallel_size, pipeline_parallel_size, data_parallel_size
     - args.ray_port, api_port
     - args._vllm_cli_args, args._vllm_env_vars
+    - args._engine_type (openai, anthropic, vllm_local, etc.)
+    - args._needs_local_vllm (whether to start Ray/vLLM server)
 
     Args:
         args: Parsed argparse namespace with datagen_config attribute
     """
     args._vllm_cli_args: List[str] = []
     args._vllm_env_vars: Dict[str, str] = {}
+    args._engine_type: str = "vllm_local"  # Default to local vLLM
+    args._needs_local_vllm: bool = True  # Default to needing local server
 
     datagen_config = getattr(args, "datagen_config", None)
     if not datagen_config:
@@ -575,6 +580,14 @@ def apply_datagen_defaults(args: argparse.Namespace) -> None:
     engine_cfg = datagen_cfg.get("engine") or {}
     backend_cfg = datagen_cfg.get("backend") or {}
     vllm_cfg = datagen_cfg.get("vllm_server") or {}
+
+    # Determine engine type and whether we need local vLLM
+    engine_type = engine_cfg.get("type", "vllm_local").lower()
+    args._engine_type = engine_type
+
+    # API-based engines don't need local Ray/vLLM
+    api_engines = {"openai", "anthropic", "azure", "together", "fireworks", "groq"}
+    args._needs_local_vllm = engine_type not in api_engines
 
     # Model path
     if getattr(args, "model", None) is None:
@@ -807,10 +820,17 @@ class LocalHarborRunner:
 
     def print_banner(self) -> None:
         """Print startup banner - subclasses should override."""
+        args = self.args
+        needs_local_vllm = getattr(args, "_needs_local_vllm", True)
+        engine_type = getattr(args, "_engine_type", "vllm_local")
+
         print(f"=== Local {self.JOB_PREFIX.title()} Runner ===")
-        print(f"  Model: {self.args.model}")
-        print(f"  TP/PP/DP: {self.args.tensor_parallel_size}/{self.args.pipeline_parallel_size}/{self.args.data_parallel_size}")
-        print(f"  GPUs: {self.args.gpus}")
+        print(f"  Model: {args.model}")
+        if needs_local_vllm:
+            print(f"  TP/PP/DP: {args.tensor_parallel_size}/{args.pipeline_parallel_size}/{args.data_parallel_size}")
+            print(f"  GPUs: {args.gpus}")
+        else:
+            print(f"  Engine: {engine_type} (API)")
         print("=" * 35)
 
     def setup(self) -> None:
@@ -823,7 +843,7 @@ class LocalHarborRunner:
         # Set up Docker runtime if using docker backend
         setup_docker_runtime_if_needed(self.get_env_type())
 
-        # Set parallelism defaults
+        # Set parallelism defaults (only relevant for local vLLM)
         if args.tensor_parallel_size is None:
             args.tensor_parallel_size = 1
         if args.pipeline_parallel_size is None:
@@ -831,14 +851,20 @@ class LocalHarborRunner:
         if args.data_parallel_size is None:
             args.data_parallel_size = 1
 
-        # Validate model
-        if args.model is None:
+        # Validate model - required for local vLLM, optional for API engines
+        needs_local_vllm = getattr(args, "_needs_local_vllm", True)
+        if args.model is None and needs_local_vllm:
             raise ValueError("Provide --model or supply a datagen config with vllm_server.model_path.")
 
-        # Generate served model ID
-        served_model_id = generate_served_model_id()
-        args._served_model_id = served_model_id
-        args._harbor_model_name = hosted_vllm_alias(served_model_id)
+        # Generate served model ID (only for local vLLM)
+        if needs_local_vllm:
+            served_model_id = generate_served_model_id()
+            args._served_model_id = served_model_id
+            args._harbor_model_name = hosted_vllm_alias(served_model_id)
+        else:
+            # For API engines, use the model from datagen config directly
+            args._served_model_id = None
+            args._harbor_model_name = args.model
 
         # Set GPU/CPU defaults
         if args.gpus is None:
@@ -894,16 +920,20 @@ class LocalHarborRunner:
     def cleanup(self) -> None:
         """Clean up processes."""
         terminate_processes(self.processes[::-1])
-        subprocess.run(["ray", "stop", "--force"], check=False)
+        # Only stop Ray if we started it (local vLLM engines)
+        needs_local_vllm = getattr(self.args, "_needs_local_vllm", True)
+        if needs_local_vllm:
+            subprocess.run(["ray", "stop", "--force"], check=False)
 
     def run(self) -> None:
         """Main entry point - start services and run Harbor."""
         args = self.args
+        needs_local_vllm = getattr(args, "_needs_local_vllm", True)
 
         # Set up directories
         experiments_dir, logs_dir = self._setup_directories()
 
-        # Set up endpoint JSON path
+        # Set up endpoint JSON path (only used for local vLLM)
         self._endpoint_json = Path(args.endpoint_json or (experiments_dir / self.DEFAULT_ENDPOINT_FILENAME))
         if self._endpoint_json.exists():
             self._endpoint_json.unlink()
@@ -922,46 +952,54 @@ class LocalHarborRunner:
         # Print banner
         self.print_banner()
 
-        # Start Ray
-        controller_script = self.repo_root / "scripts" / "vllm" / "start_vllm_ray_controller.py"
+        # Start Ray and vLLM only if needed (local vLLM engine)
+        if needs_local_vllm:
+            controller_script = self.repo_root / "scripts" / "vllm" / "start_vllm_ray_controller.py"
 
-        ray_proc = start_ray(
-            host=args.host,
-            ray_port=args.ray_port,
-            num_gpus=args.gpus,
-            num_cpus=args.cpus,
-            log_path=ray_log,
-        )
-        self.processes.append(ray_proc)
+            ray_proc = start_ray(
+                host=args.host,
+                ray_port=args.ray_port,
+                num_gpus=args.gpus,
+                num_cpus=args.cpus,
+                log_path=ray_log,
+            )
+            self.processes.append(ray_proc)
 
-        # Start vLLM controller
-        vllm_proc = start_vllm_controller(
-            model=args.model,
-            host=args.host,
-            ray_port=args.ray_port,
-            api_port=args.api_port,
-            tensor_parallel_size=args.tensor_parallel_size,
-            pipeline_parallel_size=args.pipeline_parallel_size,
-            data_parallel_size=args.data_parallel_size,
-            endpoint_path=self._endpoint_json,
-            controller_script=controller_script,
-            log_path=controller_log,
-            served_model_name=getattr(args, "_served_model_id", None),
-            extra_cli_args=getattr(args, "_vllm_cli_args", []),
-            extra_env_vars=getattr(args, "_vllm_env_vars", {}),
-        )
-        self.processes.append(vllm_proc)
+            # Start vLLM controller
+            vllm_proc = start_vllm_controller(
+                model=args.model,
+                host=args.host,
+                ray_port=args.ray_port,
+                api_port=args.api_port,
+                tensor_parallel_size=args.tensor_parallel_size,
+                pipeline_parallel_size=args.pipeline_parallel_size,
+                data_parallel_size=args.data_parallel_size,
+                endpoint_path=self._endpoint_json,
+                controller_script=controller_script,
+                log_path=controller_log,
+                served_model_name=getattr(args, "_served_model_id", None),
+                extra_cli_args=getattr(args, "_vllm_cli_args", []),
+                extra_env_vars=getattr(args, "_vllm_env_vars", {}),
+            )
+            self.processes.append(vllm_proc)
+        else:
+            engine_type = getattr(args, "_engine_type", "unknown")
+            print(f"[engine] Using {engine_type} API engine - skipping local Ray/vLLM startup")
 
         try:
-            # Wait for endpoint and run health check
-            wait_for_endpoint(self._endpoint_json, vllm_proc)
-            run_endpoint_health_check(
-                self._endpoint_json,
-                args.health_max_attempts,
-                args.health_retry_delay,
-                self.repo_root,
-            )
-            self._endpoint_meta = load_endpoint_metadata(self._endpoint_json)
+            # Wait for endpoint and run health check (only for local vLLM)
+            if needs_local_vllm:
+                wait_for_endpoint(self._endpoint_json, vllm_proc)
+                run_endpoint_health_check(
+                    self._endpoint_json,
+                    args.health_max_attempts,
+                    args.health_retry_delay,
+                    self.repo_root,
+                )
+                self._endpoint_meta = load_endpoint_metadata(self._endpoint_json)
+            else:
+                # For API engines, no local endpoint metadata
+                self._endpoint_meta = None
 
             # Compute job name
             harbor_model = getattr(args, "_harbor_model_name", args.model)

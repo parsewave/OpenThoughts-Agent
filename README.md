@@ -213,6 +213,7 @@ python eval/cloud/launch_eval_cloud.py \
 * `--accelerator` - GPU spec, e.g., `H100:1`, `A100:4` (comma-separated for fallbacks)
 * `--region` - Preferred region(s)
 * `--harbor_env` - Harbor environment backend: `daytona` (default), `docker`, or `modal`
+  * **Note**: Use `daytona` (default) for cloud VMs. The `docker` backend requires Docker-in-Docker which is not available in SkyPilot's container runtime. The `docker` and `modal` backends are primarily for local development.
 * `--secrets_env` - Path to secrets file sourced inside the container
 * `--autostop N` - Auto-stop cluster after N minutes idle (set to 0 for Kubernetes)
 * `--retry_until_up` - Keep retrying until resources are available (useful for scarce GPUs)

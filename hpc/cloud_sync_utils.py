@@ -69,6 +69,18 @@ def sync_outputs(
             if verbose:
                 print(f"[cloud-sync] Successfully synced outputs to {target}")
             return True
+        elif result.returncode == 23:
+            # rsync code 23: partial transfer due to error (often "file/directory not found")
+            # This is expected when remote directory doesn't exist yet
+            stderr_lower = (result.stderr or "").lower()
+            if "no such file" in stderr_lower or "does not exist" in stderr_lower or "change_dir" in stderr_lower:
+                if verbose:
+                    print(f"[cloud-sync] Remote directory doesn't exist yet (will sync later): {remote_path}")
+                return True  # Treat as success - directory will be created later
+            else:
+                # Other partial transfer errors should still be reported
+                print(f"[cloud-sync] rsync partial transfer (code 23): {result.stderr}", file=sys.stderr)
+                return False
         else:
             print(f"[cloud-sync] rsync failed with code {result.returncode}", file=sys.stderr)
             if not verbose and result.stderr:

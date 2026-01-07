@@ -97,12 +97,19 @@ class EvalRunner(LocalHarborRunner):
 
     def print_banner(self) -> None:
         """Print startup banner for eval."""
+        args = self.args
+        needs_local_vllm = getattr(args, "_needs_local_vllm", True)
+        engine_type = getattr(args, "_engine_type", "vllm_local")
         dataset_label = self.get_dataset_label()
+
         print("=== Local Eval Runner ===")
-        print(f"  Model: {self.args.model}")
+        print(f"  Model: {args.model}")
         print(f"  Dataset: {dataset_label}")
-        print(f"  TP/PP/DP: {self.args.tensor_parallel_size}/{self.args.pipeline_parallel_size}/{self.args.data_parallel_size}")
-        print(f"  GPUs: {self.args.gpus}")
+        if needs_local_vllm:
+            print(f"  TP/PP/DP: {args.tensor_parallel_size}/{args.pipeline_parallel_size}/{args.data_parallel_size}")
+            print(f"  GPUs: {args.gpus}")
+        else:
+            print(f"  Engine: {engine_type} (API)")
         print("=========================")
 
     def post_harbor_hook(self) -> None:
