@@ -17,6 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 
 from hpc.local_runner_utils import LocalHarborRunner
 from hpc.launch_utils import sanitize_hf_repo_id
+from hpc.arg_groups import add_harbor_env_arg, add_hf_upload_args, add_database_upload_args
 
 
 class EvalRunner(LocalHarborRunner):
@@ -46,12 +47,10 @@ class EvalRunner(LocalHarborRunner):
             "--dataset-path",
             help="Path to a Harbor task directory. Mutually exclusive with --dataset.",
         )
-        parser.add_argument(
-            "--eval-env",
-            default="daytona",
-            choices=["daytona", "docker", "modal"],
-            help="Harbor environment backend: daytona (cloud), docker (local/podman), modal. (default: daytona)",
-        )
+
+        # Harbor environment backend (unified --harbor-env, with --eval-env as legacy alias)
+        add_harbor_env_arg(parser, default="daytona", legacy_names=["--eval-env"])
+
         parser.add_argument(
             "--datagen-config",
             help="Optional datagen YAML whose vLLM settings will seed defaults for this script.",
@@ -62,52 +61,15 @@ class EvalRunner(LocalHarborRunner):
             help="Directory for logs + endpoint JSON.",
         )
 
-        # Upload options
-        parser.add_argument(
-            "--upload-to-database",
-            action="store_true",
-            help="After Harbor finishes, upload result abstracts to Supabase and traces to HuggingFace.",
-        )
-        parser.add_argument(
-            "--upload-username",
-            help="Username for Supabase result attribution (defaults to $UPLOAD_USERNAME or current user).",
-        )
-        parser.add_argument(
-            "--upload-error-mode",
-            choices=["skip_on_error", "rollback_on_error"],
-            default="skip_on_error",
-            help="Supabase upload error handling (default: skip_on_error).",
-        )
-        parser.add_argument(
-            "--upload-hf-repo",
-            help="HuggingFace repo for traces upload (defaults to <org>/<job_name>).",
-        )
-        parser.add_argument(
-            "--upload-hf-token",
-            help="HuggingFace token for traces upload (defaults to $HF_TOKEN).",
-        )
-        parser.add_argument(
-            "--upload-hf-private",
-            action="store_true",
-            help="Create the HuggingFace traces repo as private.",
-        )
-        parser.add_argument(
-            "--upload-hf-episodes",
-            choices=["last", "all"],
-            default="last",
-            help="Which episodes to include in HuggingFace traces upload.",
-        )
-        parser.add_argument(
-            "--upload-forced-update",
-            action="store_true",
-            help="Allow overwriting existing Supabase result records for the same job.",
-        )
+        # Upload options (shared from arg_groups)
+        add_hf_upload_args(parser)
+        add_database_upload_args(parser)
 
         return parser
 
     def get_env_type(self) -> str:
-        """Get the environment type from --eval-env."""
-        return self.args.eval_env
+        """Get the environment type from --harbor-env (or legacy --eval-env)."""
+        return self.args.harbor_env
 
     def get_dataset_label(self) -> str:
         """Get the dataset label for job naming."""

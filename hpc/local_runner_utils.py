@@ -24,6 +24,12 @@ import yaml
 
 from hpc.vllm_utils import _build_vllm_cli_args
 from hpc.launch_utils import generate_served_model_id, hosted_vllm_alias
+from hpc.arg_groups import (
+    add_harbor_args,
+    add_model_compute_args,
+    add_ray_vllm_args,
+    add_log_path_args,
+)
 
 
 @dataclass
@@ -723,90 +729,40 @@ class LocalHarborRunner:
     def add_common_arguments(cls, parser: argparse.ArgumentParser) -> None:
         """Add common arguments shared by all local runners.
 
+        Uses shared argument groups from hpc.arg_groups for consistency
+        with cloud launchers.
+
         Args:
             parser: ArgumentParser to add arguments to
         """
-        parser.add_argument(
-            "--harbor-config",
-            required=True,
-            help="Path to Harbor job config YAML.",
+        # Harbor core configuration (--harbor-config, --agent, --job-name, --agent-kwarg, --harbor-extra-arg)
+        add_harbor_args(parser, config_required=True)
+
+        # Model and compute (--model, --n-concurrent, --n-attempts, --gpus, --dry-run)
+        # Note: n_attempts default is 1; subclasses can override via their own defaults
+        add_model_compute_args(
+            parser,
+            model_required=False,
+            default_n_concurrent=cls.DEFAULT_N_CONCURRENT,
+            default_n_attempts=1,
+            n_attempts_help="Times to run each task for repeated trials (default: 1). Not retries on failure.",
         )
-        parser.add_argument(
-            "--model",
-            help="Model identifier (overrides datagen config).",
-        )
-        parser.add_argument(
-            "--agent",
-            default="terminus-2",
-            help="Harbor agent name to run (default: terminus-2).",
-        )
-        parser.add_argument(
-            "--n-concurrent",
-            type=int,
-            default=cls.DEFAULT_N_CONCURRENT,
-            help=f"Concurrent trials (default: {cls.DEFAULT_N_CONCURRENT}).",
-        )
-        parser.add_argument(
-            "--n-attempts",
-            type=int,
-            default=1,
-            help="Times to run each task for repeated trials (default: 1). Not retries on failure.",
-        )
-        parser.add_argument(
-            "--job-name",
-            help="Optional Harbor job name override.",
-        )
-        parser.add_argument(
-            "--host",
-            default="127.0.0.1",
-            help="Host/IP for Ray + vLLM (default: 127.0.0.1).",
-        )
-        parser.add_argument("--ray-port", type=int, default=6379, help="Ray head port.")
-        parser.add_argument("--api-port", type=int, default=8000, help="vLLM OpenAI server port.")
-        parser.add_argument("--gpus", type=int, help="GPUs to expose to Ray.")
+
+        # Ray/vLLM configuration (--host, --ray-port, --api-port, parallelism, health checks)
+        add_ray_vllm_args(parser)
+
+        # Log paths (--harbor-binary, --controller-log, --ray-log, --harbor-log)
+        add_log_path_args(parser)
+
+        # Local-runner-specific arguments (not in shared arg_groups)
         parser.add_argument("--cpus", type=int, help="CPUs to expose to Ray.")
-        parser.add_argument("--tensor-parallel-size", type=int)
-        parser.add_argument("--pipeline-parallel-size", type=int)
-        parser.add_argument("--data-parallel-size", type=int)
-        parser.add_argument("--health-max-attempts", type=int, default=100)
-        parser.add_argument("--health-retry-delay", type=int, default=30)
-        parser.add_argument("--harbor-binary", default="harbor", help="Harbor CLI executable.")
-        parser.add_argument(
-            "--agent-kwarg",
-            action="append",
-            default=[],
-            help="Additional --agent-kwarg entries (key=value).",
-        )
-        parser.add_argument(
-            "--controller-log",
-            help="Optional path for vLLM controller stdout/stderr.",
-        )
-        parser.add_argument(
-            "--ray-log",
-            help="Optional path for Ray stdout/stderr.",
-        )
         parser.add_argument(
             "--endpoint-json",
             help="Optional endpoint JSON path.",
         )
-        parser.add_argument(
-            "--harbor-log",
-            help="Optional path for Harbor CLI stdout/stderr.",
-        )
-        parser.add_argument(
-            "--harbor-extra-arg",
-            action="append",
-            default=[],
-            help="Additional passthrough args for `harbor jobs start`.",
-        )
-        parser.add_argument(
-            "--dry-run",
-            action="store_true",
-            help="Print commands without executing Harbor.",
-        )
 
     def get_env_type(self) -> str:
-        """Get the environment type (--trace-env or --eval-env).
+        """Get the environment type from --harbor-env.
 
         Subclasses must override this method.
         """

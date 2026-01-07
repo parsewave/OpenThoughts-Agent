@@ -24,6 +24,13 @@ if "--list-providers" in sys.argv:
 
 from hpc.cloud_launch_utils import CloudLauncher, repo_relative, parse_gpu_count
 from hpc.cloud_sync_utils import sync_outputs
+from hpc.arg_groups import (
+    add_harbor_args,
+    add_harbor_env_arg,
+    add_model_compute_args,
+    add_hf_upload_args,
+    add_database_upload_args,
+)
 
 
 class EvalCloudLauncher(CloudLauncher):
@@ -34,64 +41,33 @@ class EvalCloudLauncher(CloudLauncher):
     default_n_concurrent = 16
 
     def add_task_specific_args(self, parser) -> None:
-        """Add eval-specific arguments."""
-        # Core eval arguments
-        parser.add_argument("--harbor-config", required=True, help="Path (within repo) to Harbor YAML.")
-        parser.add_argument("--datagen-config", help="Optional datagen config to seed defaults.")
-        parser.add_argument("--dataset", help="Harbor dataset slug (exclusive with --dataset-path).")
-        parser.add_argument("--dataset-path", help="Path to tasks directory (exclusive with --dataset).")
-        parser.add_argument("--model", required=True, help="Model identifier used by run_eval.")
-        parser.add_argument("--agent", default="terminus-2", help="Harbor agent to run.")
-        parser.add_argument("--eval-env", default="daytona", choices=["daytona", "docker", "modal"],
-                            help="Harbor environment backend: daytona (cloud), docker (local/podman), modal. (default: daytona)")
-        parser.add_argument("--harbor-extra-arg", action="append", default=[], help="Extra --harbor jobs start args.")
-        parser.add_argument("--agent-kwarg", action="append", default=[], help="Additional --agent-kwarg entries.")
-        parser.add_argument("--n-concurrent", type=int, default=self.default_n_concurrent)
-        parser.add_argument("--n-attempts", type=int, default=3, help="Times to run each task for standard error calculation (default: 3).")
-        parser.add_argument("--gpus", type=int, default=None, help="GPUs for run_eval (default: inferred from --accelerator).")
-        parser.add_argument("--dry-run", action="store_true", help="Pass --dry-run to run_eval.")
-        parser.add_argument("--job-name", help="Optional override for Harbor job name.")
+        """Add eval-specific arguments using shared arg_groups."""
+        # Harbor core config (--harbor-config, --agent, --job-name, --agent-kwarg, --harbor-extra-arg)
+        add_harbor_args(parser, config_required=True)
 
-        # Upload options (Supabase + HuggingFace)
-        parser.add_argument(
-            "--upload-to-database",
-            action="store_true",
-            help="After Harbor finishes, upload result abstracts to Supabase and traces to HuggingFace.",
+        # Model and compute (--model, --n-concurrent, --n-attempts, --gpus, --dry-run)
+        add_model_compute_args(
+            parser,
+            model_required=True,  # Eval requires model
+            default_n_concurrent=self.default_n_concurrent,  # 16 for eval
+            default_n_attempts=3,  # Eval: multiple runs for standard error
+            n_attempts_help="Times to run each task for standard error calculation (default: 3).",
         )
-        parser.add_argument(
-            "--upload-username",
-            help="Username for Supabase result attribution (defaults to $UPLOAD_USERNAME or current user).",
-        )
-        parser.add_argument(
-            "--upload-error-mode",
-            choices=["skip_on_error", "rollback_on_error"],
-            default="skip_on_error",
-            help="Supabase upload error handling (default: skip_on_error).",
-        )
-        parser.add_argument(
-            "--upload-hf-repo",
-            help="HuggingFace repo for traces upload (defaults to <org>/<job_name>).",
-        )
-        parser.add_argument(
-            "--upload-hf-token",
-            help="HuggingFace token for traces upload (defaults to $HF_TOKEN).",
-        )
-        parser.add_argument(
-            "--upload-hf-private",
-            action="store_true",
-            help="Create the HuggingFace traces repo as private.",
-        )
-        parser.add_argument(
-            "--upload-hf-episodes",
-            choices=["last", "all"],
-            default="last",
-            help="Which episodes to include in HuggingFace traces upload.",
-        )
-        parser.add_argument(
-            "--upload-forced-update",
-            action="store_true",
-            help="Allow overwriting existing Supabase result records for the same job.",
-        )
+
+        # Harbor environment backend (unified --harbor-env, with --eval-env as legacy alias)
+        add_harbor_env_arg(parser, default="daytona", legacy_names=["--eval-env"])
+
+        # Eval-specific arguments
+        parser.add_argument("--datagen-config",
+                            help="Optional datagen config to seed defaults.")
+        parser.add_argument("--dataset",
+                            help="Harbor dataset slug (exclusive with --dataset-path).")
+        parser.add_argument("--dataset-path",
+                            help="Path to tasks directory (exclusive with --dataset).")
+
+        # Upload options (shared from arg_groups)
+        add_hf_upload_args(parser)
+        add_database_upload_args(parser)
 
     def get_dataset_arg_name(self) -> Optional[str]:
         """Return the dataset argument name for HF handling."""
@@ -133,7 +109,7 @@ class EvalCloudLauncher(CloudLauncher):
 
         cmd.extend([
             "--agent", args.agent,
-            "--eval-env", args.eval_env,
+            "--harbor-env", args.harbor_env,
             "--n-concurrent", str(args.n_concurrent),
             "--n-attempts", str(args.n_attempts),
             "--gpus", str(args.gpus),

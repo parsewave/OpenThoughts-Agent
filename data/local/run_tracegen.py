@@ -23,6 +23,7 @@ from typing import Optional, Tuple
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 from hpc.local_runner_utils import LocalHarborRunner
+from hpc.arg_groups import add_harbor_env_arg, add_hf_upload_args
 
 
 class TracegenRunner(LocalHarborRunner):
@@ -56,44 +57,24 @@ class TracegenRunner(LocalHarborRunner):
             required=True,
             help="Path to datagen YAML with vLLM settings.",
         )
-        parser.add_argument(
-            "--trace-env",
-            default="daytona",
-            choices=["daytona", "docker", "modal"],
-            help="Harbor environment backend: daytona (cloud), docker (local/podman), modal. (default: daytona)",
-        )
+
+        # Harbor environment backend (unified --harbor-env, with --trace-env as legacy alias)
+        add_harbor_env_arg(parser, default="daytona", legacy_names=["--trace-env"])
+
         parser.add_argument(
             "--experiments-dir",
             default=str(REPO_ROOT / cls.DEFAULT_EXPERIMENTS_SUBDIR),
             help="Directory for logs + endpoint JSON.",
         )
 
-        # HuggingFace upload options
-        parser.add_argument(
-            "--upload-hf-repo",
-            help="Hugging Face repo id to upload traces to (e.g., my-org/my-traces).",
-        )
-        parser.add_argument(
-            "--upload-hf-token",
-            help="Hugging Face token for upload (defaults to $HF_TOKEN).",
-        )
-        parser.add_argument(
-            "--upload-hf-private",
-            action="store_true",
-            help="Create/overwrite the Hugging Face repo as private.",
-        )
-        parser.add_argument(
-            "--upload-hf-episodes",
-            choices=["last", "all"],
-            default="last",
-            help="Which episodes to include in HuggingFace traces upload (default: last).",
-        )
+        # HuggingFace upload options (shared from arg_groups)
+        add_hf_upload_args(parser)
 
         return parser
 
     def get_env_type(self) -> str:
-        """Get the environment type from --trace-env."""
-        return self.args.trace_env
+        """Get the environment type from --harbor-env (or legacy --trace-env)."""
+        return self.args.harbor_env
 
     def get_dataset_label(self) -> str:
         """Get the dataset label for job naming."""
