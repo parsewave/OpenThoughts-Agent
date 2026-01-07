@@ -6,6 +6,9 @@ cloud launchers (launch_tracegen_cloud.py, launch_eval_cloud.py).
 
 Each function adds a cohesive group of related arguments and allows callers to
 customize defaults where needed (e.g., different n_concurrent for tracegen vs eval).
+
+Convention: Primary flags use underscore_case to match HPC launcher. Kebab-case
+aliases are provided for backwards compatibility.
 """
 
 from __future__ import annotations
@@ -18,14 +21,37 @@ from typing import List, Optional, Union
 ArgTarget = Union[ArgumentParser, _ArgumentGroup]
 
 
+def _add_arg_with_alias(
+    parser: ArgTarget,
+    primary: str,
+    alias: Optional[str] = None,
+    **kwargs,
+) -> None:
+    """Add an argument with optional kebab-case alias.
+
+    Args:
+        parser: ArgumentParser or argument group.
+        primary: Primary flag name (underscore_case, e.g., "--harbor_config").
+        alias: Optional alias (kebab-case, e.g., "--harbor-config").
+        **kwargs: Arguments passed to add_argument.
+    """
+    parser.add_argument(primary, **kwargs)
+    if alias:
+        # Add hidden alias that maps to same dest
+        dest = primary.lstrip("-").replace("-", "_")
+        parser.add_argument(alias, dest=dest, help=argparse.SUPPRESS)
+
+
 def add_harbor_args(parser: ArgTarget, *, config_required: bool = True) -> None:
     """Add Harbor configuration arguments.
 
     Args:
         parser: ArgumentParser or argument group to add arguments to.
-        config_required: Whether --harbor-config is required (default True).
+        config_required: Whether --harbor_config is required (default True).
     """
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--harbor_config",
         "--harbor-config",
         required=config_required,
         help="Path to Harbor job config YAML.",
@@ -35,17 +61,23 @@ def add_harbor_args(parser: ArgTarget, *, config_required: bool = True) -> None:
         default="terminus-2",
         help="Harbor agent name.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--job_name",
         "--job-name",
         help="Optional override for Harbor job name.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--agent_kwarg",
         "--agent-kwarg",
         action="append",
         default=[],
         help="Additional --agent-kwarg entries (key=value).",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--harbor_extra_arg",
         "--harbor-extra-arg",
         action="append",
         default=[],
@@ -66,7 +98,9 @@ def add_harbor_env_arg(
         default: Default environment backend (default "daytona").
         legacy_names: Optional list of legacy argument names to support as hidden aliases.
     """
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--harbor_env",
         "--harbor-env",
         default=default,
         choices=["daytona", "docker", "modal"],
@@ -102,20 +136,24 @@ def add_model_compute_args(
         model_required: Whether --model is required (default False).
         default_n_concurrent: Default concurrent trials (default 16).
         default_n_attempts: Default attempts per task (default 1).
-        n_attempts_help: Help text for --n-attempts argument.
+        n_attempts_help: Help text for --n_attempts argument.
     """
     parser.add_argument(
         "--model",
         required=model_required,
         help="Model identifier.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--n_concurrent",
         "--n-concurrent",
         type=int,
         default=default_n_concurrent,
         help=f"Concurrent trials (default: {default_n_concurrent}).",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--n_attempts",
         "--n-attempts",
         type=int,
         default=default_n_attempts,
@@ -127,7 +165,9 @@ def add_model_compute_args(
         default=None,
         help="Number of GPUs to use.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--dry_run",
         "--dry-run",
         action="store_true",
         help="Print commands without executing.",
@@ -136,20 +176,28 @@ def add_model_compute_args(
 
 def add_hf_upload_args(parser: ArgTarget) -> None:
     """Add HuggingFace upload arguments (common to tracegen and eval)."""
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--upload_hf_repo",
         "--upload-hf-repo",
         help="HuggingFace repo for traces upload.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--upload_hf_token",
         "--upload-hf-token",
         help="HuggingFace token (defaults to $HF_TOKEN).",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--upload_hf_private",
         "--upload-hf-private",
         action="store_true",
         help="Create the HuggingFace repo as private.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--upload_hf_episodes",
         "--upload-hf-episodes",
         choices=["last", "all"],
         default="last",
@@ -159,22 +207,30 @@ def add_hf_upload_args(parser: ArgTarget) -> None:
 
 def add_database_upload_args(parser: ArgTarget) -> None:
     """Add Supabase database upload arguments (eval only)."""
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--upload_to_database",
         "--upload-to-database",
         action="store_true",
         help="Upload result abstracts to Supabase and traces to HuggingFace.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--upload_username",
         "--upload-username",
         help="Username for Supabase result attribution (defaults to $UPLOAD_USERNAME or current user).",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--upload_error_mode",
         "--upload-error-mode",
         choices=["skip_on_error", "rollback_on_error"],
         default="skip_on_error",
         help="Supabase upload error handling.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--upload_forced_update",
         "--upload-forced-update",
         action="store_true",
         help="Allow overwriting existing Supabase records.",
@@ -188,43 +244,57 @@ def add_ray_vllm_args(parser: ArgTarget) -> None:
         default="127.0.0.1",
         help="Host/IP for Ray and vLLM.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--ray_port",
         "--ray-port",
         type=int,
         default=6379,
         help="Ray head node port.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--api_port",
         "--api-port",
         type=int,
         default=8000,
         help="vLLM OpenAI-compatible API port.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--tensor_parallel_size",
         "--tensor-parallel-size",
         type=int,
         default=None,
         help="Tensor parallel size for vLLM.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--pipeline_parallel_size",
         "--pipeline-parallel-size",
         type=int,
         default=None,
         help="Pipeline parallel size for vLLM.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--data_parallel_size",
         "--data-parallel-size",
         type=int,
         default=None,
         help="Data parallel replicas for vLLM.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--health_max_attempts",
         "--health-max-attempts",
         type=int,
         default=100,
         help="Max health check attempts for vLLM.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--health_retry_delay",
         "--health-retry-delay",
         type=int,
         default=30,
@@ -234,25 +304,70 @@ def add_ray_vllm_args(parser: ArgTarget) -> None:
 
 def add_log_path_args(parser: ArgTarget) -> None:
     """Add log file path arguments (local runners only)."""
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--harbor_binary",
         "--harbor-binary",
         default="harbor",
         help="Harbor CLI executable path.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--controller_log",
         "--controller-log",
         default=None,
         help="Path for vLLM controller logs.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--ray_log",
         "--ray-log",
         default=None,
         help="Path for Ray logs.",
     )
-    parser.add_argument(
+    _add_arg_with_alias(
+        parser,
+        "--harbor_log",
         "--harbor-log",
         default=None,
         help="Path for Harbor CLI logs.",
+    )
+
+
+def add_tasks_input_arg(
+    parser: ArgTarget,
+    *,
+    required: bool = True,
+) -> None:
+    """Add tasks input path argument with aliases.
+
+    Provides both --tasks_input_path and --trace_input_path for compatibility
+    with HPC launcher naming.
+
+    Args:
+        parser: ArgumentParser or argument group to add arguments to.
+        required: Whether the argument is required (default True).
+    """
+    parser.add_argument(
+        "--tasks_input_path",
+        required=required,
+        help="Path to tasks directory (input for trace generation).",
+    )
+    # Aliases for compatibility
+    parser.add_argument(
+        "--tasks-input-path",
+        dest="tasks_input_path",
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--trace_input_path",
+        dest="tasks_input_path",
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "--trace-input-path",
+        dest="tasks_input_path",
+        help=argparse.SUPPRESS,
     )
 
 
@@ -264,4 +379,5 @@ __all__ = [
     "add_database_upload_args",
     "add_ray_vllm_args",
     "add_log_path_args",
+    "add_tasks_input_arg",
 ]

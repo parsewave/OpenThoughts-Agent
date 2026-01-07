@@ -84,8 +84,8 @@ Use `--dry_run` to inspect generated sbatch scripts without submitting a job.
 ## Datagen Jobs
 Datagen jobs build datasets (tasks, traces, or both). Key flags:
 - `--datagen_script`: generator entry point (e.g. `data/nl2bash/generate_abstract.py`).
+- `--datagen_config`: YAML config describing the inference engine and backend (e.g., `hpc/datagen_yaml/<model>_vllm_serve.yaml`).
 - `--datagen_target_repo`: Hugging Face repo for uploading generated tasks.
-- `--datagen_engine`: inference backend (`openai`, `anthropic`, `vllm_local`, `none`).
 - `--datagen_extra_args`: extra CLI switches forwarded to the generator.
 
 Optional trace generation:
@@ -100,15 +100,16 @@ Example (tasks + traces using a vLLM endpoint):
 python -m hpc.launch \
   --job_type datagen \
   --datagen_script data/nl2bash/generate_abstract.py \
+  --datagen_config hpc/datagen_yaml/qwen3_coder_30b_a3b_vllm_serve.yaml \
   --datagen_target_repo my-org/nl2bash-tasks \
-  --datagen_engine vllm_local \
-  --datagen_extra_args "--stage both --limit 200" \
+  --enable_task_gen True \
+  --enable_trace_gen True \
   --trace_target_repo my-org/nl2bash-traces \
   --trace_harbor_config path/to/harbor_config.yaml \
   --experiments_dir "$DCFT/experiments" \
   --time_limit 12:00:00
 ```
-Adjust `--datagen_extra_args` to pass dataset-specific switches such as sampling bounds or input paths.
+Use `--datagen_extra_args` to pass dataset-specific switches such as `--limit` or `--no-upload`.
 
 ## SFT Jobs
 Training runs rely on llama-factory configs stored under `sft/hp_settings`. Supply the path to a YAML alongside optional overrides:

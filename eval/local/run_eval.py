@@ -38,28 +38,32 @@ class EvalRunner(LocalHarborRunner):
         # Add common arguments from base class
         cls.add_common_arguments(parser)
 
-        # Eval-specific arguments
+        # Eval-specific arguments (underscore primary, kebab alias)
         parser.add_argument(
             "--dataset",
-            help="Harbor dataset slug (e.g., terminal-bench@2.0). Mutually exclusive with --dataset-path.",
+            help="Harbor dataset slug (e.g., terminal-bench@2.0). Mutually exclusive with --dataset_path.",
         )
         parser.add_argument(
-            "--dataset-path",
+            "--dataset_path",
             help="Path to a Harbor task directory. Mutually exclusive with --dataset.",
         )
+        parser.add_argument("--dataset-path", dest="dataset_path", help=argparse.SUPPRESS)
 
-        # Harbor environment backend (unified --harbor-env, with --eval-env as legacy alias)
-        add_harbor_env_arg(parser, default="daytona", legacy_names=["--eval-env"])
+        # Harbor environment backend (unified --harbor_env, with legacy aliases)
+        add_harbor_env_arg(parser, default="daytona", legacy_names=["--eval-env", "--eval_env"])
 
         parser.add_argument(
-            "--datagen-config",
+            "--datagen_config",
             help="Optional datagen YAML whose vLLM settings will seed defaults for this script.",
         )
+        parser.add_argument("--datagen-config", dest="datagen_config", help=argparse.SUPPRESS)
+
         parser.add_argument(
-            "--experiments-dir",
+            "--experiments_dir",
             default=str(REPO_ROOT / cls.DEFAULT_EXPERIMENTS_SUBDIR),
             help="Directory for logs + endpoint JSON.",
         )
+        parser.add_argument("--experiments-dir", dest="experiments_dir", help=argparse.SUPPRESS)
 
         # Upload options (shared from arg_groups)
         add_hf_upload_args(parser)

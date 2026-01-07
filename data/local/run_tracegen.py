@@ -8,10 +8,10 @@ exclusive access to the box.
 
 Usage:
     python run_tracegen.py \
-        --harbor-config harbor_configs/default.yaml \
-        --tasks-input-path /path/to/tasks \
-        --datagen-config datagen_configs/my_config.yaml \
-        --upload-hf-repo my-org/my-traces
+        --harbor_config harbor_configs/default.yaml \
+        --tasks_input_path /path/to/tasks \
+        --datagen_config datagen_configs/my_config.yaml \
+        --upload_hf_repo my-org/my-traces
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from typing import Optional, Tuple
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 from hpc.local_runner_utils import LocalHarborRunner
-from hpc.arg_groups import add_harbor_env_arg, add_hf_upload_args
+from hpc.arg_groups import add_harbor_env_arg, add_hf_upload_args, add_tasks_input_arg
 
 
 class TracegenRunner(LocalHarborRunner):
@@ -46,26 +46,25 @@ class TracegenRunner(LocalHarborRunner):
         # Add common arguments from base class
         cls.add_common_arguments(parser)
 
-        # Tracegen-specific arguments
+        # Tracegen-specific arguments (with underscore primary, kebab alias)
+        add_tasks_input_arg(parser, required=True)
+
         parser.add_argument(
-            "--tasks-input-path",
-            required=True,
-            help="Path to tasks directory (input for trace generation).",
-        )
-        parser.add_argument(
-            "--datagen-config",
+            "--datagen_config",
             required=True,
             help="Path to datagen YAML with vLLM settings.",
         )
+        parser.add_argument("--datagen-config", dest="datagen_config", help=argparse.SUPPRESS)
 
-        # Harbor environment backend (unified --harbor-env, with --trace-env as legacy alias)
-        add_harbor_env_arg(parser, default="daytona", legacy_names=["--trace-env"])
+        # Harbor environment backend (unified --harbor_env, with legacy aliases)
+        add_harbor_env_arg(parser, default="daytona", legacy_names=["--trace-env", "--trace_env"])
 
         parser.add_argument(
-            "--experiments-dir",
+            "--experiments_dir",
             default=str(REPO_ROOT / cls.DEFAULT_EXPERIMENTS_SUBDIR),
             help="Directory for logs + endpoint JSON.",
         )
+        parser.add_argument("--experiments-dir", dest="experiments_dir", help=argparse.SUPPRESS)
 
         # HuggingFace upload options (shared from arg_groups)
         add_hf_upload_args(parser)

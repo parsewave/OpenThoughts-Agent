@@ -145,29 +145,29 @@ Example:
 
 ```bash
 python eval/local/run_eval.py \
-  --datagen-config hpc/datagen_yaml/qwen3_coder_30b_a3b_vllm_serve_131k_1xH200.yaml \
-  --harbor-config hpc/harbor_yaml/trace_16concurrency_eval_ctx131k.yaml \
+  --datagen_config hpc/datagen_yaml/qwen3_coder_30b_a3b_vllm_serve_131k_1xH200.yaml \
+  --harbor_config hpc/harbor_yaml/trace_16concurrency_eval_ctx131k.yaml \
   --dataset terminal-bench@2.0 \
   --model Qwen/Qwen3-Coder-30B-A3B-Instruct \
   --agent terminus-2 \
   --gpus 1 \
-  --eval-benchmark-repo DCAgent2/Qwen3Coder30B-terminus2-terminal-bench-2.0-test-lambda
+  --eval_benchmark_repo DCAgent2/Qwen3Coder30B-terminus2-terminal-bench-2.0-test-lambda
 ```
 
 What happens:
 
-1. Datagen defaults (tensor parallelism, vLLM overrides, etc.) are pulled from `--datagen-config`.
+1. Datagen defaults (tensor parallelism, vLLM overrides, etc.) are pulled from `--datagen_config`.
 2. Ray and vLLM are booted locally; endpoint metadata lands in `eval_runs/vllm_endpoint.json`.
 3. The script builds the Harbor command, injects required agent kwargs, and runs it while streaming output to `eval_runs/logs/harbor.log`.
-4. Traces, logs, and Harbor artifacts accumulate under `eval_runs/` (change via `--experiments-dir`).
+4. Traces, logs, and Harbor artifacts accumulate under `eval_runs/` (change via `--experiments_dir`).
 
 Handy flags:
 
-* `--agent-kwarg foo=bar` (repeatable) to forward Harbor agent settings.
-* `--harbor-extra-arg ...` for advanced Harbor CLI knobs (e.g., filtering datasets).
-* `--harbor-env daytona|docker|modal` to select the Harbor sandbox backend (default: `daytona`).
-* `--harbor-log /tmp/harbor.log` to redirect the live Harbor TUI.
-* `--dry-run` to validate configs without launching Ray/Harbor.
+* `--agent_kwarg foo=bar` (repeatable) to forward Harbor agent settings.
+* `--harbor_extra_arg ...` for advanced Harbor CLI knobs (e.g., filtering datasets).
+* `--harbor_env daytona|docker|modal` to select the Harbor sandbox backend (default: `daytona`).
+* `--harbor_log /tmp/harbor.log` to redirect the live Harbor TUI.
+* `--dry_run` to validate configs without launching Ray/Harbor.
 
 Once your eval behaves locally, promote the same Harbor YAML/datagen config to your HPC launcher or the cloud wrappers (see **Cloud Launchers** below).
 
@@ -181,13 +181,13 @@ Launches `data/local/run_tracegen.py` on a cloud GPU node:
 
 ```bash
 python data/cloud/launch_tracegen_cloud.py \
-  --harbor-config hpc/harbor_yaml/trace_16concurrency_ctx131k.yaml \
-  --datagen-config hpc/datagen_yaml/gpt_oss_120b_vllm_serve_131k_1xH200.yaml \
-  --tasks-input-path DCAgent/stackexchange-tor-sandboxes \
+  --harbor_config hpc/harbor_yaml/trace_16concurrency_ctx131k.yaml \
+  --datagen_config hpc/datagen_yaml/gpt_oss_120b_vllm_serve_131k_1xH200.yaml \
+  --tasks_input_path DCAgent/stackexchange-tor-sandboxes \
   --model openai/gpt-oss-120b \
-  --secrets-env /path/to/secrets.env \
+  --secrets_env /path/to/secrets.env \
   --accelerator "H100:1" \
-  --cloud-provider gcp \
+  --cloud_provider gcp \
   --region us-central1
 ```
 
@@ -197,29 +197,29 @@ Launches `eval/local/run_eval.py` on a cloud GPU node:
 
 ```bash
 python eval/cloud/launch_eval_cloud.py \
-  --harbor-config hpc/harbor_yaml/trace_16concurrency_eval_ctx131k.yaml \
-  --datagen-config hpc/datagen_yaml/qwen3_coder_30b_a3b_vllm_serve_131k_1xH200.yaml \
+  --harbor_config hpc/harbor_yaml/trace_16concurrency_eval_ctx131k.yaml \
+  --datagen_config hpc/datagen_yaml/qwen3_coder_30b_a3b_vllm_serve_131k_1xH200.yaml \
   --dataset terminal-bench@2.0 \
   --model Qwen/Qwen3-Coder-30B-A3B-Instruct \
   --agent terminus-2 \
-  --secrets-env /path/to/secrets.env \
+  --secrets_env /path/to/secrets.env \
   --accelerator "H100:1" \
-  --cloud-provider gcp
+  --cloud_provider gcp
 ```
 
 #### Common Cloud Flags
 
-* `--cloud-provider` - Cloud backend: `gcp`, `aws`, `lambda`, `kubernetes`, etc. (comma-separated for fallbacks)
+* `--cloud_provider` - Cloud backend: `gcp`, `aws`, `lambda`, `kubernetes`, etc. (comma-separated for fallbacks)
 * `--accelerator` - GPU spec, e.g., `H100:1`, `A100:4` (comma-separated for fallbacks)
 * `--region` - Preferred region(s)
-* `--harbor-env` - Harbor environment backend: `daytona` (default), `docker`, or `modal`
-* `--secrets-env` - Path to secrets file sourced inside the container
+* `--harbor_env` - Harbor environment backend: `daytona` (default), `docker`, or `modal`
+* `--secrets_env` - Path to secrets file sourced inside the container
 * `--autostop N` - Auto-stop cluster after N minutes idle (set to 0 for Kubernetes)
-* `--retry-until-up` - Keep retrying until resources are available (useful for scarce GPUs)
+* `--retry_until_up` - Keep retrying until resources are available (useful for scarce GPUs)
 * `--down` - Tear down cluster after job completes
-* `--list-providers` - Show available cloud providers and exit
+* `--list_providers` - Show available cloud providers and exit
 
-Logs and outputs sync periodically to `--local-sync-dir` during execution.
+Logs and outputs sync periodically to `--local_sync_dir` during execution.
 
 1. Ensure your cluster environment is set up (dotenv, conda env, etc.). For TACC/Vista-style machines, follow the checklist in `hpc/README.md` and use `hpc/dotenv/tacc.env` as a starting point for your environment variables.
 2. Activate your environment and source the dotenv:
@@ -234,17 +234,17 @@ The dotenvs now export `PYTHONPATH="${DCFT_PRIVATE:-$DCFT}:$PYTHONPATH"` so `pyt
 ```bash
 python -m hpc.launch \
   --job_type datagen \
-  --datagen_script data/<dataset>/generate.py \
+  --datagen_script data/<dataset>/generate_abstract.py \
+  --datagen_config hpc/datagen_yaml/<model>_vllm_serve.yaml \
   --datagen_target_repo <org/dataset-tasks> \
-  --datagen_engine vllm_local \
-  --datagen_extra_args "--stage both --limit 200" \
+  --enable_task_gen True \
   --experiments_dir "$DCFT/experiments" \
   --time_limit 12:00:00
 ```
 1. To also generate traces, add:
-   - `--enable_trace_gen`  
-   - `--trace_target_repo <org/dataset-traces>`  
-   - `--trace_harbor_config path/to/harbor_job.yaml`  
+   - `--enable_trace_gen True`
+   - `--trace_target_repo <org/dataset-traces>`
+   - `--trace_harbor_config path/to/harbor_job.yaml`
    and any of the `trace_*` overrides documented in `hpc/README.md`.
 
 The launcher will synthesize and submit one or more `sbatch` scripts under `"$experiments_dir/sbatch_scripts"` and write configs to `"$experiments_dir/configs"`. Use `--dry_run` to inspect scripts without actually calling `sbatch`.

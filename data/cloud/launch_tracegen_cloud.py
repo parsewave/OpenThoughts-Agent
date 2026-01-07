@@ -22,6 +22,8 @@ if "--list-providers" in sys.argv:
     print(list_providers(verbose=True))
     sys.exit(0)
 
+import argparse
+
 from hpc.cloud_launch_utils import CloudLauncher, repo_relative, parse_gpu_count
 from hpc.cloud_sync_utils import sync_outputs
 from hpc.arg_groups import (
@@ -29,6 +31,7 @@ from hpc.arg_groups import (
     add_harbor_env_arg,
     add_model_compute_args,
     add_hf_upload_args,
+    add_tasks_input_arg,
 )
 
 
@@ -41,10 +44,10 @@ class TracegenCloudLauncher(CloudLauncher):
 
     def add_task_specific_args(self, parser) -> None:
         """Add tracegen-specific arguments using shared arg_groups."""
-        # Harbor core config (--harbor-config, --agent, --job-name, --agent-kwarg, --harbor-extra-arg)
+        # Harbor core config (--harbor_config, --agent, --job_name, --agent_kwarg, --harbor_extra_arg)
         add_harbor_args(parser, config_required=True)
 
-        # Model and compute (--model, --n-concurrent, --n-attempts, --gpus, --dry-run)
+        # Model and compute (--model, --n_concurrent, --n_attempts, --gpus, --dry_run)
         add_model_compute_args(
             parser,
             model_required=False,
@@ -53,14 +56,15 @@ class TracegenCloudLauncher(CloudLauncher):
             n_attempts_help="Times to run each task for repeated trials (default: 1).",
         )
 
-        # Harbor environment backend (unified --harbor-env, with --trace-env as legacy alias)
-        add_harbor_env_arg(parser, default="daytona", legacy_names=["--trace-env"])
+        # Harbor environment backend (unified --harbor_env, with legacy aliases)
+        add_harbor_env_arg(parser, default="daytona", legacy_names=["--trace-env", "--trace_env"])
 
-        # Tracegen-specific required arguments
-        parser.add_argument("--datagen-config", required=True,
+        # Tracegen-specific required arguments (underscore primary, kebab alias)
+        parser.add_argument("--datagen_config", required=True,
                             help="Datagen config with vLLM settings (required).")
-        parser.add_argument("--tasks-input-path", required=True,
-                            help="Path to tasks directory OR HuggingFace repo (org/repo-name).")
+        parser.add_argument("--datagen-config", dest="datagen_config", help=argparse.SUPPRESS)
+
+        add_tasks_input_arg(parser, required=True)
 
         # HuggingFace upload options (shared from arg_groups)
         add_hf_upload_args(parser)

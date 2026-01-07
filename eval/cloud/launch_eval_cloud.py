@@ -22,6 +22,8 @@ if "--list-providers" in sys.argv:
     print(list_providers(verbose=True))
     sys.exit(0)
 
+import argparse
+
 from hpc.cloud_launch_utils import CloudLauncher, repo_relative, parse_gpu_count
 from hpc.cloud_sync_utils import sync_outputs
 from hpc.arg_groups import (
@@ -42,10 +44,10 @@ class EvalCloudLauncher(CloudLauncher):
 
     def add_task_specific_args(self, parser) -> None:
         """Add eval-specific arguments using shared arg_groups."""
-        # Harbor core config (--harbor-config, --agent, --job-name, --agent-kwarg, --harbor-extra-arg)
+        # Harbor core config (--harbor_config, --agent, --job_name, --agent_kwarg, --harbor_extra_arg)
         add_harbor_args(parser, config_required=True)
 
-        # Model and compute (--model, --n-concurrent, --n-attempts, --gpus, --dry-run)
+        # Model and compute (--model, --n_concurrent, --n_attempts, --gpus, --dry_run)
         add_model_compute_args(
             parser,
             model_required=True,  # Eval requires model
@@ -54,16 +56,19 @@ class EvalCloudLauncher(CloudLauncher):
             n_attempts_help="Times to run each task for standard error calculation (default: 3).",
         )
 
-        # Harbor environment backend (unified --harbor-env, with --eval-env as legacy alias)
-        add_harbor_env_arg(parser, default="daytona", legacy_names=["--eval-env"])
+        # Harbor environment backend (unified --harbor_env, with legacy aliases)
+        add_harbor_env_arg(parser, default="daytona", legacy_names=["--eval-env", "--eval_env"])
 
-        # Eval-specific arguments
-        parser.add_argument("--datagen-config",
+        # Eval-specific arguments (underscore primary, kebab alias)
+        parser.add_argument("--datagen_config",
                             help="Optional datagen config to seed defaults.")
+        parser.add_argument("--datagen-config", dest="datagen_config", help=argparse.SUPPRESS)
+
         parser.add_argument("--dataset",
-                            help="Harbor dataset slug (exclusive with --dataset-path).")
-        parser.add_argument("--dataset-path",
+                            help="Harbor dataset slug (exclusive with --dataset_path).")
+        parser.add_argument("--dataset_path",
                             help="Path to tasks directory (exclusive with --dataset).")
+        parser.add_argument("--dataset-path", dest="dataset_path", help=argparse.SUPPRESS)
 
         # Upload options (shared from arg_groups)
         add_hf_upload_args(parser)

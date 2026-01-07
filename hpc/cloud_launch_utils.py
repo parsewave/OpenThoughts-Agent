@@ -634,15 +634,27 @@ class CloudLauncher:
         return parser
 
     def _add_cloud_args(self, parser: "argparse.ArgumentParser") -> None:
-        """Add shared cloud arguments to parser."""
-        parser.add_argument(
-            "--cloud-provider",
+        """Add shared cloud arguments to parser.
+
+        Convention: underscore_case primary flags with kebab-case aliases for compatibility.
+        """
+        import argparse as _argparse
+
+        # Helper to add arg with alias
+        def _add(primary, alias=None, **kw):
+            parser.add_argument(primary, **kw)
+            if alias:
+                dest = primary.lstrip("-").replace("-", "_")
+                parser.add_argument(alias, dest=dest, help=_argparse.SUPPRESS)
+
+        _add(
+            "--cloud_provider", "--cloud-provider",
             default="gcp",
             help="Cloud provider(s) to use. Comma-separated for fallbacks (e.g., 'gcp,aws,lambda'). "
-            "Run with --list-providers for details.",
+            "Run with --list_providers for details.",
         )
-        parser.add_argument(
-            "--list-providers",
+        _add(
+            "--list_providers", "--list-providers",
             action="store_true",
             help="List supported cloud providers and exit.",
         )
@@ -656,26 +668,26 @@ class CloudLauncher:
             default="A100:1",
             help="SkyPilot accelerator spec(s). Comma-separated for fallback options.",
         )
-        parser.add_argument("--use-spot", action="store_true", help="Use spot/preemptible instances.")
-        parser.add_argument(
-            "--docker-image",
+        _add("--use_spot", "--use-spot", action="store_true", help="Use spot/preemptible instances.")
+        _add(
+            "--docker_image", "--docker-image",
             default=DEFAULT_DOCKER_IMAGE,
             help="Pre-built Docker image (default: auto-selects based on GPU count).",
         )
-        parser.add_argument("--task-name", default=self.task_name, help="SkyPilot task name.")
-        parser.add_argument("--cluster-name", help="Optional SkyPilot cluster name override.")
-        parser.add_argument(
-            "--remote-output-subdir",
+        _add("--task_name", "--task-name", default=self.task_name, help="SkyPilot task name.")
+        _add("--cluster_name", "--cluster-name", help="Optional SkyPilot cluster name override.")
+        _add(
+            "--remote_output_subdir", "--remote-output-subdir",
             default=self.default_output_subdir,
             help=f"Subdirectory for outputs (default: '{self.default_output_subdir}').",
         )
-        parser.add_argument(
-            "--local-sync-dir",
+        _add(
+            "--local_sync_dir", "--local-sync-dir",
             default=(self.repo_root / self.default_output_subdir).as_posix(),
         )
-        parser.add_argument("--secrets-env", help="Path to secrets.env to source inside the container.")
-        parser.add_argument(
-            "--no-sync",
+        _add("--secrets_env", "--secrets-env", help="Path to secrets.env to source inside the container.")
+        _add(
+            "--no_sync", "--no-sync",
             action="store_true",
             help="Skip syncing local codebase to VM (use code baked into Docker image).",
         )
@@ -691,15 +703,15 @@ class CloudLauncher:
             action="store_true",
             help="Tear down cluster after task completes.",
         )
-        parser.add_argument(
-            "--log-sync-interval",
+        _add(
+            "--log_sync_interval", "--log-sync-interval",
             type=int,
             default=DEFAULT_LOG_SYNC_INTERVAL,
             metavar="SECONDS",
             help=f"Interval for periodic log sync (default: {DEFAULT_LOG_SYNC_INTERVAL}s). Set to 0 to disable.",
         )
-        parser.add_argument(
-            "--retry-until-up",
+        _add(
+            "--retry_until_up", "--retry-until-up",
             action="store_true",
             help="Keep retrying to provision until the cluster is up (useful for scarce GPU availability).",
         )
