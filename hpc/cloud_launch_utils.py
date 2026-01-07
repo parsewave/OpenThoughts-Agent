@@ -698,6 +698,11 @@ class CloudLauncher:
             metavar="SECONDS",
             help=f"Interval for periodic log sync (default: {DEFAULT_LOG_SYNC_INTERVAL}s). Set to 0 to disable.",
         )
+        parser.add_argument(
+            "--retry-until-up",
+            action="store_true",
+            help="Keep retrying to provision until the cluster is up (useful for scarce GPU availability).",
+        )
 
     def add_task_specific_args(self, parser: "argparse.ArgumentParser") -> None:
         """Add task-specific arguments. Override in subclasses."""
@@ -884,6 +889,8 @@ class CloudLauncher:
         launch_kwargs = {"cluster_name": args.cluster_name}
         if args.autostop > 0:
             launch_kwargs["idle_minutes_to_autostop"] = args.autostop
+        if args.retry_until_up:
+            launch_kwargs["retry_until_up"] = True
 
         request_id = sky.launch(task, **launch_kwargs)
         launch_result = sky.stream_and_get(request_id)

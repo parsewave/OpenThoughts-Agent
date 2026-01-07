@@ -165,10 +165,61 @@ Handy flags:
 
 * `--agent-kwarg foo=bar` (repeatable) to forward Harbor agent settings.
 * `--harbor-extra-arg ...` for advanced Harbor CLI knobs (e.g., filtering datasets).
+* `--harbor-env daytona|docker|modal` to select the Harbor sandbox backend (default: `daytona`).
 * `--harbor-log /tmp/harbor.log` to redirect the live Harbor TUI.
 * `--dry-run` to validate configs without launching Ray/Harbor.
 
-Once your eval behaves locally, promote the same Harbor YAML/datagen config to your HPC launcher or the forthcoming cloud wrappers (documented separately once they graduate from alpha).
+Once your eval behaves locally, promote the same Harbor YAML/datagen config to your HPC launcher or the cloud wrappers (see **Cloud Launchers** below).
+
+### Cloud Launchers
+
+OT-Agent provides SkyPilot-based cloud launchers for running trace generation and eval jobs on cloud VMs (GCP, AWS, Lambda, Kubernetes, etc.) without SLURM. These live under `data/cloud/` and `eval/cloud/`.
+
+#### Cloud Trace Generation (`data/cloud/launch_tracegen_cloud.py`)
+
+Launches `data/local/run_tracegen.py` on a cloud GPU node:
+
+```bash
+python data/cloud/launch_tracegen_cloud.py \
+  --harbor-config hpc/harbor_yaml/trace_16concurrency_ctx131k.yaml \
+  --datagen-config hpc/datagen_yaml/gpt_oss_120b_vllm_serve_131k_1xH200.yaml \
+  --tasks-input-path DCAgent/stackexchange-tor-sandboxes \
+  --model openai/gpt-oss-120b \
+  --secrets-env /path/to/secrets.env \
+  --accelerator "H100:1" \
+  --cloud-provider gcp \
+  --region us-central1
+```
+
+#### Cloud Eval (`eval/cloud/launch_eval_cloud.py`)
+
+Launches `eval/local/run_eval.py` on a cloud GPU node:
+
+```bash
+python eval/cloud/launch_eval_cloud.py \
+  --harbor-config hpc/harbor_yaml/trace_16concurrency_eval_ctx131k.yaml \
+  --datagen-config hpc/datagen_yaml/qwen3_coder_30b_a3b_vllm_serve_131k_1xH200.yaml \
+  --dataset terminal-bench@2.0 \
+  --model Qwen/Qwen3-Coder-30B-A3B-Instruct \
+  --agent terminus-2 \
+  --secrets-env /path/to/secrets.env \
+  --accelerator "H100:1" \
+  --cloud-provider gcp
+```
+
+#### Common Cloud Flags
+
+* `--cloud-provider` - Cloud backend: `gcp`, `aws`, `lambda`, `kubernetes`, etc. (comma-separated for fallbacks)
+* `--accelerator` - GPU spec, e.g., `H100:1`, `A100:4` (comma-separated for fallbacks)
+* `--region` - Preferred region(s)
+* `--harbor-env` - Harbor environment backend: `daytona` (default), `docker`, or `modal`
+* `--secrets-env` - Path to secrets file sourced inside the container
+* `--autostop N` - Auto-stop cluster after N minutes idle (set to 0 for Kubernetes)
+* `--retry-until-up` - Keep retrying until resources are available (useful for scarce GPUs)
+* `--down` - Tear down cluster after job completes
+* `--list-providers` - Show available cloud providers and exit
+
+Logs and outputs sync periodically to `--local-sync-dir` during execution.
 
 1. Ensure your cluster environment is set up (dotenv, conda env, etc.). For TACC/Vista-style machines, follow the checklist in `hpc/README.md` and use `hpc/dotenv/tacc.env` as a starting point for your environment variables.
 2. Activate your environment and source the dotenv:
