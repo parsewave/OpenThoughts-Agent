@@ -69,6 +69,9 @@ class HPC(BaseModel):
     num_nodes_default: int = 4
     num_nodes_fast: int = 8
 
+    # Extra SBATCH directives (cluster-specific, e.g., licenses)
+    extra_sbatch_directives: List[str] = []
+
     def model_post_init(self, __context) -> None:
         # Derive a default CPU-per-GPU ratio when not explicitly provided.
         if not self.cpus_per_gpu:
@@ -176,6 +179,9 @@ class HPC(BaseModel):
             lines.append(mem_directive)
         if self.node_exclusion_list:
             lines.append(f"#SBATCH --exclude={self.node_exclusion_list}")
+        # Add any extra cluster-specific directives (e.g., licenses)
+        for directive in self.extra_sbatch_directives:
+            lines.append(directive)
         return "\n".join(lines)
 
     def get_srun_export_env(self) -> str:
@@ -407,6 +413,8 @@ capella = HPC(
     num_nodes_slow=1,
     num_nodes_default=1,
     num_nodes_fast=4,
+    # ZIH license requirements
+    extra_sbatch_directives=["#SBATCH --licenses=walrus:1,octopus:1,narwhal:1,cat:1"],
 )
 
 alpha = HPC(
@@ -439,6 +447,8 @@ alpha = HPC(
     num_nodes_slow=1,
     num_nodes_default=1,
     num_nodes_fast=4,
+    # ZIH license requirements
+    extra_sbatch_directives=["#SBATCH --licenses=walrus:1,octopus:1,narwhal:1,cat:1"],
 )
 
 dip = HPC(
