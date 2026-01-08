@@ -16,6 +16,7 @@ from hpc.launch_utils import (
     setup_experiments_dir,
     substitute_template,
     build_sbatch_directives,
+    coerce_positive_int,
 )
 
 
@@ -50,40 +51,19 @@ def build_training_parameters_link(hub_model_id: Optional[str]) -> Optional[str]
     return f"https://huggingface.co/{hub_model_id}/blob/main/config.json"
 
 
-def _normalize_deepspeed_path(ds_val: str) -> str:
-    if not isinstance(ds_val, str):
-        return ds_val
-    mapping = {
-        "dcft/train/zero3.json": "dcft/train/llamafactory/examples/deepspeed/ds_z3_config.json",
-        "dcft/train/zero3_offload.json": "dcft/train/llamafactory/examples/deepspeed/ds_z3_offload_config.json",
-        "dcft/train/zero2.json": "dcft/train/llamafactory/examples/deepspeed/ds_z2_config.json",
-    }
-    if ds_val in mapping:
-        return mapping[ds_val]
-    for old, new in mapping.items():
-        if ds_val.endswith(old) or old in ds_val:
-            return ds_val.replace(old, new)
-    return ds_val
-
-
 def ensure_deepspeed_config(base_config: dict, exp_args: dict) -> dict:
-    """Ensure DeepSpeed settings exist and point at canonical config paths."""
-
+    """Ensure DeepSpeed settings exist."""
     default_ds = LlamaFactoryArgs.__dataclass_fields__["deepspeed"].default
     if not base_config.get("deepspeed"):
         base_config["deepspeed"] = exp_args.get("deepspeed", default_ds) or default_ds
-
-    if isinstance(base_config.get("deepspeed"), str):
-        normalized = _normalize_deepspeed_path(base_config["deepspeed"])
-        if normalized != base_config["deepspeed"]:
-            print(f"Normalized deepspeed path: {base_config['deepspeed']} -> {normalized}")
-            base_config["deepspeed"] = normalized
     return base_config
 
 
 def maybe_compute_gradient_accumulation(base_config: dict, exp_args: dict) -> dict:
-    num_nodes = int(exp_args.get("num_nodes"))
-    num_gpus = int(exp_args.get("gpus_per_node"))
+    num_nodes = coerce_positive_int(exp_args.get("num_nodes"), 1)
+    num_gpus = coerce_positive_int(exp_args.get("gpus_per_node"), 1)
+
+    # Extract global_batch_size from exp_args or base_config
     raw_global_batch_size = exp_args.pop("global_batch_size", None)
     if raw_global_batch_size is None:
         raw_global_batch_size = base_config.pop("global_batch_size", None)
@@ -94,37 +74,22 @@ def maybe_compute_gradient_accumulation(base_config: dict, exp_args: dict) -> di
         print("\nSkipping automatic gradient accumulation calculation because global_batch_size was not provided.")
         return base_config
 
-    try:
-        global_batch_size = int(raw_global_batch_size)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(
-            f"Expected integer-like global_batch_size, got {raw_global_batch_size!r}"
-        ) from exc
+    global_batch_size = coerce_positive_int(raw_global_batch_size, 0)
+    if global_batch_size <= 0:
+        raise ValueError(f"Expected positive global_batch_size, got {raw_global_batch_size!r}")
 
     total_gpu_count = num_nodes * num_gpus
 
-    def _int_config_value(key: str, default: int = 1) -> int:
-        raw_value = base_config.get(key, default)
-        try:
-            return int(raw_value)
-        except (TypeError, ValueError) as exc:
-            raise ValueError(
-                f"Expected integer-like value for {key}, got {raw_value!r}"
-            ) from exc
-
-    tensor_model_parallel_size = _int_config_value("tensor_model_parallel_size", 1)
-    pipeline_model_parallel_size = _int_config_value("pipeline_model_parallel_size", 1)
-    expert_model_parallel_size = _int_config_value("expert_model_parallel_size", 1)
+    # Model parallelism settings
+    tensor_model_parallel_size = coerce_positive_int(base_config.get("tensor_model_parallel_size"), 1)
+    pipeline_model_parallel_size = coerce_positive_int(base_config.get("pipeline_model_parallel_size"), 1)
+    expert_model_parallel_size = coerce_positive_int(base_config.get("expert_model_parallel_size"), 1)
 
     model_parallel_world_size = (
         tensor_model_parallel_size
         * pipeline_model_parallel_size
         * expert_model_parallel_size
     )
-    if model_parallel_world_size <= 0:
-        raise ValueError(
-            f"Model parallel world size must be positive; got {model_parallel_world_size}"
-        )
 
     if total_gpu_count % model_parallel_world_size != 0:
         print(
@@ -133,19 +98,11 @@ def maybe_compute_gradient_accumulation(base_config: dict, exp_args: dict) -> di
         )
     data_parallel_replicas = max(total_gpu_count // model_parallel_world_size, 1)
 
-    per_device_train_batch_size = base_config.get("per_device_train_batch_size", 1)
-    try:
-        per_device_train_batch_size = max(int(per_device_train_batch_size), 1)
-    except (TypeError, ValueError) as exc:
-        raise ValueError(
-            f"Expected integer-like per_device_train_batch_size, got {per_device_train_batch_size!r}"
-        ) from exc
+    per_device_train_batch_size = coerce_positive_int(base_config.get("per_device_train_batch_size"), 1)
 
     effective_batch_denom = per_device_train_batch_size * data_parallel_replicas
-    if effective_batch_denom == 0:
-        raise ValueError("Effective batch denominator resolved to zero.")
-
     gradient_accumulation_steps = global_batch_size // effective_batch_denom
+
     if gradient_accumulation_steps == 0 or (
         gradient_accumulation_steps * effective_batch_denom != global_batch_size
     ):
