@@ -1,7 +1,8 @@
 """Harbor CLI utilities for HPC launchers.
 
 This module provides utilities for interacting with the Harbor CLI:
-- Config loading and parsing
+- Config path resolution and loading
+- Registry validation for dataset slugs
 - Agent kwargs extraction and serialization
 - Command building for harbor jobs start
 
@@ -14,11 +15,149 @@ from __future__ import annotations
 
 import copy
 import json
+import os
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import yaml
+
+
+# ---------------------------------------------------------------------------
+# Harbor config paths and directories
+# ---------------------------------------------------------------------------
+
+# Directory containing Harbor YAML configs (relative to this file)
+_DIRENV = os.path.dirname(__file__)
+HARBOR_CONFIG_DIR = os.path.join(_DIRENV, "harbor_yaml")
+
+
+def resolve_harbor_config_path(
+    raw_value: str,
+    config_dir: Optional[str] = None,
+) -> Path:
+    """Resolve a Harbor config path to an absolute path.
+
+    Checks in order:
+    1. raw_value as-is (if it exists)
+    2. Fallback to config_dir / raw_value
+
+    Args:
+        raw_value: Path to harbor config (absolute or relative)
+        config_dir: Directory to search if raw_value not found directly.
+                   Defaults to HARBOR_CONFIG_DIR.
+
+    Returns:
+        Resolved absolute path to the config file
+
+    Raises:
+        FileNotFoundError: If config file doesn't exist in any location
+    """
+    if config_dir is None:
+        config_dir = HARBOR_CONFIG_DIR
+
+    # Try raw_value directly first
+    path = Path(raw_value).expanduser()
+    if path.exists():
+        return path.resolve()
+
+    # Try relative to config_dir
+    fallback = Path(config_dir) / raw_value
+    if fallback.exists():
+        return fallback.resolve()
+
+    # Not found - raise with helpful message
+    raise FileNotFoundError(
+        f"Harbor job config not found: {raw_value} "
+        f"(also checked {config_dir})"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Harbor registry utilities
+# ---------------------------------------------------------------------------
+
+# Default locations to search for Harbor registry.json
+def _get_default_registry_hints() -> List[Optional[Path]]:
+    """Get default paths to check for Harbor registry."""
+    # Import here to avoid circular imports
+    try:
+        from hpc.launch_utils import PROJECT_ROOT
+        project_parent = PROJECT_ROOT.parent
+    except ImportError:
+        project_parent = Path(__file__).resolve().parent.parent.parent
+
+    return [
+        Path(os.environ.get("HARBOR_REGISTRY_PATH", "")).expanduser()
+        if os.environ.get("HARBOR_REGISTRY_PATH")
+        else None,
+        project_parent / "harbor" / "registry.json",
+    ]
+
+
+def load_harbor_registry() -> Optional[Dict[str, Any]]:
+    """Load the Harbor dataset registry from known locations.
+
+    Searches DEFAULT_REGISTRY_HINTS in order and returns the first
+    valid registry found.
+
+    Returns:
+        Parsed registry dict, or None if not found/invalid
+    """
+    for candidate in _get_default_registry_hints():
+        if candidate and candidate.exists():
+            try:
+                return json.loads(candidate.read_text())
+            except Exception:
+                return None
+    return None
+
+
+def build_dataset_slug_set(registry: Optional[Dict[str, Any]]) -> Set[str]:
+    """Build a set of valid dataset slugs from a Harbor registry.
+
+    Args:
+        registry: Parsed registry dict (list of dataset entries)
+
+    Returns:
+        Set of valid slug strings (e.g., {"terminal-bench", "terminal-bench@2.0"})
+    """
+    if not registry:
+        return set()
+
+    entries: Set[str] = set()
+    for item in registry:
+        name = item.get("name")
+        version = item.get("version")
+        if not name:
+            continue
+        if version:
+            entries.add(f"{name}@{version}")
+        entries.add(name)
+    return entries
+
+
+def validate_harbor_dataset_slug(slug: str) -> None:
+    """Validate that a dataset slug exists in the Harbor registry.
+
+    Args:
+        slug: Dataset slug to validate (e.g., "terminal-bench@2.0")
+
+    Raises:
+        ValueError: If slug is not found in registry (when registry exists)
+    """
+    registry = load_harbor_registry()
+    if not registry:
+        # No registry available - skip validation
+        return
+
+    valid = build_dataset_slug_set(registry)
+    if slug not in valid:
+        raise ValueError(
+            f"Dataset '{slug}' is not in the local Harbor registry "
+            f"(known datasets: {sorted(list(valid))[:8]} ...). "
+            "Specify --eval-dataset-path instead or update the registry hint."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -209,6 +348,95 @@ def default_job_name(prefix: str, dataset_label: str, model_label: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+def collect_extra_agent_kwargs(
+    datagen_extras: Optional[Dict[str, Any]] = None,
+    cli_kwargs: Any = None,
+) -> Dict[str, Any]:
+    """Collect extra agent kwargs from datagen config and CLI.
+
+    This is a pre-merge helper for prepare functions that run before sbatch.
+    The result should be passed to build_harbor_command(extra_agent_kwargs=...)
+    for final merging with Harbor YAML base kwargs via merge_agent_kwargs().
+
+    Precedence (lowest to highest):
+    1. datagen_extras (from datagen config's extra_agent_kwargs)
+    2. cli_kwargs (from --trace-agent-kwargs CLI arg)
+
+    Args:
+        datagen_extras: Dict from datagen config's extra_agent_kwargs field
+        cli_kwargs: CLI argument value - can be dict, JSON string, or None
+
+    Returns:
+        Merged dict of extra kwargs (NOT including Harbor YAML base)
+    """
+    result: Dict[str, Any] = dict(datagen_extras or {})
+
+    if cli_kwargs:
+        if isinstance(cli_kwargs, dict):
+            result.update(cli_kwargs)
+        elif isinstance(cli_kwargs, str):
+            try:
+                parsed = json.loads(cli_kwargs)
+                if isinstance(parsed, dict):
+                    result.update(parsed)
+            except json.JSONDecodeError:
+                pass
+
+    return result
+
+
+def merge_agent_kwargs(
+    harbor_config_data: dict,
+    agent_name: str,
+    endpoint_meta: Optional[Dict[str, Any]] = None,
+    extra_kwargs: Optional[Dict[str, Any]] = None,
+    cli_overrides: Optional[List[str]] = None,
+) -> Tuple[Dict[str, Any], List[str]]:
+    """Merge agent kwargs from multiple sources with proper precedence.
+
+    This is the consolidated helper for agent kwargs handling. Precedence (lowest to highest):
+    1. Base kwargs from Harbor YAML (agents[].kwargs)
+    2. Endpoint-specific values (api_base, metrics_endpoint) for local vLLM
+    3. Extra kwargs from datagen config (extra_agent_kwargs)
+    4. CLI --agent-kwarg overrides (highest precedence, supports dotted keys)
+
+    Args:
+        harbor_config_data: Parsed Harbor config dict
+        agent_name: Agent name to extract kwargs for
+        endpoint_meta: Dict with api_base/metrics_endpoint from vLLM (None for API engines)
+        extra_kwargs: Additional kwargs from datagen config or other sources
+        cli_overrides: Raw --agent-kwarg strings from CLI (e.g., ["key=value", "nested.key=value"])
+
+    Returns:
+        Tuple of (merged_kwargs_dict, passthrough_strings)
+        - merged_kwargs_dict: Final merged kwargs dict
+        - passthrough_strings: CLI entries that couldn't be parsed as key=value
+    """
+    # 1. Start with base kwargs from Harbor YAML
+    agent_kwargs = extract_agent_kwargs_from_config(harbor_config_data, agent_name)
+
+    # 2. Apply endpoint-specific values (only for local vLLM)
+    if endpoint_meta:
+        if endpoint_meta.get("metrics_endpoint"):
+            agent_kwargs["metrics_endpoint"] = endpoint_meta["metrics_endpoint"]
+        if endpoint_meta.get("api_base"):
+            agent_kwargs["api_base"] = endpoint_meta["api_base"]
+
+    # 3. Apply extra kwargs from datagen config
+    if extra_kwargs:
+        for key, value in extra_kwargs.items():
+            apply_nested_key(agent_kwargs, key, value)
+
+    # 4. CLI --agent-kwarg flags take highest precedence (supports dotted keys)
+    passthrough: List[str] = []
+    if cli_overrides:
+        override_kwargs, passthrough = parse_agent_kwarg_strings(cli_overrides)
+        for dotted_key, override_value in override_kwargs.items():
+            apply_nested_key(agent_kwargs, dotted_key, override_value)
+
+    return agent_kwargs, passthrough
+
+
 def build_harbor_command(
     harbor_binary: str,
     harbor_config_path: str,
@@ -225,13 +453,16 @@ def build_harbor_command(
     dataset_slug: Optional[str] = None,
     dataset_path: Optional[str] = None,
     jobs_dir: Optional[str] = None,
+    extra_agent_kwargs: Optional[Dict[str, Any]] = None,
 ) -> List[str]:
     """Build the harbor jobs start command.
 
-    The Harbor YAML is the ground truth for agent configuration. This function:
-    1. Extracts ALL kwargs from the Harbor YAML for the specified agent
-    2. Overrides with endpoint-specific values (api_base, metrics_endpoint) if using local vLLM
-    3. Applies CLI --agent-kwarg overrides with highest precedence
+    The Harbor YAML is the ground truth for agent configuration. This function
+    uses merge_agent_kwargs() to combine kwargs from multiple sources:
+    1. Base kwargs from Harbor YAML (agents[].kwargs)
+    2. Endpoint-specific values (api_base, metrics_endpoint) for local vLLM
+    3. Extra kwargs from datagen config (extra_agent_kwargs parameter)
+    4. CLI --agent-kwarg overrides (highest precedence)
 
     Args:
         harbor_binary: Path to harbor CLI
@@ -249,24 +480,19 @@ def build_harbor_command(
         dataset_slug: Harbor dataset slug (mutually exclusive with dataset_path)
         dataset_path: Path to tasks directory (mutually exclusive with dataset_slug)
         jobs_dir: Override for --jobs-dir (where Harbor writes job outputs)
+        extra_agent_kwargs: Additional kwargs from datagen config (merged before CLI overrides)
 
     Returns:
         Complete harbor command as list of strings
     """
-    # Build agent kwargs - start with ALL kwargs from Harbor YAML as ground truth
-    agent_kwargs = extract_agent_kwargs_from_config(harbor_config_data, agent_name)
-
-    # Override with endpoint-specific values (only for local vLLM, not API engines)
-    if endpoint_meta:
-        if endpoint_meta.get("metrics_endpoint"):
-            agent_kwargs["metrics_endpoint"] = endpoint_meta["metrics_endpoint"]
-        if endpoint_meta.get("api_base"):
-            agent_kwargs["api_base"] = endpoint_meta["api_base"]
-
-    # CLI --agent-kwarg flags take highest precedence (supports dotted keys)
-    override_kwargs, passthrough = parse_agent_kwarg_strings(agent_kwarg_overrides)
-    for dotted_key, override_value in override_kwargs.items():
-        apply_nested_key(agent_kwargs, dotted_key, override_value)
+    # Merge agent kwargs using consolidated helper
+    agent_kwargs, passthrough = merge_agent_kwargs(
+        harbor_config_data=harbor_config_data,
+        agent_name=agent_name,
+        endpoint_meta=endpoint_meta,
+        extra_kwargs=extra_agent_kwargs,
+        cli_overrides=agent_kwarg_overrides,
+    )
 
     # Build base command
     cmd = [
@@ -322,3 +548,32 @@ def build_harbor_command(
         cmd.append(extra)
 
     return cmd
+
+
+# ---------------------------------------------------------------------------
+# Module exports
+# ---------------------------------------------------------------------------
+
+__all__ = [
+    # Constants
+    "HARBOR_CONFIG_DIR",
+    # Config resolution
+    "resolve_harbor_config_path",
+    "load_harbor_config",
+    "get_harbor_env_from_config",
+    # Registry utilities
+    "load_harbor_registry",
+    "build_dataset_slug_set",
+    "validate_harbor_dataset_slug",
+    # Agent kwargs
+    "extract_agent_kwargs_from_config",
+    "apply_nested_key",
+    "parse_agent_kwarg_strings",
+    "serialize_agent_kwargs",
+    "collect_extra_agent_kwargs",
+    "merge_agent_kwargs",
+    # Job naming
+    "default_job_name",
+    # Command building
+    "build_harbor_command",
+]

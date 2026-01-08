@@ -5,16 +5,12 @@ from __future__ import annotations
 import json
 import os
 import shlex
-import shutil
 import subprocess
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from omegaconf import OmegaConf
-
-from data.generation.utils import load_datagen_config, resolve_engine_runtime
 from hpc.launch_utils import (
     default_vllm_endpoint_path,
     derive_datagen_job_name,  # Re-exported for backwards compatibility
@@ -28,15 +24,17 @@ from hpc.launch_utils import (
     hosted_vllm_alias,
     strip_hosted_vllm_alias,
 )
-from hpc.harbor_utils import get_harbor_env_from_config
+from hpc.harbor_utils import (
+    get_harbor_env_from_config,
+    HARBOR_CONFIG_DIR,
+    resolve_harbor_config_path,
+)
 
 # Backward compatibility aliases
 _normalize_cli_args = normalize_cli_args
-_coerce_positive_int = coerce_positive_int
 
 DIRENV = os.path.dirname(__file__)
 DATAGEN_CONFIG_DIR = os.path.join(DIRENV, "datagen_yaml")
-HARBOR_CONFIG_DIR = os.path.join(DIRENV, "harbor_yaml")
 DEFAULT_RAY_CGRAPH_TIMEOUT = os.environ.get("RAY_CGRAPH_TIMEOUT_DEFAULT", "86500")
 DEFAULT_RAY_CGRAPH_MAX_INFLIGHT = os.environ.get("RAY_CGRAPH_MAX_INFLIGHT_DEFAULT", "")
 HARBOR_MODEL_PLACEHOLDER = "placeholder/override-at-runtime"
@@ -70,13 +68,13 @@ def resolve_datagen_config_path(raw_value: str) -> Path:
     return resolve_config_path(raw_value, DATAGEN_CONFIG_DIR, "datagen")
 
 
-def resolve_harbor_config_path(raw_value: str) -> Path:
-    """Resolve ``raw_value`` to an absolute Harbor job config path."""
-    return resolve_config_path(raw_value, HARBOR_CONFIG_DIR, "harbor job")
-
-
 def _prepare_datagen_configuration(exp_args: dict):
-    """Load the YAML datagen configuration and derive launch metadata."""
+    """Load the YAML datagen configuration and derive launch metadata.
+
+    Uses the consolidated parse_datagen_config() for common parsing logic.
+    """
+    from hpc.datagen_config_utils import parse_datagen_config
+    from data.generation.utils import resolve_engine_runtime
 
     raw_config = exp_args.get("datagen_config") or os.environ.get("DATAGEN_CONFIG_PATH")
     if not raw_config:
@@ -84,107 +82,94 @@ def _prepare_datagen_configuration(exp_args: dict):
             "Data generation requires --datagen-config or DATAGEN_CONFIG_PATH to specify the engine YAML."
         )
 
+    # Resolve path with fallback to config directory
     resolved_path = resolve_datagen_config_path(raw_config)
-    loaded = load_datagen_config(resolved_path)
 
+    # Use consolidated parser
     trace_model_override = exp_args.get("trace_model")
-    if trace_model_override:
-        engine_cfg = loaded.config.engine
-        engine_cfg.model = trace_model_override
-        try:
-            loaded.raw.engine.model = trace_model_override
-        except AttributeError:
-            pass
+    parsed = parse_datagen_config(
+        config_path=str(resolved_path),
+        model_override=trace_model_override,
+    )
 
-        engine_type = (engine_cfg.type or "").lower()
-        if engine_type == "vllm_local" and getattr(engine_cfg, "vllm_local", None):
-            engine_cfg.vllm_local.model_name = trace_model_override  # type: ignore[assignment]
-            try:
-                loaded.raw.engine.vllm_local.model_name = trace_model_override  # type: ignore[attr-defined]
-            except AttributeError:
-                pass
+    # Store parsed config and related objects
+    exp_args["_parsed_datagen_config"] = parsed
+    exp_args["_datagen_config_original_path"] = str(parsed.config_path)
+    exp_args["_datagen_config_raw"] = parsed.loaded.raw
+    exp_args["_datagen_config_obj"] = parsed.loaded.config
+    exp_args["datagen_config_path"] = str(parsed.config_path)
 
-        vllm_cfg = loaded.config.vllm_server
-        if vllm_cfg:
-            vllm_cfg.model_path = trace_model_override
-            try:
-                loaded.raw.vllm_server.model_path = trace_model_override  # type: ignore[attr-defined]
-            except AttributeError:
-                pass
-
-    runtime = resolve_engine_runtime(loaded.config)
-
-    exp_args["_datagen_config_original_path"] = str(resolved_path)
-    exp_args["_datagen_config_raw"] = loaded.raw
-    exp_args["_datagen_config_obj"] = loaded.config
-    extra_agent_kwargs = dict(getattr(loaded.config, "extra_agent_kwargs", {}) or {})
-    exp_args["_datagen_extra_agent_kwargs"] = extra_agent_kwargs
-    chunk_array_max = getattr(loaded.config, "chunk_array_max", None)
-    try:
-        chunk_array_max = int(chunk_array_max) if chunk_array_max is not None else None
-    except (TypeError, ValueError):
-        chunk_array_max = None
-    exp_args["_chunk_array_max"] = chunk_array_max
+    # Engine runtime (for backwards compatibility with code expecting runtime object)
+    runtime = resolve_engine_runtime(parsed.loaded.config)
     exp_args["_datagen_engine_runtime"] = runtime
-    exp_args["datagen_config_path"] = str(resolved_path)
 
-    exp_args["datagen_engine"] = runtime.type
-    exp_args["datagen_healthcheck_interval"] = runtime.healthcheck_interval or 300
-    runtime_model = runtime.engine_kwargs.get("model") or runtime.engine_kwargs.get("model_name")
-    if runtime_model:
-        exp_args["datagen_model"] = runtime_model
-    elif trace_model_override:
-        exp_args["datagen_model"] = trace_model_override
+    # Extra agent kwargs
+    exp_args["_datagen_extra_agent_kwargs"] = parsed.extra_agent_kwargs
+
+    # HPC-specific settings
+    exp_args["_chunk_array_max"] = parsed.chunk_array_max
+
+    # Engine settings
+    exp_args["datagen_engine"] = parsed.engine_type
+    exp_args["datagen_healthcheck_interval"] = parsed.healthcheck_interval
+
+    # Model
+    if parsed.model:
+        exp_args["datagen_model"] = parsed.model
     else:
         exp_args.pop("datagen_model", None)
-    if runtime.max_output_tokens is not None:
-        exp_args["datagen_max_tokens"] = runtime.max_output_tokens
+
+    # Max tokens
+    if parsed.max_output_tokens is not None:
+        exp_args["datagen_max_tokens"] = parsed.max_output_tokens
     else:
         exp_args.pop("datagen_max_tokens", None)
 
-    backend = loaded.config.backend
+    # Backend settings
+    backend = parsed.loaded.config.backend
     exp_args["_datagen_backend_config"] = backend
     exp_args["datagen_backend"] = backend.type
-    exp_args["datagen_wait_for_endpoint"] = backend.wait_for_endpoint
-    exp_args["datagen_ray_port"] = backend.ray_port
-    exp_args["datagen_api_port"] = backend.api_port
-    if backend.endpoint_json_path:
-        exp_args["vllm_endpoint_json_path"] = backend.endpoint_json_path
-    if backend.ray_cgraph_submit_timeout is not None:
-        exp_args["ray_cgraph_submit_timeout"] = str(backend.ray_cgraph_submit_timeout)
+    exp_args["datagen_wait_for_endpoint"] = parsed.wait_for_endpoint
+    exp_args["datagen_ray_port"] = parsed.ray_port
+    exp_args["datagen_api_port"] = parsed.api_port
+
+    # Endpoint JSON path
+    if parsed.endpoint_json_path:
+        exp_args["vllm_endpoint_json_path"] = parsed.endpoint_json_path
+
+    # Ray cgraph settings (HPC-specific)
+    if parsed.ray_cgraph_submit_timeout is not None:
+        exp_args["ray_cgraph_submit_timeout"] = parsed.ray_cgraph_submit_timeout
     else:
         exp_args.pop("ray_cgraph_submit_timeout", None)
-    if backend.ray_cgraph_get_timeout is not None:
-        exp_args["ray_cgraph_get_timeout"] = str(backend.ray_cgraph_get_timeout)
+
+    if parsed.ray_cgraph_get_timeout is not None:
+        exp_args["ray_cgraph_get_timeout"] = parsed.ray_cgraph_get_timeout
     else:
         exp_args.pop("ray_cgraph_get_timeout", None)
-    if backend.ray_cgraph_max_inflight_executions is not None:
-        exp_args["ray_cgraph_max_inflight_executions"] = str(
-            backend.ray_cgraph_max_inflight_executions
-        )
+
+    if parsed.ray_cgraph_max_inflight_executions is not None:
+        exp_args["ray_cgraph_max_inflight_executions"] = parsed.ray_cgraph_max_inflight_executions
     else:
         exp_args.pop("ray_cgraph_max_inflight_executions", None)
-    if backend.healthcheck_max_attempts is not None:
-        exp_args["trace_health_max_attempts"] = int(backend.healthcheck_max_attempts)
+
+    # Health check settings
+    if parsed.health_max_attempts is not None:
+        exp_args["trace_health_max_attempts"] = parsed.health_max_attempts
     elif "trace_health_max_attempts" in exp_args:
         exp_args.pop("trace_health_max_attempts")
-    if backend.healthcheck_retry_delay is not None:
-        exp_args["trace_health_retry_delay"] = int(backend.healthcheck_retry_delay)
+
+    if parsed.health_retry_delay is not None:
+        exp_args["trace_health_retry_delay"] = parsed.health_retry_delay
     elif "trace_health_retry_delay" in exp_args:
         exp_args.pop("trace_health_retry_delay")
 
-    vllm_cfg = loaded.config.vllm_server
+    # vLLM server config
+    vllm_cfg = parsed.vllm_server_config
     exp_args["_datagen_vllm_server_config"] = vllm_cfg
-    if vllm_cfg and vllm_cfg.endpoint_json_path:
-        exp_args["vllm_endpoint_json_path"] = vllm_cfg.endpoint_json_path
-    elif exp_args.get("vllm_endpoint_json_path") and not vllm_cfg:
-        exp_args.pop("vllm_endpoint_json_path", None)
-    if vllm_cfg:
-        extra_cli_args = _normalize_cli_args(vllm_cfg.extra_args)
-        if extra_cli_args:
-            exp_args["_vllm_server_extra_args"] = extra_cli_args
-        elif "_vllm_server_extra_args" in exp_args:
-            exp_args.pop("_vllm_server_extra_args")
+
+    if parsed.vllm_extra_args:
+        exp_args["_vllm_server_extra_args"] = parsed.vllm_extra_args
     elif "_vllm_server_extra_args" in exp_args:
         exp_args.pop("_vllm_server_extra_args")
 
@@ -358,15 +343,12 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
             if not vllm_model_path:
                 vllm_model_path = trace_model or ""
 
-        agent_kwargs = exp_args.get("_datagen_extra_agent_kwargs") or {}
-        if exp_args.get("trace_agent_kwargs"):
-            if isinstance(exp_args["trace_agent_kwargs"], dict):
-                agent_kwargs.update(exp_args["trace_agent_kwargs"])
-            else:
-                try:
-                    agent_kwargs.update(json.loads(str(exp_args["trace_agent_kwargs"])))
-                except json.JSONDecodeError:
-                    pass
+        # Collect extra agent kwargs using consolidated helper
+        from hpc.harbor_utils import collect_extra_agent_kwargs
+        agent_kwargs = collect_extra_agent_kwargs(
+            datagen_extras=exp_args.get("_datagen_extra_agent_kwargs"),
+            cli_kwargs=exp_args.get("trace_agent_kwargs"),
+        )
 
         # Convert vllm_cfg dataclass to dict for pass-through (if not already done)
         trace_vllm_server_config = asdict(vllm_cfg) if vllm_cfg else {}
@@ -872,6 +854,7 @@ class TracegenJobRunner:
         jobs_dir = str(Path(self.config.experiments_dir) / "trace_jobs")
 
         # Build command using shared utility
+        # Pass config.agent_kwargs as extra_agent_kwargs (from datagen config + CLI overrides)
         cmd = build_harbor_command(
             harbor_binary="harbor",
             harbor_config_path=self.config.harbor_config,
@@ -883,10 +866,11 @@ class TracegenJobRunner:
             n_concurrent=self.config.n_concurrent,
             n_attempts=self.config.n_attempts,
             endpoint_meta=endpoint_meta,
-            agent_kwarg_overrides=[],  # Config agent_kwargs already in harbor YAML
+            agent_kwarg_overrides=[],  # CLI overrides already merged into config.agent_kwargs
             harbor_extra_args=[],
             dataset_path=self.config.tasks_input_path,
             jobs_dir=jobs_dir,
+            extra_agent_kwargs=self.config.agent_kwargs or None,
         )
 
         print(f"Running Harbor command: {' '.join(cmd)}")

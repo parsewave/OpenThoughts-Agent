@@ -17,7 +17,6 @@ from hpc.launch_utils import (
     resolve_repo_path,
     resolve_workspace_path,
     resolve_config_path,
-    coerce_agent_kwargs,
     default_vllm_endpoint_path,
     launch_sbatch,
     _parse_optional_int,
@@ -29,69 +28,15 @@ from hpc.launch_utils import (
     strip_hosted_vllm_alias,
 )
 
-# Config directory paths (same as datagen_launch_utils)
-_DIRENV = os.path.dirname(__file__)
-HARBOR_CONFIG_DIR = os.path.join(_DIRENV, "harbor_yaml")
+# Import Harbor utilities from consolidated module
+from hpc.harbor_utils import (
+    HARBOR_CONFIG_DIR,
+    resolve_harbor_config_path,
+    validate_harbor_dataset_slug,
+    load_harbor_config,
+)
 
 from scripts.harbor.job_config_utils import load_job_config
-
-
-def resolve_harbor_config_path(raw_value: str) -> Path:
-    """Resolve ``raw_value`` to an absolute Harbor job config path.
-
-    Checks in order: raw_value as-is, then HARBOR_CONFIG_DIR fallback.
-    """
-    return resolve_config_path(raw_value, HARBOR_CONFIG_DIR, "harbor job")
-
-DEFAULT_REGISTRY_HINTS = [
-    Path(os.environ.get("HARBOR_REGISTRY_PATH", "")).expanduser()
-    if os.environ.get("HARBOR_REGISTRY_PATH")
-    else None,
-    PROJECT_ROOT.parent / "harbor" / "registry.json",
-]
-
-
-def _load_harbor_registry() -> dict | None:
-    for candidate in DEFAULT_REGISTRY_HINTS:
-        if candidate and candidate.exists():
-            try:
-                return json.loads(candidate.read_text())
-            except Exception:
-                return None
-    return None
-
-
-def _build_dataset_slug_set(registry: dict | None) -> set[str]:
-    if not registry:
-        return set()
-    entries: set[str] = set()
-    for item in registry:
-        name = item.get("name")
-        version = item.get("version")
-        if not name:
-            continue
-        if version:
-            entries.add(f"{name}@{version}")
-        entries.add(name)
-    return entries
-
-
-def _validate_harbor_dataset_slug(slug: str) -> None:
-    registry = _load_harbor_registry()
-    if not registry:
-        return
-    valid = _build_dataset_slug_set(registry)
-    if slug not in valid:
-        raise ValueError(
-            f"Dataset '{slug}' is not in the local Harbor registry "
-            f"(known datasets: {sorted(list(valid))[:8]} ...). "
-            "Specify --eval-dataset-path instead or update the registry hint."
-        )
-
-
-def _coerce_agent_kwargs(value: Any) -> Dict[str, Any]:
-    """Wrapper for backwards compatibility - use coerce_agent_kwargs from launch_utils."""
-    return coerce_agent_kwargs(value)
 
 
 def prepare_eval_configuration(exp_args: dict) -> dict:
@@ -129,7 +74,7 @@ def prepare_eval_configuration(exp_args: dict) -> dict:
         slug = harbor_dataset.strip()
         if not slug:
             raise ValueError("--harbor-dataset cannot be empty.")
-        _validate_harbor_dataset_slug(slug)
+        validate_harbor_dataset_slug(slug)
         exp_args["harbor_dataset"] = slug
 
     if not (exp_args.get("harbor_dataset") or exp_args.get("_eval_dataset_path_resolved")):
@@ -176,13 +121,13 @@ def prepare_eval_configuration(exp_args: dict) -> dict:
     if "trace_agent_name" not in exp_args:
         exp_args["trace_agent_name"] = agent_name
 
-    base_agent_kwargs = dict(agent_cfg.kwargs or {})
-    datagen_agent_defaults = dict(exp_args.get("_datagen_extra_agent_kwargs") or {})
-    base_agent_kwargs.update(datagen_agent_defaults)
-    cli_agent_kwargs = _coerce_agent_kwargs(exp_args.get("trace_agent_kwargs"))
-    agent_kwargs: Dict[str, Any] = dict(base_agent_kwargs)
-    agent_kwargs.update(cli_agent_kwargs)
-    exp_args["_eval_agent_kwargs"] = agent_kwargs
+    # Collect extra agent kwargs from datagen config and CLI
+    # NOTE: Do NOT include Harbor YAML base kwargs here - merge_agent_kwargs() handles that
+    from hpc.harbor_utils import collect_extra_agent_kwargs
+    exp_args["_eval_agent_kwargs"] = collect_extra_agent_kwargs(
+        datagen_extras=exp_args.get("_datagen_extra_agent_kwargs"),
+        cli_kwargs=exp_args.get("trace_agent_kwargs"),
+    )
 
     if exp_args.get("trace_env"):
         eval_env = exp_args["trace_env"]
@@ -464,6 +409,7 @@ class EvalJobRunner:
         jobs_dir = str(Path(self.config.experiments_dir) / "trace_jobs")
 
         # Build command using shared utility
+        # Pass config.agent_kwargs as extra_agent_kwargs (from datagen config + CLI overrides)
         cmd = build_harbor_command(
             harbor_binary="harbor",
             harbor_config_path=self.config.harbor_config,
@@ -475,11 +421,12 @@ class EvalJobRunner:
             n_concurrent=self.config.n_concurrent,
             n_attempts=self.config.n_attempts,
             endpoint_meta=endpoint_meta,
-            agent_kwarg_overrides=[],  # Config agent_kwargs already in harbor YAML
+            agent_kwarg_overrides=[],  # CLI overrides already merged into config.agent_kwargs
             harbor_extra_args=[],
             dataset_slug=self.config.dataset,
             dataset_path=self.config.dataset_path,
             jobs_dir=jobs_dir,
+            extra_agent_kwargs=self.config.agent_kwargs or None,
         )
 
         print(f"Running Harbor command: {' '.join(cmd)}")

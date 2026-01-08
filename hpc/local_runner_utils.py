@@ -10,7 +10,6 @@ datagen config parsing, Docker runtime setup, and Harbor command building.
 from __future__ import annotations
 
 import argparse
-import copy
 import json
 import os
 import subprocess
@@ -19,8 +18,6 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-
-import yaml
 
 from hpc.vllm_utils import _build_vllm_cli_args
 from hpc.launch_utils import generate_served_model_id, hosted_vllm_alias
@@ -49,6 +46,8 @@ from hpc.harbor_utils import (
     serialize_agent_kwargs,
     default_job_name,
     build_harbor_command,
+    merge_agent_kwargs,
+    collect_extra_agent_kwargs,
 )
 
 
@@ -348,78 +347,70 @@ def load_endpoint_metadata(endpoint_json: Path) -> Dict[str, Any]:
 def apply_datagen_defaults(args: argparse.Namespace) -> None:
     """Load datagen config and apply defaults to args.
 
-    Extracts vLLM settings from datagen config YAML and sets:
+    Uses the consolidated parse_datagen_config() to extract settings from YAML.
+
+    Sets on args:
     - args.model (if not set)
     - args.tensor_parallel_size, pipeline_parallel_size, data_parallel_size
     - args.ray_port, api_port
     - args._vllm_cli_args, args._vllm_env_vars
     - args._engine_type (openai, anthropic, vllm_local, etc.)
     - args._needs_local_vllm (whether to start Ray/vLLM server)
+    - args._extra_agent_kwargs (additional agent kwargs from datagen config)
+    - args._parsed_datagen_config (the full ParsedDatagenConfig)
 
     Args:
         args: Parsed argparse namespace with datagen_config attribute
     """
+    # Initialize defaults
     args._vllm_cli_args: List[str] = []
     args._vllm_env_vars: Dict[str, str] = {}
-    args._engine_type: str = "vllm_local"  # Default to local vLLM
-    args._needs_local_vllm: bool = True  # Default to needing local server
+    args._engine_type: str = "vllm_local"
+    args._needs_local_vllm: bool = True
+    args._extra_agent_kwargs: Dict[str, Any] = {}
+    args._parsed_datagen_config = None
 
     datagen_config = getattr(args, "datagen_config", None)
     if not datagen_config:
         return
 
-    cfg_path = Path(datagen_config).expanduser().resolve()
-    if not cfg_path.exists():
-        raise FileNotFoundError(f"Datagen config not found: {cfg_path}")
-    with cfg_path.open("r", encoding="utf-8") as handle:
-        datagen_cfg = yaml.safe_load(handle) or {}
-    args.datagen_config = str(cfg_path)
+    # Use consolidated parser
+    from hpc.datagen_config_utils import parse_datagen_config
 
-    engine_cfg = datagen_cfg.get("engine") or {}
-    backend_cfg = datagen_cfg.get("backend") or {}
-    vllm_cfg = datagen_cfg.get("vllm_server") or {}
+    parsed = parse_datagen_config(datagen_config)
+    args._parsed_datagen_config = parsed
+    args.datagen_config = str(parsed.config_path)
 
-    # Determine engine type and whether we need local vLLM
-    engine_type = engine_cfg.get("type", "vllm_local").lower()
-    args._engine_type = engine_type
+    # Apply parsed values to args
+    args._engine_type = parsed.engine_type
+    args._needs_local_vllm = parsed.needs_local_vllm
+    args._extra_agent_kwargs = parsed.extra_agent_kwargs
 
-    # API-based engines don't need local Ray/vLLM
-    api_engines = {"openai", "anthropic", "azure", "together", "fireworks", "groq"}
-    args._needs_local_vllm = engine_type not in api_engines
+    # Model path (CLI arg takes precedence)
+    if getattr(args, "model", None) is None and parsed.model:
+        args.model = parsed.model
 
-    # Model path
-    if getattr(args, "model", None) is None:
-        args.model = vllm_cfg.get("model_path") or engine_cfg.get("model")
+    # Parallelism settings (CLI args take precedence)
+    if getattr(args, "tensor_parallel_size", None) is None:
+        args.tensor_parallel_size = parsed.tensor_parallel_size
+    if getattr(args, "pipeline_parallel_size", None) is None:
+        args.pipeline_parallel_size = parsed.pipeline_parallel_size
+    if getattr(args, "data_parallel_size", None) is None:
+        args.data_parallel_size = parsed.data_parallel_size
 
-    # Parallelism settings
-    tp_default = maybe_int(vllm_cfg.get("tensor_parallel_size")) or maybe_int(
-        backend_cfg.get("tensor_parallel_size")
-    )
-    pp_default = maybe_int(vllm_cfg.get("pipeline_parallel_size")) or maybe_int(
-        backend_cfg.get("pipeline_parallel_size")
-    )
-    dp_default = maybe_int(vllm_cfg.get("data_parallel_size")) or maybe_int(
-        backend_cfg.get("data_parallel_size")
-    )
-
-    if getattr(args, "tensor_parallel_size", None) is None and tp_default:
-        args.tensor_parallel_size = tp_default
-    if getattr(args, "pipeline_parallel_size", None) is None and pp_default:
-        args.pipeline_parallel_size = pp_default
-    if getattr(args, "data_parallel_size", None) is None and dp_default:
-        args.data_parallel_size = dp_default
-
-    # Port settings
+    # Port settings (CLI args take precedence)
     if getattr(args, "ray_port", None) is None:
-        args.ray_port = maybe_int(backend_cfg.get("ray_port")) or 6379
+        args.ray_port = parsed.ray_port
     if getattr(args, "api_port", None) is None:
-        args.api_port = maybe_int(backend_cfg.get("api_port")) or 8000
+        args.api_port = parsed.api_port
 
     # Build CLI args and env vars from vllm_server config
-    merged_cfg = {**engine_cfg, **vllm_cfg}
-    cli_args, env_vars = _build_vllm_cli_args(merged_cfg)
-    args._vllm_cli_args = cli_args
-    args._vllm_env_vars = env_vars
+    if parsed.vllm_server_config:
+        from dataclasses import asdict
+        vllm_dict = asdict(parsed.vllm_server_config)
+        cli_args, env_vars = _build_vllm_cli_args(vllm_dict)
+        args._vllm_cli_args = cli_args
+        args._vllm_env_vars = env_vars
 
     # Setup tiktoken encodings for GPT-OSS models
     if is_gpt_oss_model(args.model):
@@ -815,6 +806,7 @@ class LocalHarborRunner:
                 harbor_extra_args=list(args.harbor_extra_arg or []),
                 dataset_slug=dataset_slug,
                 dataset_path=dataset_path,
+                extra_agent_kwargs=getattr(args, "_extra_agent_kwargs", None),
             )
             print("Harbor command:", " ".join(harbor_cmd))
 
@@ -854,6 +846,8 @@ __all__ = [
     "parse_agent_kwarg_strings",
     "serialize_agent_kwargs",
     "build_harbor_command",
+    "merge_agent_kwargs",
+    "collect_extra_agent_kwargs",
     # Model ID utilities (re-exported from launch_utils)
     "generate_served_model_id",
     "hosted_vllm_alias",
