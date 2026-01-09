@@ -8,8 +8,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import resource
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -76,6 +78,130 @@ class ManagedProcess:
                     self._log_handle.close()
                 except Exception:
                     pass
+
+
+# ---------------------------------------------------------------------------
+# File Descriptor Monitoring
+# ---------------------------------------------------------------------------
+
+DEFAULT_FD_MONITOR_INTERVAL = 120  # 2 minutes
+
+
+class FileDescriptorMonitor:
+    """Background thread that periodically logs file descriptor usage.
+
+    Monitors how close the process is to hitting the NOFILE ulimit,
+    which is useful for debugging "Too many open files" issues in
+    high-concurrency workloads like Harbor trace generation.
+
+    Usage:
+        monitor = FileDescriptorMonitor(interval_seconds=120)
+        monitor.start()
+        # ... run workload ...
+        monitor.stop()
+    """
+
+    def __init__(self, interval_seconds: int = DEFAULT_FD_MONITOR_INTERVAL):
+        """Initialize the file descriptor monitor.
+
+        Args:
+            interval_seconds: How often to log FD usage (default: 120s)
+        """
+        self.interval = interval_seconds
+        self._stop_event = threading.Event()
+        self._thread: Optional[threading.Thread] = None
+
+    def _get_fd_usage(self) -> tuple:
+        """Get current file descriptor usage.
+
+        Returns:
+            Tuple of (current_open_fds, soft_limit, hard_limit, percent_used)
+        """
+        try:
+            # Get current open file descriptors for this process
+            pid = os.getpid()
+            fd_dir = Path(f"/proc/{pid}/fd")
+            if fd_dir.exists():
+                current_fds = len(list(fd_dir.iterdir()))
+            else:
+                # Fallback for non-Linux systems (macOS, etc.)
+                # Count FDs by iterating through possible range
+                current_fds = 0
+                for fd in range(1024):
+                    try:
+                        os.fstat(fd)
+                        current_fds += 1
+                    except OSError:
+                        pass
+
+            # Get limits
+            soft_limit, hard_limit = resource.getrlimit(resource.RLIMIT_NOFILE)
+            percent_used = (current_fds / soft_limit * 100) if soft_limit > 0 else 0
+
+            return current_fds, soft_limit, hard_limit, percent_used
+        except Exception as e:
+            return -1, -1, -1, 0.0
+
+    def _log_status(self) -> None:
+        """Log current file descriptor status."""
+        current, soft, hard, percent = self._get_fd_usage()
+
+        if current < 0:
+            print("[fd-monitor] Unable to read file descriptor usage")
+            return
+
+        # Determine status level
+        if percent >= 90:
+            level = "CRITICAL"
+        elif percent >= 75:
+            level = "WARNING"
+        elif percent >= 50:
+            level = "INFO"
+        else:
+            level = "OK"
+
+        timestamp = time.strftime("%H:%M:%S")
+        print(
+            f"[fd-monitor] [{timestamp}] {level}: {current:,} / {soft:,} FDs open "
+            f"({percent:.1f}% of soft limit, hard limit: {hard:,})"
+        )
+
+        if percent >= 75:
+            print(
+                f"[fd-monitor] Consider reducing --n_concurrent or increasing ulimit -n"
+            )
+
+    def _run(self) -> None:
+        """Background thread loop."""
+        # Initial status
+        self._log_status()
+
+        while not self._stop_event.is_set():
+            self._stop_event.wait(self.interval)
+            if not self._stop_event.is_set():
+                self._log_status()
+
+    def start(self) -> None:
+        """Start the background monitoring thread."""
+        if self._thread is not None:
+            return
+        if self.interval <= 0:
+            print("[fd-monitor] Disabled (interval <= 0)")
+            return
+
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread.start()
+        print(f"[fd-monitor] Started monitoring (every {self.interval}s)")
+
+    def stop(self) -> None:
+        """Stop the background monitoring thread."""
+        self._stop_event.set()
+        if self._thread is not None:
+            self._thread.join(timeout=5)
+            self._thread = None
+        # Final status report
+        self._log_status()
+        print("[fd-monitor] Stopped")
 
 
 def _open_log_file(log_path: Optional[Path]) -> tuple:
@@ -372,6 +498,7 @@ class LocalHarborRunner:
         self._endpoint_json: Optional[Path] = None
         self._endpoint_meta: Optional[Dict[str, Any]] = None
         self._harbor_job_name: Optional[str] = None
+        self._fd_monitor: Optional[FileDescriptorMonitor] = None
 
     @classmethod
     def add_common_arguments(cls, parser: argparse.ArgumentParser) -> None:
@@ -408,6 +535,17 @@ class LocalHarborRunner:
             "--endpoint-json",
             help="Optional endpoint JSON path.",
         )
+
+        # File descriptor monitoring
+        parser.add_argument(
+            "--fd_monitor_interval",
+            type=int,
+            default=DEFAULT_FD_MONITOR_INTERVAL,
+            metavar="SECONDS",
+            help=f"Interval for file descriptor monitoring (default: {DEFAULT_FD_MONITOR_INTERVAL}s). "
+                 "Set to 0 to disable.",
+        )
+        parser.add_argument("--fd-monitor-interval", dest="fd_monitor_interval", help=argparse.SUPPRESS)
 
     def get_env_type(self) -> str:
         """Get the environment type from --harbor-env.
@@ -553,7 +691,12 @@ class LocalHarborRunner:
         sig.signal(sig.SIGTERM, _handle_signal)
 
     def cleanup(self) -> None:
-        """Clean up processes."""
+        """Clean up processes and monitoring threads."""
+        # Stop file descriptor monitor
+        if self._fd_monitor is not None:
+            self._fd_monitor.stop()
+            self._fd_monitor = None
+
         terminate_processes(self.processes[::-1])
         # Only stop Ray if we started it (local vLLM engines)
         needs_local_vllm = getattr(self.args, "_needs_local_vllm", True)
@@ -586,6 +729,12 @@ class LocalHarborRunner:
 
         # Print banner
         self.print_banner()
+
+        # Start file descriptor monitor
+        fd_interval = getattr(args, "fd_monitor_interval", DEFAULT_FD_MONITOR_INTERVAL)
+        if fd_interval > 0:
+            self._fd_monitor = FileDescriptorMonitor(interval_seconds=fd_interval)
+            self._fd_monitor.start()
 
         # Start Ray and vLLM only if needed (local vLLM engine)
         if needs_local_vllm:
@@ -686,6 +835,9 @@ __all__ = [
     "start_vllm_controller",
     "wait_for_endpoint",
     "terminate_processes",
+    # File descriptor monitoring
+    "FileDescriptorMonitor",
+    "DEFAULT_FD_MONITOR_INTERVAL",
     # Config and setup utilities
     "maybe_int",
     "apply_datagen_defaults",

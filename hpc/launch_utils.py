@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import shlex
@@ -23,6 +24,7 @@ from hpc.hf_utils import sanitize_hf_repo_id
 
 from .job_name_ignore_list import JOB_NAME_IGNORE_KEYS
 from .arguments import JobType
+from .cli_utils import normalize_job_type
 
 # =============================================================================
 # Type Aliases
@@ -719,12 +721,182 @@ def _parse_optional_int(value: Any, label: Optional[str] = None) -> Optional[int
         return None
 
 
+def parse_bool_with_default(value: Any, default: bool) -> bool:
+    """Parse a value as boolean with a default for None/missing values.
+
+    Handles CLI argument quirks where booleans may arrive as strings like "false".
+
+    Args:
+        value: Value to parse (bool, str, int, or None)
+        default: Default value to return if value is None
+
+    Returns:
+        Parsed boolean value
+
+    Examples:
+        >>> parse_bool_with_default(None, True)
+        True
+        >>> parse_bool_with_default("false", True)
+        False
+        >>> parse_bool_with_default(False, True)
+        False
+    """
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    # Handle string values like "false", "true", "0", "1"
+    return str(value).strip().lower() in {"true", "1", "yes", "y", "on"}
+
+
 def maybe_int(value: Any) -> Optional[int]:
     """Parse a value as int, returning None if not possible.
 
     This is a permissive alias for _parse_optional_int(value, label=None).
     """
     return _parse_optional_int(value, label=None)
+
+
+def apply_env_overrides(
+    exp_args: dict,
+    cli_args_filtered: dict,
+    hpc,
+    *,
+    apply_mca_template_fn: Optional[Any] = None,
+    apply_cluster_overrides_fn: Optional[Any] = None,
+    prepare_datagen_fn: Optional[Any] = None,
+    prepare_eval_fn: Optional[Any] = None,
+) -> tuple[dict, str, Optional[Any]]:
+    """Normalize resource overrides, defaults, and job-type specific toggles.
+
+    This function preprocesses experiment arguments before job dispatch:
+    - Normalizes GPU/CPU counts
+    - Validates cluster-specific constraints (e.g., Perlmutter 4 GPUs)
+    - Sets default time limits from HPC config
+    - Validates job_type and job_creator
+    - Applies job-type specific configurations via callbacks
+
+    Args:
+        exp_args: Experiment arguments dict
+        cli_args_filtered: CLI arguments dict (without internal keys)
+        hpc: HPC cluster configuration object
+        apply_mca_template_fn: Callback for MCA template (SFT_MCA jobs)
+        apply_cluster_overrides_fn: Callback for cluster-specific overrides
+        prepare_datagen_fn: Callback for datagen configuration
+        prepare_eval_fn: Callback for eval configuration
+
+    Returns:
+        Tuple of (updated exp_args, job_type string, datagen_runtime or None)
+
+    Raises:
+        ValueError: If job_type is missing or invalid, or constraint violations
+    """
+    hpc_name = str(getattr(hpc, "name", "") or "").lower()
+
+    # Perlmutter requires exactly 4 GPUs per node
+    if hpc_name == "perlmutter":
+        requested = cli_args_filtered.get("gpus_per_node") or exp_args.get("gpus_per_node")
+        if requested not in (None, "", "None"):
+            requested_int = _parse_optional_int(requested, "--gpus_per_node")
+            if requested_int is not None and requested_int != 4:
+                raise ValueError("Perlmutter requires 4 GPUs per node.")
+        exp_args = update_exp_args(exp_args, {"gpus_per_node": 4})
+
+    # Normalize GPU count
+    gpus_per_node_norm = _parse_optional_int(exp_args.get("gpus_per_node"), "--gpus_per_node") or 0
+    exp_args = update_exp_args(exp_args, {"gpus_per_node": gpus_per_node_norm})
+
+    # Normalize CPU counts
+    cpus_per_node_norm = _parse_optional_int(exp_args.get("cpus_per_node"), "--cpus_per_node")
+    if cpus_per_node_norm is not None:
+        exp_args = update_exp_args(exp_args, {"cpus_per_node": cpus_per_node_norm})
+
+    cpus_per_gpu_norm = _parse_optional_int(exp_args.get("cpus_per_gpu"), "--cpus_per_gpu")
+    if cpus_per_gpu_norm is not None:
+        exp_args = update_exp_args(exp_args, {"cpus_per_gpu": cpus_per_gpu_norm})
+
+    cpus_per_node_cli_norm = _parse_optional_int(cli_args_filtered.get("cpus_per_node"), "--cpus_per_node")
+    cpus_per_gpu_cli_norm = _parse_optional_int(cli_args_filtered.get("cpus_per_gpu"), "--cpus_per_gpu")
+
+    # Handle cpus_per_gpu -> cpus_per_node derivation
+    if cpus_per_gpu_cli_norm is not None:
+        if cpus_per_node_cli_norm is not None:
+            raise ValueError("Provide only one of --cpus_per_node or --cpus_per_gpu, not both.")
+        if gpus_per_node_norm <= 0:
+            raise ValueError("--cpus_per_gpu requires --gpus_per_node to be greater than zero.")
+        cpus_per_node_norm = cpus_per_gpu_cli_norm * gpus_per_node_norm
+        exp_args = update_exp_args(
+            exp_args,
+            {
+                "cpus_per_gpu": cpus_per_gpu_cli_norm,
+                "cpus_per_node": cpus_per_node_norm,
+            },
+        )
+        cpus_per_gpu_norm = cpus_per_gpu_cli_norm
+    else:
+        if cpus_per_node_norm is None and cpus_per_gpu_norm is not None and gpus_per_node_norm > 0:
+            cpus_per_node_norm = cpus_per_gpu_norm * gpus_per_node_norm
+            exp_args = update_exp_args(exp_args, {"cpus_per_node": cpus_per_node_norm})
+        elif (
+            cpus_per_node_norm is not None
+            and (cpus_per_gpu_norm is None or cpus_per_gpu_norm == 0)
+            and gpus_per_node_norm > 0
+        ):
+            derived_cpus_per_gpu = max(1, math.ceil(cpus_per_node_norm / gpus_per_node_norm))
+            exp_args = update_exp_args(exp_args, {"cpus_per_gpu": derived_cpus_per_gpu})
+
+    # Validate job_creator
+    job_creator = str(exp_args.get("job_creator", "mlfoundations-dev") or "mlfoundations-dev").strip()
+    if not job_creator:
+        raise ValueError("--job_creator must be a non-empty string.")
+    if len(job_creator) > 96:
+        raise ValueError("--job_creator must be 96 characters or fewer.")
+    exp_args = update_exp_args(exp_args, {"job_creator": job_creator})
+
+    # Set default time_limit from HPC config
+    if exp_args.get("time_limit") in (None, ""):
+        default_time = getattr(hpc, "default_time_limit", "24:00:00")
+        exp_args = update_exp_args(exp_args, {"time_limit": default_time})
+        print(f"Using default time_limit: {default_time}")
+
+    # Normalize and validate job_type
+    job_type = normalize_job_type(exp_args)
+    if job_type is None:
+        raise ValueError(
+            f"--job_type is required. Valid options: {', '.join(jt.value for jt in JobType)}"
+        )
+    exp_args = update_exp_args(exp_args, {"job_type": job_type})
+
+    # Handle MCA upgrade for SFT jobs
+    if exp_args.get("use_mca") and job_type == JobType.SFT.value:
+        job_type = JobType.SFT_MCA.value
+        exp_args = update_exp_args(exp_args, {"job_type": job_type})
+
+    if job_type == JobType.SFT_MCA.value:
+        exp_args = update_exp_args(exp_args, {"use_mca": True})
+        if apply_mca_template_fn is not None:
+            exp_args = apply_mca_template_fn(
+                exp_args,
+                hpc,
+                update_exp_args_fn=update_exp_args,
+            )
+
+    # Apply cluster-specific overrides
+    if apply_cluster_overrides_fn is not None:
+        exp_args = apply_cluster_overrides_fn(exp_args, hpc)
+
+    # Prepare job-type specific configurations
+    datagen_runtime = None
+    if job_type == JobType.DATAGEN.value or exp_args.get("datagen_script"):
+        if prepare_datagen_fn is not None:
+            datagen_runtime = prepare_datagen_fn(exp_args)
+    elif job_type == JobType.EVAL.value:
+        if prepare_datagen_fn is not None:
+            datagen_runtime = prepare_datagen_fn(exp_args)
+        if prepare_eval_fn is not None:
+            exp_args = prepare_eval_fn(exp_args)
+
+    return exp_args, job_type, datagen_runtime
 
 
 def _merge_dependencies(*deps: Optional[str]) -> Optional[str]:

@@ -17,6 +17,7 @@ from hpc.launch_utils import (
     substitute_template,
     build_sbatch_directives,
     coerce_positive_int,
+    parse_bool_with_default,
 )
 
 
@@ -148,6 +149,125 @@ def maybe_apply_cluster_specific_env_overrides(exp_args: dict, hpc) -> dict:
         _set_default("data_shared_file_system", True)
 
     return exp_args
+
+
+def configure_sft_reporting(base_config: dict, exp_args: dict, model_path: str) -> dict:
+    """Configure wandb reporting and push_to_hub for SFT training.
+
+    Args:
+        base_config: LlamaFactory training configuration dict
+        exp_args: Experiment arguments from CLI
+        model_path: Path to the model (used for no-internet clusters)
+
+    Returns:
+        Updated base_config with reporting settings
+    """
+    # Default: push on internet nodes, don't push on no-internet nodes
+    default_push = exp_args.get("internet_node", False)
+    push_to_hub = parse_bool_with_default(exp_args.get("push_to_hub"), default_push)
+
+    if exp_args.get("internet_node"):
+        base_config["report_to"] = "wandb"
+        base_config["push_to_hub"] = push_to_hub
+    else:
+        base_config.pop("report_to", None)
+        base_config["push_to_hub"] = push_to_hub
+        base_config["model_name_or_path"] = model_path
+        base_config["datasets_cache_dir"] = os.environ.get("HF_HUB_CACHE", "")
+    return base_config
+
+
+def pre_validation_sft(cli_args: dict) -> None:
+    """Validate SFT experiment configuration before job submission.
+
+    Args:
+        cli_args: Raw CLI arguments dict
+
+    Raises:
+        FileNotFoundError: If train_config_path doesn't exist
+    """
+    if "train_config_path" in cli_args:
+        config_path = cli_args["train_config_path"]
+        if not os.path.exists(config_path):
+            raise FileNotFoundError(f"Train config file {config_path} does not exist.")
+
+
+def submit_sft_job(
+    exp_args: dict,
+    cli_args: dict,
+    hpc,
+    *,
+    construct_config_yaml_fn: Callable,
+    update_exp_args_fn: Callable[[dict, dict], dict],
+    write_run_summary_fn: Callable[[dict, dict], None],
+    display_args_fn: Callable[[dict, str], None],
+    submit_job_fn: Callable,
+    should_run_pretokenize_fn: Callable,
+    schedule_pretokenize_fn: Callable,
+) -> Optional[str]:
+    """Submit an SFT training job to SLURM.
+
+    This function handles the complete SFT job submission flow:
+    1. Pre-validation of config files
+    2. Construction of LlamaFactory config YAML
+    3. Generation of sbatch script
+    4. Optional pretokenization job scheduling
+    5. Job submission to SLURM
+
+    Args:
+        exp_args: Experiment arguments dict
+        cli_args: Raw CLI arguments dict
+        hpc: HPC cluster configuration object
+        construct_config_yaml_fn: Function to construct the training config YAML
+        update_exp_args_fn: Function to update exp_args dict
+        write_run_summary_fn: Function to write run summary metadata
+        display_args_fn: Function to display arguments
+        submit_job_fn: Function to submit sbatch job
+        should_run_pretokenize_fn: Function to check if pretokenization is needed
+        schedule_pretokenize_fn: Function to schedule pretokenization job
+
+    Returns:
+        Job ID string if submitted, None if dry run
+    """
+    job_type = exp_args.get("job_type")
+
+    # Pre-validation
+    pre_validation_sft(cli_args)
+
+    # Construct the config yaml
+    train_config, train_config_path_out = construct_config_yaml_fn(exp_args)
+    exp_args = update_exp_args_fn(exp_args, train_config)
+    exp_args = update_exp_args_fn(exp_args, {"train_config_path_out": train_config_path_out})
+    write_run_summary_fn(exp_args, train_config)
+
+    # Construct the sbatch script using universal SFT template
+    train_sbatch_path_out = construct_sft_sbatch_script(exp_args, hpc)
+    exp_args = update_exp_args_fn(exp_args, {"train_sbatch_path_out": train_sbatch_path_out})
+
+    display_args_fn(exp_args, "Train")
+
+    if exp_args.get("dry_run", False):
+        print("DRY RUN: Job would be submitted with the above parameters, but --dry_run flag was set.")
+        return None
+
+    dependency = None
+    wants_pretokenize = should_run_pretokenize_fn(exp_args, job_type)
+    if wants_pretokenize:
+        tokenized_path = exp_args.get("tokenized_path", "")
+        if tokenized_path and os.path.exists(tokenized_path):
+            print(f"Tokenized directory {tokenized_path} already exists, skipping pretokenization job submission")
+        else:
+            pretok_job_id = schedule_pretokenize_fn(
+                exp_args,
+                update_exp_args_fn=update_exp_args_fn,
+                construct_config_yaml_fn=construct_config_yaml_fn,
+                construct_sbatch_script_fn=lambda args: construct_sft_sbatch_script(args, hpc),
+                submit_job_fn=submit_job_fn,
+            )
+            dependency = f"afterok:{pretok_job_id}"
+
+    train_job_id = submit_job_fn(exp_args=exp_args, dependency=dependency)
+    return train_job_id
 
 
 # =============================================================================

@@ -102,9 +102,25 @@ def coerce_numeric_cli_values(args_dict: dict[str, Any]) -> dict[str, Any]:
     return args_dict
 
 
+def normalize_job_type(exp_args: dict) -> str | None:
+    """Normalize job_type string without applying a default.
+
+    Args:
+        exp_args: Experiment arguments dict
+
+    Returns:
+        Normalized job_type string (lowercase, stripped) or None if not set
+    """
+    raw_value = exp_args.get("job_type")
+    if raw_value is None or raw_value == "":
+        return None
+    return str(raw_value).strip().lower()
+
+
 __all__ = [
     "parse_comma_separated",
     "normalize_cli_args",
+    "normalize_job_type",
     "parse_bool_flag",
     "coerce_str_bool_none",
     "coerce_numeric_cli_values",
