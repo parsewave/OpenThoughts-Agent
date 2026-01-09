@@ -10,6 +10,7 @@ orchestrator:
   type: local
   n_concurrent_trials: 24
   quiet: false
+  plain_output: true
   adaptive_concurrency:
     enabled: false
     algorithm: gradient2
