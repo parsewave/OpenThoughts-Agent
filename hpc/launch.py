@@ -16,7 +16,8 @@ from hpc.launch_utils import (
     get_job_name,
     launch_sbatch,
     sanitize_repo_component,
-    setup_experiments_dir,
+    resolve_job_and_paths,
+    derive_default_job_name,
     update_exp_args,
 )
 from hpc.pretokenize_launch_utils import schedule_pretokenize, should_run_pretokenize
@@ -273,8 +274,13 @@ def _write_train_config(configs_dir: str, job_name: str, base_config: dict) -> s
 
 
 def construct_config_yaml(exp_args):
-    exp_paths = setup_experiments_dir(exp_args)
-    configs_dir = str(exp_paths.configs)
+    # Legacy SFT path - auto-derive job_name if not provided
+    job_setup = resolve_job_and_paths(
+        exp_args,
+        job_type_label="SFT",
+        derive_job_name_fn=derive_default_job_name,
+    )
+    configs_dir = str(job_setup.paths.configs)
 
     train_config_path = exp_args.get("train_config_path")
     checkpoints_dir = exp_args.get("checkpoints_dir")
@@ -331,8 +337,13 @@ def submit_job(
     exp_args=None,
     dependency=None,
 ):
-    exp_paths = setup_experiments_dir(exp_args)
-    exp_args["logs_dir"] = str(exp_paths.logs)
+    # Legacy SFT path - auto-derive job_name if not provided
+    job_setup = resolve_job_and_paths(
+        exp_args or {},
+        job_type_label="SFT",
+        derive_job_name_fn=derive_default_job_name,
+    )
+    exp_args["logs_dir"] = str(job_setup.paths.logs)
 
     base_dependency = _merge_dependencies(exp_args.get("dependency"), dependency)
     current_dependency = base_dependency

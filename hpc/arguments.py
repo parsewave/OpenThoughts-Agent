@@ -336,9 +336,10 @@ class LaunchArgs:
         default=None, metadata={"help": "Path to config file"}
     )
     experiments_dir: Optional[str] = field(
-        default="experiments",
+        default=None,
         metadata={
-            "help": "Output for storing experiment outputs - logs, configs, sbatch scripts"
+            "help": "Output for storing experiment outputs - logs, configs, sbatch scripts. "
+            "Defaults to ./experiments/<job_name> when not specified."
         },
     )
     image: Optional[str] = field(

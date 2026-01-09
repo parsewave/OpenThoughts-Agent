@@ -15,7 +15,7 @@ import time
 from dataclasses import dataclass
 from os import PathLike
 from pathlib import Path
-from typing import Any, Dict, Mapping, Optional, Union
+from typing import Any, Callable, Dict, Mapping, Optional, Union
 
 from hpc.hpc import detect_hpc
 
@@ -328,6 +328,7 @@ class ExperimentsPaths:
 def setup_experiments_dir(
     exp_args: dict,
     *,
+    job_name: Optional[str] = None,
     create_dirs: bool = True,
     sbatch_subdir: str = "sbatch",
 ) -> ExperimentsPaths:
@@ -338,6 +339,9 @@ def setup_experiments_dir(
 
     Args:
         exp_args: Experiment arguments dict containing optional "experiments_dir".
+        job_name: Optional job name. When experiments_dir is not explicitly set,
+                  the default becomes "experiments/<job_name>" instead of just
+                  "experiments". This keeps each job's outputs isolated.
         create_dirs: Whether to create directories (default True).
         sbatch_subdir: Name of sbatch subdirectory (default "sbatch",
                        use "sbatch_scripts" for backwards compat where needed).
@@ -345,7 +349,16 @@ def setup_experiments_dir(
     Returns:
         ExperimentsPaths with root, sbatch, configs, and logs paths.
     """
-    experiments_subdir = exp_args.get("experiments_dir") or "experiments"
+    explicit_experiments_dir = exp_args.get("experiments_dir")
+    if explicit_experiments_dir:
+        # User explicitly set experiments_dir - use it as-is
+        experiments_subdir = explicit_experiments_dir
+    elif job_name:
+        # Default to experiments/<job_name> when job_name is available
+        experiments_subdir = f"experiments/{job_name}"
+    else:
+        # Fallback to just "experiments" (legacy behavior)
+        experiments_subdir = "experiments"
     experiments_abs = resolve_workspace_path(experiments_subdir)
 
     paths = ExperimentsPaths(
@@ -361,6 +374,52 @@ def setup_experiments_dir(
         paths.logs.mkdir(parents=True, exist_ok=True)
 
     return paths
+
+
+@dataclass
+class JobSetupResult:
+    """Result of resolve_job_and_paths()."""
+    job_name: str
+    paths: ExperimentsPaths
+
+
+def resolve_job_and_paths(
+    exp_args: dict,
+    *,
+    job_type_label: str = "job",
+    derive_job_name_fn: Optional[Callable[[dict], str]] = None,
+    sbatch_subdir: str = "sbatch",
+) -> JobSetupResult:
+    """Resolve job_name and experiments paths in one step.
+
+    This consolidates the common pattern across launchers:
+    1. Get job_name from exp_args (or derive it)
+    2. Setup experiments directory using job_name
+
+    Args:
+        exp_args: Experiment arguments dict.
+        job_type_label: Label for error messages (e.g., "Eval", "SFT", "Datagen").
+        derive_job_name_fn: Optional function to derive job_name if not in exp_args.
+                           If None and job_name is missing, raises ValueError.
+        sbatch_subdir: Name of sbatch subdirectory (default "sbatch").
+
+    Returns:
+        JobSetupResult with job_name and paths.
+
+    Raises:
+        ValueError: If job_name is missing and no derive_job_name_fn provided.
+    """
+    job_name = exp_args.get("job_name")
+
+    if not job_name:
+        if derive_job_name_fn:
+            job_name = derive_job_name_fn(exp_args)
+        else:
+            raise ValueError(f"{job_type_label} jobs require a --job_name.")
+
+    paths = setup_experiments_dir(exp_args, job_name=job_name, sbatch_subdir=sbatch_subdir)
+
+    return JobSetupResult(job_name=job_name, paths=paths)
 
 
 def repo_relative(path_str: str, repo_root: Optional[Path] = None) -> str:
@@ -1387,6 +1446,8 @@ __all__ = [
     # Experiments directory setup
     "ExperimentsPaths",
     "setup_experiments_dir",
+    "JobSetupResult",
+    "resolve_job_and_paths",
     # Value coercion
     "coerce_positive_int",
     # Dict utilities

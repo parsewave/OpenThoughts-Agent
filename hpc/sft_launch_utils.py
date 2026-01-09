@@ -13,11 +13,12 @@ import yaml
 from hpc.arguments import LlamaFactoryArgs
 from hpc.data_argument_keys import DATA_ARGUMENT_KEYS
 from hpc.launch_utils import (
-    setup_experiments_dir,
+    resolve_job_and_paths,
     substitute_template,
     build_sbatch_directives,
     coerce_positive_int,
     parse_bool_with_default,
+    derive_default_job_name,
 )
 
 
@@ -508,13 +509,15 @@ def construct_sft_sbatch_script(exp_args: dict, hpc) -> str:
     """
     print("\n=== SFT MODE (Universal Launcher) ===")
 
-    # Resolve paths
-    exp_paths = setup_experiments_dir(exp_args)
+    # Resolve job_name and paths (auto-derives job_name if not provided)
+    job_setup = resolve_job_and_paths(
+        exp_args,
+        job_type_label="SFT",
+        derive_job_name_fn=derive_default_job_name,
+    )
+    job_name = job_setup.job_name
+    exp_paths = job_setup.paths
     experiments_subdir = str(exp_paths.root)
-
-    job_name = exp_args.get("job_name")
-    if not job_name:
-        raise ValueError("SFT jobs require a --job_name.")
 
     # Extract config values
     train_config_path = exp_args.get("train_config_path_out")
