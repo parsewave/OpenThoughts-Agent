@@ -42,6 +42,10 @@ from hpc.hf_utils import is_hf_dataset_path
 
 DEFAULT_LOG_SYNC_INTERVAL = 120  # 2 minutes
 
+# Harbor git URL for cloud reinstalls (always fetch latest from branch)
+HARBOR_GIT_URL = "git+https://github.com/laude-institute/harbor.git@penfever/temp-override"
+HARBOR_REINSTALL_CMD = f'pip install --upgrade --force-reinstall "harbor @ {HARBOR_GIT_URL}"'
+
 
 # ---------------------------------------------------------------------------
 # Periodic Remote Sync
@@ -251,6 +255,7 @@ def build_remote_setup_script(
     secrets_path: Optional[str] = None,
     add_pythonpath: bool = True,
     extra_env_vars: Optional[Dict[str, str]] = None,
+    pre_task_commands: Optional[List[str]] = None,
 ) -> str:
     """Build the remote setup script to run in the container.
 
@@ -260,6 +265,8 @@ def build_remote_setup_script(
         secrets_path: Optional path to secrets file to source
         add_pythonpath: Whether to add workdir to PYTHONPATH
         extra_env_vars: Additional environment variables to export
+        pre_task_commands: Optional list of commands to run before main_cmd
+                          (e.g., package reinstalls, environment setup)
 
     Returns:
         Shell script as string (commands joined with &&)
@@ -276,6 +283,11 @@ def build_remote_setup_script(
 
     if secrets_path:
         cmds.append(f"set -a && source {secrets_path} && set +a")
+
+    # Add pre-task commands (e.g., harbor reinstall)
+    if pre_task_commands:
+        for pre_cmd in pre_task_commands:
+            cmds.append(pre_cmd)
 
     cmds.append(main_cmd)
 
@@ -1053,6 +1065,25 @@ class CloudLauncher:
         """Normalize repo-relative paths. Override in subclasses."""
         pass
 
+    def get_pre_task_commands(self, args: "argparse.Namespace") -> List[str]:
+        """Return commands to run before the main task on remote.
+
+        By default, reinstalls harbor from the latest commit on the branch
+        to ensure cloud runs use the most up-to-date version.
+
+        Override in subclasses to customize or disable.
+
+        Args:
+            args: Parsed arguments
+
+        Returns:
+            List of shell commands to run before the main task
+        """
+        return [
+            f'echo "[cloud-setup] Reinstalling harbor from latest commit..."',
+            HARBOR_REINSTALL_CMD,
+        ]
+
     def run(self, args: "argparse.Namespace") -> None:
         """Main entry point to run the cloud launcher."""
         import shlex
@@ -1105,12 +1136,16 @@ class CloudLauncher:
         # Setup GPT-OSS tiktoken encodings if needed (modifies file_mounts)
         extra_env_vars = self.setup_gpt_oss_if_needed(args, file_mounts)
 
+        # Get pre-task commands (e.g., harbor reinstall)
+        pre_task_commands = self.get_pre_task_commands(args)
+
         final_cmd = build_remote_setup_script(
             workdir=remote_workdir,
             main_cmd=task_cmd_str,
             secrets_path=remote_secret_path,
             add_pythonpath=not args.no_sync,
             extra_env_vars=extra_env_vars,
+            pre_task_commands=pre_task_commands,
         )
 
         # Build resources
@@ -1140,6 +1175,8 @@ __all__ = [
     "GHCR_IMAGE_BASE",
     "DEFAULT_DOCKER_IMAGE",
     "DEFAULT_LOG_SYNC_INTERVAL",
+    "HARBOR_GIT_URL",
+    "HARBOR_REINSTALL_CMD",
     # Periodic sync
     "PeriodicRemoteSync",
     "PeriodicLogSync",

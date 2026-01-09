@@ -18,7 +18,7 @@ dependencies = [
     "datasets>=2.0.0",
     "supabase>=2.22.3",
     "python-dotenv>=1.0.0",
-    "harbor @ git+https://github.com/laude-institute/harbor.git@a37706c696081223c981d5918a059786418f0ab3",
+    "harbor @ git+https://github.com/laude-institute/harbor.git@penfever/temp-override",
     "dynamic-semaphore @ git+https://github.com/penfever/dynamic-semaphore",
     "google-cloud-storage",
     "h5py",
