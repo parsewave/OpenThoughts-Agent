@@ -10,7 +10,6 @@ laion/exp_tas_max_tokens_2048_traces
 laion/exp_tas_high_diversity_traces
 laion/exp_tas_top_k_128_traces
 laion/exp_tas_repetition_penalty_1_2_traces
-laion/openthoughts-3-QwQ-32b-annotated-16k_qwen2.5-1.5B_16k
 laion/exp_tas_summarize_off_traces
 laion/exp_tas_summarize_threshold_2048_traces
 laion/exp_tas_top_k_64_traces
