@@ -643,13 +643,13 @@ class RLJobRunner:
         Returns:
             Exit code (0 for success, non-zero for failure).
         """
-        print(f"=== RLJobRunner: {self.config.job_name} ===")
+        print(f"=== RLJobRunner: {self.config.job_name} ===", flush=True)
 
         try:
             self._setup_environment()
             return self._run_with_ray()
         except Exception as e:
-            print(f"RL job failed: {e}", file=sys.stderr)
+            print(f"RL job failed: {e}", file=sys.stderr, flush=True)
             import traceback
             traceback.print_exc()
             return 1
@@ -673,10 +673,10 @@ class RLJobRunner:
         # vLLM settings
         os.environ["VLLM_USE_V1"] = "1"
 
-        print(f"Environment configured:")
-        print(f"  TENSOR_PARALLEL_SIZE={os.environ['TENSOR_PARALLEL_SIZE']}")
-        print(f"  NUM_INFERENCE_ENGINES={os.environ['NUM_INFERENCE_ENGINES']}")
-        print(f"  POLICY_NUM_NODES={os.environ['POLICY_NUM_NODES']}")
+        print(f"Environment configured:", flush=True)
+        print(f"  TENSOR_PARALLEL_SIZE={os.environ['TENSOR_PARALLEL_SIZE']}", flush=True)
+        print(f"  NUM_INFERENCE_ENGINES={os.environ['NUM_INFERENCE_ENGINES']}", flush=True)
+        print(f"  POLICY_NUM_NODES={os.environ['POLICY_NUM_NODES']}", flush=True)
 
     def _run_with_ray(self) -> int:
         """Run SkyRL training with managed Ray cluster.
@@ -702,13 +702,13 @@ class RLJobRunner:
             ray_env_vars=hpc.get_ray_env_vars(),
         )
 
-        print(f"Starting Ray cluster with {num_nodes} nodes, {gpus_per_node} GPUs/node")
+        print(f"Starting Ray cluster with {num_nodes} nodes, {gpus_per_node} GPUs/node", flush=True)
 
         with RayCluster.from_slurm(ray_cfg) as ray_cluster:
             # Set RAY_ADDRESS for SkyRL to connect
             os.environ["RAY_ADDRESS"] = ray_cluster.address
-            print(f"Ray cluster ready at {ray_cluster.address}")
-            print(f"Total GPUs available: {ray_cluster.total_gpus}")
+            print(f"Ray cluster ready at {ray_cluster.address}", flush=True)
+            print(f"Total GPUs available: {ray_cluster.total_gpus}", flush=True)
 
             return self._run_skyrl()
 
