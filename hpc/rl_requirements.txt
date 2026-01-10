@@ -8,8 +8,9 @@
 # Do not mix these dependencies with datagen extras.
 # =============================================================================
 
-# SkyRL from mlfoundations fork (with vllm extra)
-skyrl[vllm] @ git+https://github.com/mlfoundations/skyrl.git
+# SkyRL-train from penfever fork (with vllm extra)
+# Note: Install from skyrl-train subdirectory (root is metadata-only)
+skyrl[vllm] @ git+https://github.com/penfever/SkyRL.git@penfever/working#subdirectory=skyrl-train
 
 # Harbor - MUST match the branch used in main pyproject.toml for compatibility
 # This is the laude-institute fork with custom patches
