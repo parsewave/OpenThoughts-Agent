@@ -37,7 +37,8 @@ def resolve_rl_train_data(
     subdirectory is a task containing an instruction.md file. This function:
     1. Detects HuggingFace dataset identifiers (e.g., "org/repo-name")
     2. Extracts them to $SCRATCH/tasks/<repo-name>/ using extract_tasks_from_parquet
-    3. Returns local filesystem paths for all datasets
+    3. Fixes permissions (chmod) to ensure tasks are readable
+    4. Returns local filesystem paths for all datasets
 
     Args:
         train_data: List of dataset paths (local paths or HF repo IDs).
@@ -106,12 +107,45 @@ def resolve_rl_train_data(
                 print(f"  stderr: {e.stderr}")
                 raise RuntimeError(f"Failed to extract HF dataset: {data_path}") from e
 
+            # Fix permissions on extracted tasks (chmod -R a+rX)
+            _fix_task_permissions(output_dir, verbose=verbose)
+
             resolved_paths.append(str(output_dir))
         else:
-            # It's a local path - use as-is
+            # It's a local path - fix permissions just in case
+            local_path = Path(data_path)
+            if local_path.exists():
+                _fix_task_permissions(local_path, verbose=verbose)
             resolved_paths.append(data_path)
 
     return resolved_paths
+
+
+def _fix_task_permissions(task_dir: Path, verbose: bool = True) -> None:
+    """Fix permissions on task directory to ensure files are readable.
+
+    Runs chmod -R a+rX on the directory to make all files readable
+    and directories traversable.
+
+    Args:
+        task_dir: Path to task directory.
+        verbose: Whether to print status messages.
+    """
+    if not task_dir.exists():
+        return
+
+    if verbose:
+        print(f"[rl_launch_utils] Fixing permissions on: {task_dir}")
+
+    try:
+        subprocess.run(
+            ["chmod", "-R", "a+rX", str(task_dir)],
+            check=True,
+            capture_output=True,
+        )
+    except subprocess.CalledProcessError as e:
+        # Don't fail the whole job for permission issues
+        print(f"[rl_launch_utils] Warning: chmod failed on {task_dir}: {e.stderr}")
 
 
 def compute_num_inference_engines(

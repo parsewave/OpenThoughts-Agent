@@ -164,7 +164,7 @@ def _format_hydra_arg(key: str, value: Any, use_plus_prefix: bool = False) -> st
 
     Handles special formatting for different types:
     - bool: lowercase true/false
-    - list: quoted bracket notation
+    - list: YAML list notation (no outer quotes so Hydra parses as list, not string)
     - str/int/float: direct value
 
     Args:
@@ -179,12 +179,14 @@ def _format_hydra_arg(key: str, value: Any, use_plus_prefix: bool = False) -> st
     if isinstance(value, bool):
         return f"{prefix}{key}={str(value).lower()}"
     elif isinstance(value, (list, tuple)):
-        # Format list items, quoting strings
+        # Format as YAML list WITHOUT outer quotes so Hydra parses it as a list
+        # (with outer quotes like "['a']", Hydra treats it as a string literal)
+        # Use double quotes around string items to handle paths with special chars
         items = ",".join(
-            f"'{v}'" if isinstance(v, str) else str(v)
+            f'"{v}"' if isinstance(v, str) else str(v)
             for v in value
         )
-        return f'{prefix}{key}="[{items}]"'
+        return f"{prefix}{key}=[{items}]"
     else:
         return f"{prefix}{key}={value}"
 
