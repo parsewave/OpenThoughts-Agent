@@ -104,6 +104,47 @@ else
     uv pip install -e "$BASE_DIR[rl]"
 fi
 
+# =============================================================================
+# Clone SkyRL repository (required for examples/terminal_bench entrypoints)
+# =============================================================================
+# The terminal_bench entrypoint lives in examples/, which is NOT part of the
+# installed skyrl-train package. We need the full repo cloned.
+
+SKYRL_REPO="https://github.com/penfever/SkyRL.git"
+SKYRL_BRANCH="penfever/working"
+
+# Determine SKYRL_HOME location
+if [[ -n "${SKYRL_HOME:-}" ]]; then
+    SKYRL_DIR="$SKYRL_HOME"
+elif [[ -n "${SCRATCH:-}" ]]; then
+    SKYRL_DIR="$SCRATCH/SkyRL"
+else
+    SKYRL_DIR="$BASE_DIR/SkyRL"
+fi
+
+echo ""
+echo "=== SkyRL Repository Setup ==="
+echo "Target directory: $SKYRL_DIR"
+
+if [[ -d "$SKYRL_DIR" ]]; then
+    echo "SkyRL repo already exists at: $SKYRL_DIR"
+    echo "Updating to latest $SKYRL_BRANCH..."
+    pushd "$SKYRL_DIR" > /dev/null
+    git fetch origin
+    git checkout "$SKYRL_BRANCH" 2>/dev/null || git checkout -b "$SKYRL_BRANCH" "origin/$SKYRL_BRANCH"
+    git pull origin "$SKYRL_BRANCH" || echo "Warning: Could not pull latest changes"
+    popd > /dev/null
+else
+    echo "Cloning SkyRL from $SKYRL_REPO..."
+    git clone --branch "$SKYRL_BRANCH" "$SKYRL_REPO" "$SKYRL_DIR"
+fi
+
+echo "SkyRL repo ready at: $SKYRL_DIR"
+echo ""
+echo "IMPORTANT: Add this to your shell or source your cluster's dotenv file:"
+echo "  export SKYRL_HOME=\"$SKYRL_DIR\""
+echo "  export PYTHONPATH=\"\$SKYRL_HOME/skyrl-train:\$PYTHONPATH\""
+
 # Verify installation
 echo ""
 echo "Verifying installation..."
