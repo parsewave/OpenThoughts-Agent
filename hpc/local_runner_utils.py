@@ -147,7 +147,7 @@ class FileDescriptorMonitor:
         current, soft, hard, percent = self._get_fd_usage()
 
         if current < 0:
-            print("[fd-monitor] Unable to read file descriptor usage")
+            print("[fd-monitor] Unable to read file descriptor usage", flush=True)
             return
 
         # Determine status level
@@ -163,12 +163,14 @@ class FileDescriptorMonitor:
         timestamp = time.strftime("%H:%M:%S")
         print(
             f"[fd-monitor] [{timestamp}] {level}: {current:,} / {soft:,} FDs open "
-            f"({percent:.1f}% of soft limit, hard limit: {hard:,})"
+            f"({percent:.1f}% of soft limit, hard limit: {hard:,})",
+            flush=True,
         )
 
         if percent >= 75:
             print(
-                f"[fd-monitor] Consider reducing --n_concurrent or increasing ulimit -n"
+                f"[fd-monitor] Consider reducing --n_concurrent or increasing ulimit -n",
+                flush=True,
             )
 
     def _run(self) -> None:
@@ -186,12 +188,12 @@ class FileDescriptorMonitor:
         if self._thread is not None:
             return
         if self.interval <= 0:
-            print("[fd-monitor] Disabled (interval <= 0)")
+            print("[fd-monitor] Disabled (interval <= 0)", flush=True)
             return
 
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
-        print(f"[fd-monitor] Started monitoring (every {self.interval}s)")
+        print(f"[fd-monitor] Started monitoring (every {self.interval}s)", flush=True)
 
     def stop(self) -> None:
         """Stop the background monitoring thread."""
@@ -201,7 +203,7 @@ class FileDescriptorMonitor:
             self._thread = None
         # Final status report
         self._log_status()
-        print("[fd-monitor] Stopped")
+        print("[fd-monitor] Stopped", flush=True)
 
 
 def _open_log_file(log_path: Optional[Path]) -> tuple:

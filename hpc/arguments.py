@@ -535,8 +535,8 @@ class DataGenArgs:
         metadata={"help": "Override Harbor agent model for trace generation"}
     )
     trace_agent_name: Optional[str] = field(
-        default=None,
-        metadata={"help": "Override Harbor agent name for trace generation"}
+        default="terminus-2",
+        metadata={"help": "Agent name for trace generation and run_summary.json (default: terminus-2)"}
     )
     trace_agent_kwargs: Optional[str] = field(
         default=None,
