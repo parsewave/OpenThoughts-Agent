@@ -196,4 +196,4 @@ generator:
 # Data paths (set via CLI --train_data, --val_data)
 data:
   train_data: []
-  val_data: []
+  val_data: ["open-thoughts/OpenThoughts-TB-dev"]
