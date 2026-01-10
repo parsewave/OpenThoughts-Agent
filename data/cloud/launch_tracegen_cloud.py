@@ -41,6 +41,7 @@ class TracegenCloudLauncher(CloudLauncher):
     """Cloud launcher for data/local/run_tracegen.py."""
 
     task_name = "ot-tracegen-cloud"
+    job_name_prefix = "tracegen"  # For auto-derived job names
     default_output_subdir = "cloud_runs"
     default_n_concurrent = 64
 

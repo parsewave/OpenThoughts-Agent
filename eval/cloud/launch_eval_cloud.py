@@ -41,6 +41,7 @@ class EvalCloudLauncher(CloudLauncher):
     """Cloud launcher for eval/local/run_eval.py."""
 
     task_name = "ot-eval-cloud"
+    job_name_prefix = "eval"  # For auto-derived job names
     default_output_subdir = "cloud_runs"
     default_n_concurrent = 16
 

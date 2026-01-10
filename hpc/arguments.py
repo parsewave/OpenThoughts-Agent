@@ -336,9 +336,10 @@ class LaunchArgs:
         default=None, metadata={"help": "Path to config file"}
     )
     experiments_dir: Optional[str] = field(
-        default="experiments",
+        default=None,
         metadata={
-            "help": "Output for storing experiment outputs - logs, configs, sbatch scripts"
+            "help": "Output for storing experiment outputs - logs, configs, sbatch scripts. "
+            "Defaults to ./experiments/<job_name> when not specified."
         },
     )
     image: Optional[str] = field(
@@ -534,8 +535,8 @@ class DataGenArgs:
         metadata={"help": "Override Harbor agent model for trace generation"}
     )
     trace_agent_name: Optional[str] = field(
-        default=None,
-        metadata={"help": "Override Harbor agent name for trace generation"}
+        default="terminus-2",
+        metadata={"help": "Agent name for trace generation and run_summary.json (default: terminus-2)"}
     )
     trace_agent_kwargs: Optional[str] = field(
         default=None,

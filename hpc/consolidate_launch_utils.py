@@ -8,7 +8,7 @@ from typing import Optional, Callable
 
 from hpc.launch_utils import (
     sanitize_repo_for_job,
-    setup_experiments_dir,
+    resolve_job_and_paths,
     parse_bool_with_default,
     scale_memory_for_partial_gpus,
 )
@@ -82,15 +82,25 @@ def launch_consolidate_job(
     effective_output_repo = output_repo
     input_kind = "local" if input_is_local else "repo"
 
-    job_name = exp_args.get("job_name")
-    if not job_name:
+    # Define local derive function that captures input_value
+    def _derive_consolidate_job_name(_: dict) -> str:
         identifier = sanitize_repo_for_job(str(input_value))
-        job_name = f"{identifier}_consolidate"
-        if len(job_name) > 96:
-            job_name = job_name[:96]
-        exp_args = update_exp_args_fn(exp_args, {"job_name": job_name})
+        name = f"{identifier}_consolidate"
+        return name[:96] if len(name) > 96 else name
 
-    exp_paths = setup_experiments_dir(exp_args, sbatch_subdir="sbatch_scripts")
+    # Resolve job_name and paths
+    job_setup = resolve_job_and_paths(
+        exp_args,
+        job_type_label="Consolidate",
+        derive_job_name_fn=_derive_consolidate_job_name,
+        sbatch_subdir="sbatch_scripts",
+    )
+    job_name = job_setup.job_name
+    exp_paths = job_setup.paths
+
+    # Update exp_args with derived job_name if it was auto-derived
+    if not exp_args.get("job_name"):
+        exp_args = update_exp_args_fn(exp_args, {"job_name": job_name})
     experiments_dir = str(exp_paths.root)
     exp_args = update_exp_args_fn(exp_args, {"logs_dir": str(exp_paths.logs)})
 

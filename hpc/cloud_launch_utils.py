@@ -41,9 +41,67 @@ from hpc.cli_utils import parse_comma_separated
 from hpc.hf_utils import is_hf_dataset_path
 
 DEFAULT_LOG_SYNC_INTERVAL = 120  # 2 minutes
+DEFAULT_CLOUD_OUTPUT_PREFIX = "trace_runs"  # Default output subdir prefix for cloud jobs
 
 # Harbor git URL for cloud reinstalls (always fetch latest from branch)
 HARBOR_GIT_URL = "git+https://github.com/laude-institute/harbor.git@penfever/temp-override"
+
+
+# ---------------------------------------------------------------------------
+# Job Name Derivation for Cloud Launchers
+# ---------------------------------------------------------------------------
+
+
+def derive_cloud_job_name(args: "argparse.Namespace", task_prefix: str = "cloud") -> str:
+    """Construct a fallback job name for cloud launches.
+
+    Pattern: {task_prefix}_{cloud_provider}_{model}_{dataset}
+    Example: tracegen_gcp_qwen2.5-7b-instruct_swebench-verified
+
+    Args:
+        args: Parsed argparse namespace
+        task_prefix: Prefix for the job name (e.g., "tracegen", "eval")
+
+    Returns:
+        Derived job name (max 63 chars for SkyPilot cluster naming)
+    """
+    import re
+
+    def _sanitize_component(value: str) -> str:
+        """Sanitize a string for use in job names."""
+        value = value.strip().rstrip("/")
+        if "/" in value:
+            value = value.split("/")[-1]
+        return re.sub(r"[^A-Za-z0-9._-]+", "-", value).strip("-_") or "task"
+
+    parts: list[str] = [task_prefix]
+
+    # Include cloud provider (use first if comma-separated)
+    cloud_provider = getattr(args, "cloud_provider", None)
+    if cloud_provider:
+        first_provider = cloud_provider.split(",")[0].strip()
+        parts.append(_sanitize_component(first_provider))
+
+    # Model component
+    model = getattr(args, "model", None)
+    if model:
+        parts.append(_sanitize_component(str(model)))
+
+    # Dataset component (tasks_input_path, harbor_dataset, dataset, or dataset_path)
+    dataset_value = (
+        getattr(args, "tasks_input_path", None)
+        or getattr(args, "harbor_dataset", None)
+        or getattr(args, "dataset", None)
+        or getattr(args, "dataset_path", None)
+    )
+    if dataset_value:
+        parts.append(_sanitize_component(str(dataset_value)))
+
+    job_name = "_".join(filter(None, parts))
+
+    # SkyPilot cluster names must be <= 63 chars and lowercase
+    job_name = job_name[:63].lower()
+    return job_name
 
 # Combined cloud dependency install command.
 # Use uv for better dependency resolution (pip doesn't track all installed packages).
@@ -102,22 +160,22 @@ class PeriodicRemoteSync:
             if result.returncode == 0:
                 synced_files = list(local_path.glob("**/*"))
                 if synced_files:
-                    print(f"[sync] Synced {len(synced_files)} file(s) to {self.local_dir}")
+                    print(f"[sync] Synced {len(synced_files)} file(s) to {self.local_dir}", flush=True)
             elif result.returncode == 23:
                 # rsync code 23: partial transfer due to error (often "file/directory not found")
                 stderr_lower = (result.stderr or "").lower()
                 if "no such file" in stderr_lower or "does not exist" in stderr_lower or "change_dir" in stderr_lower:
                     pass  # Remote directory doesn't exist yet - expected early in job
                 else:
-                    print(f"[sync] Warning: rsync partial transfer (code 23): {result.stderr}", file=sys.stderr)
+                    print(f"[sync] Warning: rsync partial transfer (code 23): {result.stderr}", file=sys.stderr, flush=True)
             elif "No such file" in result.stderr or "does not exist" in result.stderr.lower():
                 pass  # Remote directory doesn't exist yet
             else:
-                print(f"[sync] Warning: rsync returned {result.returncode}", file=sys.stderr)
+                print(f"[sync] Warning: rsync returned {result.returncode}", file=sys.stderr, flush=True)
         except subprocess.TimeoutExpired:
             pass  # Sync took too long, skip
         except Exception as e:
-            print(f"[sync] Warning: sync failed: {e}", file=sys.stderr)
+            print(f"[sync] Warning: sync failed: {e}", file=sys.stderr, flush=True)
 
     def _run(self) -> None:
         """Background thread loop."""
@@ -132,7 +190,7 @@ class PeriodicRemoteSync:
             return
         self._thread = threading.Thread(target=self._run, daemon=True)
         self._thread.start()
-        print(f"[sync] Started periodic sync (every {self.interval}s) to {self.local_dir}")
+        print(f"[sync] Started periodic sync (every {self.interval}s) to {self.local_dir}", flush=True)
 
     def stop(self) -> None:
         """Stop the background sync thread."""
@@ -141,7 +199,7 @@ class PeriodicRemoteSync:
             self._thread.join(timeout=5)
             self._thread = None
         self._sync()  # Final sync
-        print("[sync] Stopped periodic sync")
+        print("[sync] Stopped periodic sync", flush=True)
 
 
 # Backwards compatibility alias
@@ -552,6 +610,7 @@ class CloudLauncher:
 
     # Override these in subclasses
     task_name: str = "cloud-task"
+    job_name_prefix: str = "cloud"  # Prefix for auto-derived job names
     default_output_subdir: str = "cloud_runs"
     default_n_concurrent: int = 16
 
@@ -618,16 +677,15 @@ class CloudLauncher:
             default=DEFAULT_DOCKER_IMAGE,
             help="Pre-built Docker image (default: auto-selects based on GPU count).",
         )
-        _add("--task_name", "--task-name", default=self.task_name, help="SkyPilot task name.")
-        _add("--cluster_name", "--cluster-name", help="Optional SkyPilot cluster name override.")
+        _add("--task_name", "--task-name", help="SkyPilot task name (defaults to <job_name>).")
+        _add("--cluster_name", "--cluster-name", help="SkyPilot cluster name (defaults to <job_name>).")
         _add(
             "--remote_output_subdir", "--remote-output-subdir",
-            default=self.default_output_subdir,
-            help=f"Subdirectory for outputs (default: '{self.default_output_subdir}').",
+            help=f"Subdirectory for outputs (defaults to '{DEFAULT_CLOUD_OUTPUT_PREFIX}/<job_name>').",
         )
         _add(
             "--local_sync_dir", "--local-sync-dir",
-            default=(self.repo_root / self.default_output_subdir).as_posix(),
+            help=f"Local sync directory (defaults to './{DEFAULT_CLOUD_OUTPUT_PREFIX}/<job_name>').",
         )
         _add("--secrets_env", "--secrets-env", help="Path to secrets.env to source inside the container.")
         _add(
@@ -1060,6 +1118,42 @@ class CloudLauncher:
                 print(f"[cloud] Run manually: sky down {cluster_name}", file=sys.stderr)
 
     # -------------------------------------------------------------------------
+    # Job Name and Path Resolution
+    # -------------------------------------------------------------------------
+
+    def resolve_job_name_and_defaults(self, args: "argparse.Namespace") -> None:
+        """Resolve job_name and set defaults for task_name, cluster_name, output dirs.
+
+        If job_name is not provided, derives it using derive_cloud_job_name().
+        Then sets defaults for task_name, cluster_name, and path-related args based on job_name.
+
+        Args:
+            args: Parsed arguments (modified in place)
+        """
+        # Derive job_name if not provided
+        job_name = getattr(args, "job_name", None)
+        if not job_name:
+            job_name = derive_cloud_job_name(args, task_prefix=self.job_name_prefix)
+            args.job_name = job_name
+            print(f"[cloud] Auto-derived job_name: {job_name}")
+
+        # Set task_name default to job_name
+        if not getattr(args, "task_name", None):
+            args.task_name = job_name
+
+        # Set cluster_name default to job_name
+        if not getattr(args, "cluster_name", None):
+            args.cluster_name = job_name
+
+        # Set remote_output_subdir default to trace_runs/<job_name>
+        if not getattr(args, "remote_output_subdir", None):
+            args.remote_output_subdir = f"{DEFAULT_CLOUD_OUTPUT_PREFIX}/{job_name}"
+
+        # Set local_sync_dir default to ./trace_runs/<job_name>
+        if not getattr(args, "local_sync_dir", None):
+            args.local_sync_dir = (self.repo_root / DEFAULT_CLOUD_OUTPUT_PREFIX / job_name).as_posix()
+
+    # -------------------------------------------------------------------------
     # Main Entry Point
     # -------------------------------------------------------------------------
 
@@ -1104,6 +1198,9 @@ class CloudLauncher:
         if args.list_providers:
             print(list_providers(verbose=True))
             return
+
+        # Resolve job_name and set defaults for cluster_name, remote_output_subdir, local_sync_dir
+        self.resolve_job_name_and_defaults(args)
 
         # Validate providers
         provider_names, provider_configs = self.validate_providers(args)
@@ -1185,8 +1282,11 @@ __all__ = [
     "GHCR_IMAGE_BASE",
     "DEFAULT_DOCKER_IMAGE",
     "DEFAULT_LOG_SYNC_INTERVAL",
+    "DEFAULT_CLOUD_OUTPUT_PREFIX",
     "HARBOR_GIT_URL",
     "CLOUD_DEPS_INSTALL_CMD",
+    # Job name derivation
+    "derive_cloud_job_name",
     # Periodic sync
     "PeriodicRemoteSync",
     "PeriodicLogSync",

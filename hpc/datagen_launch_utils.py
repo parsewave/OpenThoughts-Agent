@@ -23,7 +23,7 @@ from hpc.launch_utils import (
     hosted_vllm_alias,
     strip_hosted_vllm_alias,
     set_or_pop,
-    setup_experiments_dir,
+    resolve_job_and_paths,
     substitute_template,
 )
 from hpc.harbor_utils import (
@@ -126,13 +126,15 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
     if task_enabled and not exp_args.get("datagen_script"):
         raise ValueError("--datagen-script is required for task generation")
 
-    # Resolve paths
-    exp_paths = setup_experiments_dir(exp_args)
+    # Resolve job_name and paths (auto-derives job_name if not provided)
+    job_setup = resolve_job_and_paths(
+        exp_args,
+        job_type_label="Datagen",
+        derive_job_name_fn=derive_datagen_job_name,
+    )
+    job_name = job_setup.job_name
+    exp_paths = job_setup.paths
     experiments_subdir = str(exp_paths.root)  # String form for config dicts
-
-    job_name = exp_args.get("job_name")
-    if not job_name:
-        job_name = derive_datagen_job_name(exp_args)
 
     # vLLM settings
     vllm_cfg = exp_args.get("_datagen_vllm_server_config")

@@ -3573,14 +3573,28 @@ def upload_job_and_trial_records(
             logger.info(f"Model '{model_name}' not found, trying stripped name: {hf_name}")
             model = get_model_by_name(hf_name)
 
-        # If still missing, attempt auto-register from HF run_summary.json
+        # If still missing, attempt auto-register from HF
+        # Try run_summary.json first (trained models), fall back to base model registration
         if not model:
             summary = _hf_run_summary(hf_name)
-            print("summary", summary, "hf_name", hf_name)
             if summary:
+                # Use eval job's agent_name as fallback if model's run_summary is missing it
+                if not summary.get("agent_name") and agent_name:
+                    logger.info(f"Model run_summary missing agent_name, using eval agent: {agent_name}")
+                    summary["agent_name"] = agent_name
                 uploaded_model = register_trained_model(summary, forced_update=forced_update)
-                if not uploaded_model or uploaded_model['success'] == False:
-                    raise ValueError(f"Could not register model in database: {uploaded_model}")
+                if not uploaded_model or uploaded_model.get('success') == False:
+                    # If trained model registration fails, fall back to base model registration
+                    logger.warning(f"register_trained_model failed for {hf_name}, trying register_base_model")
+                    uploaded_model = register_base_model(hf_name, forced_update=forced_update)
+                    if not uploaded_model or uploaded_model.get('success') == False:
+                        raise ValueError(f"Could not register model in database: {uploaded_model}")
+            else:
+                # No run_summary.json - this is likely a base model (Qwen, Llama, etc.)
+                logger.info(f"No run_summary.json for {hf_name}, registering as base model")
+                uploaded_model = register_base_model(hf_name, forced_update=forced_update)
+                if not uploaded_model or uploaded_model.get('success') == False:
+                    raise ValueError(f"Could not register base model in database: {uploaded_model}")
             # Re-lookup after attempted registration
             model = get_model_by_name(hf_name)
             if model:

@@ -16,7 +16,8 @@ from hpc.launch_utils import (
     get_job_name,
     launch_sbatch,
     sanitize_repo_component,
-    setup_experiments_dir,
+    resolve_job_and_paths,
+    derive_default_job_name,
     update_exp_args,
 )
 from hpc.pretokenize_launch_utils import schedule_pretokenize, should_run_pretokenize
@@ -50,8 +51,33 @@ from database.unified_db.utils import load_supabase_keys
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
-def _extract_agent_name(dataset_name: str):
-    return sanitize_repo_component(dataset_name)
+def _extract_agent_name(dataset_name: str) -> str:
+    """Extract agent name from dataset name for run_summary.json.
+
+    Tries in order:
+    1. Extract from traces-<slug> pattern (e.g., "traces-swebench" -> "swebench")
+    2. Extract repo name from HF-style path (e.g., "org/repo-name" -> "repo-name")
+    3. Fall back to the full dataset name
+
+    Returns:
+        A non-empty agent name string (never None)
+    """
+    if not dataset_name:
+        return "unknown"
+
+    # Try traces-<slug> pattern first
+    agent = sanitize_repo_component(dataset_name)
+    if agent:
+        return agent
+
+    # Extract repo name from HF-style path (org/repo-name -> repo-name)
+    if "/" in dataset_name:
+        repo_part = dataset_name.split("/")[-1].strip()
+        if repo_part:
+            return repo_part
+
+    # Fall back to full dataset name
+    return dataset_name.strip() or "unknown"
 
 
 def write_run_summary(exp_args, train_config):
@@ -66,7 +92,8 @@ def write_run_summary(exp_args, train_config):
     os.makedirs(output_dir, exist_ok=True)
 
     dataset_name = train_config.get("dataset") or exp_args.get("dataset")
-    agent_name = _extract_agent_name(dataset_name) if dataset_name else None
+    # Use explicit trace_agent_name if provided, otherwise derive from dataset
+    agent_name = exp_args.get("trace_agent_name") or _extract_agent_name(dataset_name)
 
     hub_model_id = train_config.get("hub_model_id") or exp_args.get("hub_model_id")
     training_parameters_link = build_training_parameters_link(hub_model_id)
@@ -273,8 +300,13 @@ def _write_train_config(configs_dir: str, job_name: str, base_config: dict) -> s
 
 
 def construct_config_yaml(exp_args):
-    exp_paths = setup_experiments_dir(exp_args)
-    configs_dir = str(exp_paths.configs)
+    # Legacy SFT path - auto-derive job_name if not provided
+    job_setup = resolve_job_and_paths(
+        exp_args,
+        job_type_label="SFT",
+        derive_job_name_fn=derive_default_job_name,
+    )
+    configs_dir = str(job_setup.paths.configs)
 
     train_config_path = exp_args.get("train_config_path")
     checkpoints_dir = exp_args.get("checkpoints_dir")
@@ -331,8 +363,13 @@ def submit_job(
     exp_args=None,
     dependency=None,
 ):
-    exp_paths = setup_experiments_dir(exp_args)
-    exp_args["logs_dir"] = str(exp_paths.logs)
+    # Legacy SFT path - auto-derive job_name if not provided
+    job_setup = resolve_job_and_paths(
+        exp_args or {},
+        job_type_label="SFT",
+        derive_job_name_fn=derive_default_job_name,
+    )
+    exp_args["logs_dir"] = str(job_setup.paths.logs)
 
     base_dependency = _merge_dependencies(exp_args.get("dependency"), dependency)
     current_dependency = base_dependency

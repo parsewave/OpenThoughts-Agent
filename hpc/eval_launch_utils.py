@@ -26,8 +26,9 @@ from hpc.launch_utils import (
     generate_served_model_id,
     hosted_vllm_alias,
     strip_hosted_vllm_alias,
-    setup_experiments_dir,
+    resolve_job_and_paths,
     substitute_template,
+    derive_datagen_job_name,
 )
 from hpc.hf_utils import resolve_hf_repo_id, resolve_dataset_path
 
@@ -453,13 +454,15 @@ def launch_eval_job_v2(exp_args: dict, hpc) -> None:
 
     print("\n=== EVAL MODE (Universal Launcher) ===")
 
-    # Resolve paths
-    exp_paths = setup_experiments_dir(exp_args)
+    # Resolve job_name and paths (auto-derives job_name if not provided)
+    job_setup = resolve_job_and_paths(
+        exp_args,
+        job_type_label="Eval",
+        derive_job_name_fn=derive_datagen_job_name,  # Handles both datagen and eval
+    )
+    job_name = job_setup.job_name
+    exp_paths = job_setup.paths
     experiments_subdir = str(exp_paths.root)  # String form for config dicts
-
-    job_name = exp_args.get("job_name")
-    if not job_name:
-        raise ValueError("Eval jobs require a --job_name.")
 
     # Extract config values
     harbor_cfg = exp_args.get("_eval_harbor_config_resolved")
