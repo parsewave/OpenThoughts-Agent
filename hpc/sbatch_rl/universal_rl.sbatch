@@ -109,8 +109,13 @@ export HYDRA_FULL_ERROR=1
 # --- Ray logging ---
 # Use $SCRATCH for Ray temp/logs because Ray creates very long socket paths
 # that can exceed the 107-byte Unix socket path limit (AF_UNIX).
-export RAY_TMPDIR="${SCRATCH:-/tmp}/ray_tmp"
-export RAY_LOG_DIR="${SCRATCH:-/tmp}/ray_logs"
+# Keep per-job subdirs short to avoid hitting path-length limits while still
+# preventing stale sessions from reusing the same plasma sockets.
+RAY_TMP_BASE="${SCRATCH:-/tmp}/ray_tmp"
+RAY_LOG_BASE="${SCRATCH:-/tmp}/ray_logs"
+RAY_JOB_TAG="${SLURM_JOB_ID:-$$}"
+export RAY_TMPDIR="${RAY_TMP_BASE}/${RAY_JOB_TAG}"
+export RAY_LOG_DIR="${RAY_LOG_BASE}"
 
 # --- HuggingFace/WandB paths ---
 export HF_HOME="${HF_HOME:-${HF_HUB_CACHE:-/tmp/hf_home}}"
@@ -123,21 +128,11 @@ mkdir -p "{experiments_dir}/logs"
 mkdir -p "{experiments_dir}/exports"
 
 # Ray directories in $SCRATCH (shorter paths for Unix socket limit)
-mkdir -p "${SCRATCH:-/tmp}/ray_tmp"
-mkdir -p "${SCRATCH:-/tmp}/ray_logs"
+mkdir -p "$RAY_TMPDIR"
+mkdir -p "$RAY_LOG_DIR"
 
 # --- SSH Tunneling (JSC clusters only) ---
 {ssh_tunnel_setup}
-
-# --- Clean up stale Ray instances on all nodes ---
-# This prevents collisions with Ray sessions from previous/crashed jobs.
-# Run on all allocated nodes using srun.
-echo "Cleaning up stale Ray instances on all nodes..."
-for node in $(scontrol show hostnames "$SLURM_JOB_NODELIST"); do
-  srun --export=ALL --nodes=1 --ntasks=1 --overlap -w "$node" \
-    ray stop --force 2>/dev/null || true
-done
-sleep 2  # Brief pause to let processes terminate
 
 # --- Run the RL training job via Python runner ---
 # Ray cluster management is handled by hpc/ray_utils.py using proper srun calls
