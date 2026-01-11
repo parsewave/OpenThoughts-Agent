@@ -31,7 +31,7 @@ from hpc.harbor_utils import (
     HARBOR_CONFIG_DIR,
     resolve_harbor_config_path,
 )
-from hpc.hf_utils import resolve_dataset_path
+from hpc.hf_utils import resolve_dataset_path, derive_default_hf_repo_id, sanitize_hf_repo_id
 
 # Backward compatibility aliases
 _normalize_cli_args = normalize_cli_args
@@ -116,6 +116,16 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
 
     print("\n=== DATA GENERATION MODE (Universal Launcher) ===")
 
+    # Auto-configure when trace_input_path is provided
+    # (user is providing pre-existing tasks, so task gen is unnecessary but trace gen is implied)
+    if exp_args.get("trace_input_path"):
+        if exp_args.get("enable_task_gen") is None:
+            exp_args["enable_task_gen"] = False
+            print("[datagen] Auto-disabled task generation (--trace-input-path provided)")
+        if exp_args.get("enable_trace_gen") is None:
+            exp_args["enable_trace_gen"] = True
+            print("[datagen] Auto-enabled trace generation (--trace-input-path provided)")
+
     # Determine what to run
     task_enabled = str(exp_args.get("enable_task_gen", True)).lower() not in {"false", "0", "no", "none"}
     trace_enabled = str(exp_args.get("enable_trace_gen", False)).lower() not in {"false", "0", "no", "none"}
@@ -164,6 +174,12 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
         # Convert vllm_cfg dataclass to dict for pass-through
         vllm_server_config = asdict(vllm_cfg) if vllm_cfg else {}
 
+        # Auto-derive datagen_target_repo if not set
+        datagen_target_repo = exp_args.get("datagen_target_repo")
+        if not datagen_target_repo:
+            datagen_target_repo = sanitize_hf_repo_id(derive_default_hf_repo_id(f"{job_name}-tasks"))
+            print(f"[datagen] Auto-derived --datagen-target-repo: {datagen_target_repo}")
+
         task_config = TaskgenJobConfig(
             job_name=f"{job_name}_tasks",
             datagen_script=exp_args.get("datagen_script") or "",
@@ -171,7 +187,7 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
             cluster_name=hpc.name,
             output_dir=exp_args.get("datagen_output_dir"),
             input_dir=exp_args.get("datagen_input_dir"),
-            target_repo=exp_args.get("datagen_target_repo"),
+            target_repo=datagen_target_repo,
             engine=engine,
             datagen_config_path=exp_args.get("datagen_config_path"),
             needs_vllm=requires_vllm,
@@ -235,7 +251,9 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
         trace_script = exp_args.get("trace_script") or exp_args.get("datagen_script")
         trace_target_repo = exp_args.get("trace_target_repo")
         if not trace_target_repo:
-            raise ValueError("--trace-target-repo is required when enabling trace generation")
+            # Auto-derive from job_name: <org>/<job_name>-traces
+            trace_target_repo = sanitize_hf_repo_id(derive_default_hf_repo_id(f"{job_name}-traces"))
+            print(f"[datagen] Auto-derived --trace-target-repo: {trace_target_repo}")
 
         harbor_config = exp_args.get("trace_harbor_config")
         if not harbor_config:

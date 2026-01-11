@@ -39,13 +39,13 @@ config_groups:
 # Terminal bench / agentic environment settings
 terminal_bench:
   agent_name: terminus
-  # Max episodes per task - generous for complex multi-step tasks
-  max_episodes: 32
+  # Max episodes per task - "fail fast" assumption
+  max_episodes: 16
   # trials_dir: Directory for Harbor trial artifacts (derived from experiments_dir if null)
   trials_dir: null
   # Sandbox resources - adequate for most agentic tasks
-  sandbox_cpu: 2
-  override_cpus: 2
+  sandbox_cpu: 1
+  override_cpus: 1
   override_memory_mb: 2048
   override_storage_mb: 2048
   # Enable summarization to compress long histories
