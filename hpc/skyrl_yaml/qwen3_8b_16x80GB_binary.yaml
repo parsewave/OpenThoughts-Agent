@@ -1,5 +1,8 @@
-# SkyRL Configuration: Qwen3 8B on 16x80GB GPUs
+# SkyRL Configuration: Qwen3 8B on 16x80GB GPUs (Binary Rewards)
 # Optimized for 32k context agentic RL with synchronous training
+#
+# REWARD MODE: Binary (0/1) - original verifier reward without shaping
+# Use qwen3_8b_16x80GB_shaped.yaml for partial credit based on test pass ratios
 #
 # Hardware: 16 GPUs with 80GB VRAM each (e.g., 2x8 H100/A100-80GB or 4x4)
 # Model: Qwen3 8B Base (~16GB bf16 weights)
@@ -23,7 +26,7 @@
 # Usage:
 #   python -m hpc.launch \
 #       --job_type rl \
-#       --rl_config qwen3_8b_16x80GB.yaml \
+#       --rl_config qwen3_8b_16x80GB_binary.yaml \
 #       --job_name qwen3_8b_agentic \
 #       --train_data '["mlfoundations-dev/your-dataset"]' \
 #       --model_path Qwen/Qwen3-8B \
@@ -114,12 +117,9 @@ terminal_bench:
     log_level: WARNING             # Harbor logging level (DEBUG, INFO, WARNING, ERROR)
 
     # ==========================================================================
-    # Reward shaping settings (partial credit for test pass ratios)
+    # Reward shaping settings (DISABLED - binary rewards)
     # ==========================================================================
-    enable_reward_shaping: true    # Enable reward shaping based on test output
-    reward_parser: null            # Auto-detect (pytest, unittest, generic)
-    reward_shaper: pass_ratio      # Simple mean: passed_tests / total_tests
-    reward_shaping_fallback: true  # Fall back to original reward if parsing fails
+    enable_reward_shaping: false   # Use original binary (0/1) verifier rewards
 
   # Model info for Harbor's hosted_vllm validation (token limits and costs)
   model_info:
@@ -209,7 +209,7 @@ generator:
   model_dtype: bfloat16
 
   # Tensor parallelism = 2 for 32k context with 8B model
-  # This gives us 8 inference engines (16 GPUs / TP=2)
+  # This gives us 8 engines (16 GPUs / TP=2)
   # Each engine pair has 160GB effective memory for KV cache
   inference_engine_tensor_parallel_size: 2
   # Computed automatically: (num_nodes * gpus_per_node) / tensor_parallel_size
