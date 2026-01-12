@@ -698,6 +698,21 @@ class RLArgs:
         default=None,
         metadata={"help": "Ray head node port (default: 6379)"}
     )
+    rl_use_conda: bool = field(
+        default=False,
+        metadata={
+            "help": "Use conda environment for RL instead of venv. "
+            "Useful for clusters like Perlmutter where conda is preferred.",
+            "store_true": True,
+        }
+    )
+    rl_conda_env: Optional[str] = field(
+        default="dcagent-rl",
+        metadata={
+            "help": "Name of conda environment to use for RL when --rl_use_conda is set. "
+            "Default: dcagent-rl"
+        }
+    )
 
 
 def _option_strings(field_name: str) -> list[str]:
