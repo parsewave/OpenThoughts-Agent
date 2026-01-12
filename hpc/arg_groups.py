@@ -433,6 +433,27 @@ def add_rl_training_args(
             "If not set, derived from experiments_dir/run_name/exports."
         ),
     )
+    _add_arg_with_alias(
+        parser,
+        "--rl_use_conda",
+        "--rl-use-conda",
+        action="store_true",
+        default=False,
+        help=(
+            "Use conda environment for RL instead of venv. "
+            "Useful for clusters like Perlmutter where conda is preferred."
+        ),
+    )
+    _add_arg_with_alias(
+        parser,
+        "--rl_conda_env",
+        "--rl-conda-env",
+        default="dcagent-rl",
+        help=(
+            "Name of conda environment to use for RL when --rl_use_conda is set. "
+            "Default: dcagent-rl"
+        ),
+    )
 
 
 def add_tasks_input_arg(

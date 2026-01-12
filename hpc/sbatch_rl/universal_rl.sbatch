@@ -55,18 +55,10 @@ set -u
 
 # --- RL Environment Activation ---
 # The RL environment is separate from datagen due to dependency conflicts.
-# It's created by: ./hpc/setup_rl_env.sh
-RL_ENV_DIR="${RL_ENV_DIR:-$WORKDIR/envs/rl}"
-if [[ -d "$RL_ENV_DIR" ]]; then
-  echo "Activating RL environment: $RL_ENV_DIR"
-  source "$RL_ENV_DIR/bin/activate"
-elif [[ -n "${DCFT_RL_ENV:-}" ]] && [[ -d "$DCFT_RL_ENV" ]]; then
-  echo "Activating RL environment from DCFT_RL_ENV: $DCFT_RL_ENV"
-  source "$DCFT_RL_ENV/bin/activate"
-else
-  echo "Warning: RL environment not found at $RL_ENV_DIR"
-  echo "Run ./hpc/setup_rl_env.sh to create it, or set DCFT_RL_ENV"
-fi
+# Options:
+#   1. venv created by ./hpc/setup_rl_env.sh (default)
+#   2. Conda environment specified by --rl_use_conda --rl_conda_env NAME
+{rl_env_activation}
 
 # --- Source environment files ---
 if [ -n "${DCFT:-}" ] && [ -f "$DCFT/hpc/dotenv/{cluster_env_file}" ]; then

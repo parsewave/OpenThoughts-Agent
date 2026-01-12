@@ -313,6 +313,42 @@ def get_rl_env_exports(exp_args: Dict[str, Any], hpc: Optional[Any] = None) -> s
     return "\n".join(lines)
 
 
+def get_rl_env_activation(exp_args: Dict[str, Any]) -> str:
+    """
+    Generate shell code for RL environment activation.
+
+    Supports two modes:
+    1. Conda environment (--rl_use_conda --rl_conda_env NAME)
+    2. venv created by setup_rl_env.sh (default)
+
+    Args:
+        exp_args: Experiment arguments dictionary.
+
+    Returns:
+        Multi-line shell script for environment activation.
+    """
+    use_conda = exp_args.get("rl_use_conda", False)
+    conda_env = exp_args.get("rl_conda_env", "dcagent-rl")
+
+    if use_conda:
+        return f'''# Using conda environment for RL: {conda_env}
+echo "Activating conda environment: {conda_env}"
+conda activate {conda_env}'''
+    else:
+        return '''# Using venv for RL (created by ./hpc/setup_rl_env.sh)
+RL_ENV_DIR="${RL_ENV_DIR:-$WORKDIR/envs/rl}"
+if [[ -d "$RL_ENV_DIR" ]]; then
+  echo "Activating RL environment: $RL_ENV_DIR"
+  source "$RL_ENV_DIR/bin/activate"
+elif [[ -n "${DCFT_RL_ENV:-}" ]] && [[ -d "$DCFT_RL_ENV" ]]; then
+  echo "Activating RL environment from DCFT_RL_ENV: $DCFT_RL_ENV"
+  source "$DCFT_RL_ENV/bin/activate"
+else
+  echo "Warning: RL environment not found at $RL_ENV_DIR"
+  echo "Run ./hpc/setup_rl_env.sh to create it, or set DCFT_RL_ENV"
+fi'''
+
+
 # =============================================================================
 # RLJobConfig and Job Submission
 # =============================================================================
@@ -517,6 +553,9 @@ fi"""
     # Build SkyRL command
     skyrl_command = build_skyrl_command_string(job_config)
 
+    # Generate RL environment activation code (conda or venv)
+    rl_env_activation = get_rl_env_activation(exp_args)
+
     substitutions = {
         "time_limit": exp_args.get("time_limit") or "24:00:00",
         "num_nodes": str(num_nodes),
@@ -530,6 +569,7 @@ fi"""
         "cuda_setup": cuda_setup,
         "nccl_exports": hpc.get_nccl_exports(),
         "rl_env_exports": rl_env_exports,
+        "rl_env_activation": rl_env_activation,
         "ssh_tunnel_setup": hpc.get_ssh_tunnel_setup(),
         "ray_port": str(job_config.ray_port),
         "master_port": str(job_config.master_port),
