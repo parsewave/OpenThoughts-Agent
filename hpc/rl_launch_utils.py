@@ -333,6 +333,21 @@ def get_rl_env_activation(exp_args: Dict[str, Any]) -> str:
     if use_conda:
         return f'''# Using conda environment for RL: {conda_env}
 echo "Activating conda environment: {conda_env}"
+# Initialize conda for non-interactive shell (required before conda activate)
+if [[ -n "${{CONDA_EXE:-}}" ]]; then
+  # Use CONDA_EXE to find conda.sh
+  CONDA_BASE=$(dirname $(dirname "$CONDA_EXE"))
+  source "$CONDA_BASE/etc/profile.d/conda.sh"
+elif [[ -f "${{HOME}}/miniconda3/etc/profile.d/conda.sh" ]]; then
+  source "${{HOME}}/miniconda3/etc/profile.d/conda.sh"
+elif [[ -f "${{HOME}}/anaconda3/etc/profile.d/conda.sh" ]]; then
+  source "${{HOME}}/anaconda3/etc/profile.d/conda.sh"
+elif command -v conda &>/dev/null; then
+  eval "$(conda shell.bash hook)"
+else
+  echo "ERROR: Could not find conda installation for initialization"
+  exit 1
+fi
 conda activate {conda_env}'''
     else:
         return '''# Using venv for RL (created by ./hpc/setup_rl_env.sh)

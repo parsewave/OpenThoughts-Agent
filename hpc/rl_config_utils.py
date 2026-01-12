@@ -379,9 +379,16 @@ def build_skyrl_hydra_args(
                 pass
         data["val_data"] = val_data
 
-    # Model path
-    if exp_args.get("model_path"):
-        trainer.setdefault("policy", {}).setdefault("model", {})["path"] = exp_args["model_path"]
+    # Model path and served_model_name for Harbor/LiteLLM compatibility
+    model_path = exp_args.get("model_path")
+    if model_path:
+        trainer.setdefault("policy", {}).setdefault("model", {})["path"] = model_path
+
+        # Compute served_model_name: extract just the model name from "org/model" format.
+        # Harbor/LiteLLM requires model names with exactly one '/' (e.g., "hosted_vllm/Qwen3-8B"),
+        # so we strip the org prefix from HuggingFace model IDs like "Qwen/Qwen3-8B".
+        served_model_name = model_path.split("/")[-1] if "/" in model_path else model_path
+        generator.setdefault("engine_init_kwargs", {})["served_model_name"] = served_model_name
 
     # Build args for each section
     # Keys under engine_init_kwargs need ++ prefix (add or override) since some keys
