@@ -5,6 +5,8 @@
 #SBATCH --cpus-per-task={cpus_per_node}
 #SBATCH --output={experiments_dir}/logs/%x_%j.out
 #SBATCH --job-name={job_name}
+#SBATCH --mail-type=END,TIME_LIMIT,FAIL
+#SBATCH --mail-user={email_address}
 {sbatch_extra_directives}
 
 # ==============================================================================

@@ -591,6 +591,7 @@ fi"""
         "gpus_per_node": str(gpus_per_node),
         "config_path": str(config_path),
         "skyrl_command": skyrl_command,
+        "email_address": os.environ.get("EMAIL_ADDRESS", ""),
     }
 
     sbatch_text = substitute_template(template_text, substitutions)

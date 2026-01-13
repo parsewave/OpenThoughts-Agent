@@ -586,6 +586,7 @@ def construct_sft_sbatch_script(exp_args: dict, hpc) -> str:
         "gpus_per_node": str(gpus_per_node),
         "config_path": str(config_path),
         "srun_command": srun_command,
+        "email_address": os.environ.get("EMAIL_ADDRESS", ""),
     }
 
     sbatch_text = substitute_template(template_text, substitutions)

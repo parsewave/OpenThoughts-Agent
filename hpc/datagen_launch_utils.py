@@ -230,6 +230,7 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
             "conda_activate": hpc.conda_activate or "# No conda activation configured",
             "cluster_env_file": cluster_env_file,
             "config_path": str(task_config_path),
+            "email_address": os.environ.get("EMAIL_ADDRESS", ""),
         }
 
         sbatch_text = substitute_template(template_text, substitutions)
@@ -353,6 +354,7 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
             "conda_activate": hpc.conda_activate or "# No conda activation configured",
             "cluster_env_file": cluster_env_file,
             "config_path": str(trace_config_path),
+            "email_address": os.environ.get("EMAIL_ADDRESS", ""),
         }
 
         sbatch_text = substitute_template(template_text, substitutions)
