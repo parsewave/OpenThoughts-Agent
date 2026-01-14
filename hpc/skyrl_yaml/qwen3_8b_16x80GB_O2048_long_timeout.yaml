@@ -7,9 +7,6 @@
 # Hardware: 16 GPUs with 80GB VRAM each (e.g., 2x8 H100/A100-80GB or 4x4)
 # Model: Qwen3 8B Base (~16GB bf16 weights)
 #
-# CONTEXT BUDGET (32k total model context):
-#   - max_generate_length: 8k tokens (agent responses)
-#   - vLLM enforces total context <= max_model_len (32k)
 #
 # vLLM enforces prompt + generation <= max_model_len, so we must budget.
 # For multi-turn agentic tasks, prompts grow with history - enable_summarize
@@ -60,7 +57,7 @@ terminal_bench:
     store_all_messages: true
 
     # Agent timeout overrides
-    override_timeout_sec: 240        # Agent execution timeout (seconds)
+    override_timeout_sec: 480
     # override_setup_timeout_sec: 120  # Agent setup timeout
     # max_timeout_sec: 1800          # Cap timeout (useful for runaway tasks)
 
@@ -83,7 +80,7 @@ terminal_bench:
     # Verifier settings (maps to Harbor VerifierConfig)
     # ==========================================================================
     # verifier_disable: false       # Disable verification (for debugging)
-    verifier_override_timeout_sec: 120  # Override verifier timeout
+    verifier_override_timeout_sec: 240  # Override verifier timeout
 
     # ==========================================================================
     # Retry settings (maps to Harbor RetryConfig for QueueOrchestrator)
@@ -135,8 +132,8 @@ terminal_bench:
   model_info:
     # Context budget: 32k total = 24k prompt + 8k generation
     # Prompts grow with conversation history, so reserve headroom for generation
-    max_input_tokens: 24576   # 24k - leaves 8k for generation
-    max_output_tokens: 8192   # 8k - sufficient for most agent responses
+    max_input_tokens: 30720
+    max_output_tokens: 2048
 
 # Trainer configuration
 trainer:
@@ -157,8 +154,12 @@ trainer:
   epochs: 10
   update_epochs_per_batch: 1
 
-  train_batch_size: 64
-  policy_mini_batch_size: 4
+  # Batch sizes optimized for sync RL
+  # IMPORTANT: train_batch_size must be >= total GPUs (data parallel size)
+  # For 4 nodes x 4 GPUs = 16 GPUs, use train_batch_size >= 16
+  # Override with --skyrl_override trainer.train_batch_size=N if needed
+  train_batch_size: 16
+  policy_mini_batch_size: 8  # 2 gradient steps per batch
   eval_batch_size: 32
 
   # Micro batch sizes - set to 1 for long context to avoid OOM
