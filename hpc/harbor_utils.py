@@ -325,7 +325,7 @@ def load_endpoint_metadata(endpoint_json: Path) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def extract_agent_kwargs_from_config(harbor_config: dict, agent_name: str) -> dict:
+def extract_agent_kwargs_from_config(harbor_config: dict, agent_name: Optional[str]) -> dict:
     """Extract kwargs for the specified agent from harbor config.
 
     The Harbor YAML is the ground truth for agent configuration. This function
@@ -333,7 +333,7 @@ def extract_agent_kwargs_from_config(harbor_config: dict, agent_name: str) -> di
 
     Args:
         harbor_config: Parsed harbor config dict (from YAML)
-        agent_name: Name of the agent to find (e.g., "terminus-2")
+        agent_name: Name of the agent to find (e.g., "terminus-2"). If None, uses first agent.
 
     Returns:
         Copy of the agent's kwargs dict, or empty dict if not found
@@ -482,7 +482,7 @@ def collect_extra_agent_kwargs(
 
 def merge_agent_kwargs(
     harbor_config_data: dict,
-    agent_name: str,
+    agent_name: Optional[str],
     endpoint_meta: Optional[Dict[str, Any]] = None,
     extra_kwargs: Optional[Dict[str, Any]] = None,
     cli_overrides: Optional[List[str]] = None,
@@ -497,7 +497,7 @@ def merge_agent_kwargs(
 
     Args:
         harbor_config_data: Parsed Harbor config dict
-        agent_name: Agent name to extract kwargs for
+        agent_name: Agent name to extract kwargs for. If None, uses first agent from config.
         endpoint_meta: Dict with api_base/metrics_endpoint from vLLM (None for API engines)
         extra_kwargs: Additional kwargs from datagen config or other sources
         cli_overrides: Raw --agent-kwarg strings from CLI (e.g., ["key=value", "nested.key=value"])
@@ -537,7 +537,7 @@ def build_harbor_command(
     harbor_config_path: str,
     harbor_config_data: dict,
     job_name: str,
-    agent_name: str,
+    agent_name: Optional[str],
     model_name: str,
     env_type: str,
     n_concurrent: int,
@@ -564,7 +564,7 @@ def build_harbor_command(
         harbor_config_path: Path to harbor config YAML
         harbor_config_data: Parsed harbor config dict
         job_name: Name for this harbor job
-        agent_name: Agent to run (e.g., "terminus-2")
+        agent_name: Agent to run (e.g., "terminus-2"). If None, uses the agent from harbor config.
         model_name: Model identifier for --model flag
         env_type: Environment type for --env flag (daytona, docker, modal, apptainer)
         n_concurrent: Number of concurrent trials
@@ -598,8 +598,6 @@ def build_harbor_command(
         harbor_config_path,
         "--job-name",
         job_name,
-        "--agent",
-        agent_name,
         "--model",
         model_name,
         "--env",
@@ -609,6 +607,10 @@ def build_harbor_command(
         "--n-attempts",
         str(n_attempts),
     ]
+
+    # Add agent override only if explicitly specified (otherwise use harbor config)
+    if agent_name is not None:
+        cmd.extend(["--agent", agent_name])
 
     # Add dataset (slug or path)
     if dataset_slug:

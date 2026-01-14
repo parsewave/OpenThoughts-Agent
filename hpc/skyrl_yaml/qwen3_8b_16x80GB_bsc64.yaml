@@ -1,8 +1,11 @@
-# SkyRL Configuration: Qwen3 1.7B on 4x80GB GPUs
+# SkyRL Configuration: Qwen3 8B on 16x80GB GPUs (Binary Rewards)
 # Optimized for 32k context agentic RL with synchronous training
 #
-# Hardware: 4 GPUs with 80GB VRAM each (e.g., 1x4 H100/A100-80GB)
-# Model: Qwen3 1.7B Base (~3.4GB bf16 weights)
+# REWARD MODE: Binary (0/1) - original verifier reward without shaping
+# Use qwen3_8b_16x80GB_shaped.yaml for partial credit based on test pass ratios
+#
+# Hardware: 16 GPUs with 80GB VRAM each (e.g., 2x8 H100/A100-80GB or 4x4)
+# Model: Qwen3 8B Base (~16GB bf16 weights)
 #
 # CONTEXT BUDGET (32k total model context):
 #   - max_generate_length: 8k tokens (agent responses)
@@ -13,20 +16,20 @@
 # helps compress old turns to stay within budget.
 #
 # Key Design Decisions:
-# - TP=1 for inference engines: 4 engines with 80GB each
-#   1.7B model is small enough for single-GPU inference with 32k context
-# - Moderate train_batch_size (8): Good for 4 GPUs with 2 gradient steps
-# - Aggressive memory settings: 0.92 utilization (smaller model = more KV cache room)
+# - TP=2 for inference engines: 8 engines with 160GB effective memory each
+#   This provides headroom for 32k KV cache with multiple concurrent sequences
+# - Small train_batch_size (16): Reduces sync RL waiting time variance
+# - Aggressive memory settings: 0.90 utilization with prefix caching enabled
 # - GRPO with 4 samples: Good gradient signal for policy improvement
 #
 # Usage:
 #   python -m hpc.launch \
 #       --job_type rl \
-#       --rl_config qwen3_1.7b_4x80GB.yaml \
-#       --job_name qwen3_1.7b_agentic \
+#       --rl_config qwen3_8b_16x80GB_binary.yaml \
+#       --job_name qwen3_8b_agentic \
 #       --train_data '["mlfoundations-dev/your-dataset"]' \
-#       --model_path Qwen/Qwen3-1.7B \
-#       --num_nodes 1
+#       --model_path Qwen/Qwen3-8B \
+#       --num_nodes 2
 
 # SkyRL entrypoint module
 entrypoint: examples.terminal_bench.entrypoints.main_tbench
@@ -50,7 +53,7 @@ terminal_bench:
     # Agent name - must be a valid Harbor AgentName (e.g., terminus-2, oracle)
     name: terminus-2
     # Max agent-environment turns before Harbor forces termination
-    max_episodes: 16
+    max_episodes: 64
     # Disable summarization, consistent with prior RL work
     enable_summarize: false
     # Store full message history for trajectory reconstruction
@@ -85,12 +88,15 @@ terminal_bench:
     # ==========================================================================
     # Retry settings (maps to Harbor RetryConfig for QueueOrchestrator)
     # ==========================================================================
+    # Retry logic with exponential backoff for transient failures
     max_retries: 2                 # Max retry attempts per trial
     min_wait_sec: 1.0              # Initial backoff delay (seconds)
     max_wait_sec: 60.0             # Maximum backoff delay
     wait_multiplier: 2.0           # Exponential backoff multiplier
 
     # Exception filtering - don't retry permanent failures
+    # Default Harbor exclusions: AgentTimeoutError, VerifierTimeoutError,
+    #   RewardFileNotFoundError, RewardFileEmptyError, VerifierOutputParseError
     # We add ContextLengthExceededError since summarization is disabled
     exclude_exceptions:
       - AgentTimeoutError
@@ -111,12 +117,9 @@ terminal_bench:
     log_level: WARNING             # Harbor logging level (DEBUG, INFO, WARNING, ERROR)
 
     # ==========================================================================
-    # Reward shaping settings (partial credit for test pass ratios)
+    # Reward shaping settings (DISABLED - binary rewards)
     # ==========================================================================
-    enable_reward_shaping: true    # Enable reward shaping based on test output
-    reward_parser: null            # Auto-detect (pytest, unittest, generic)
-    reward_shaper: pass_ratio      # Simple mean: passed_tests / total_tests
-    reward_shaping_fallback: true  # Fall back to original reward if parsing fails
+    enable_reward_shaping: false   # Use original binary (0/1) verifier rewards
 
   # Model info for Harbor's hosted_vllm validation (token limits and costs)
   model_info:
@@ -144,12 +147,9 @@ trainer:
   epochs: 10
   update_epochs_per_batch: 1
 
-  # Batch sizes optimized for 4 GPUs
-  # train_batch_size must be >= total GPUs (data parallel size)
-  # For 1 node x 4 GPUs = 4 GPUs, use train_batch_size >= 4
-  train_batch_size: 8
-  policy_mini_batch_size: 4  # 2 gradient steps per batch
-  eval_batch_size: 16
+  train_batch_size: 64
+  policy_mini_batch_size: 4
+  eval_batch_size: 32
 
   # Micro batch sizes - set to 1 for long context to avoid OOM
   micro_forward_batch_size_per_gpu: 1
@@ -158,9 +158,9 @@ trainer:
   max_prompt_length: 999999
 
   # Evaluation and checkpointing
-  eval_interval: 10
+  eval_interval: 20
   eval_before_train: false
-  ckpt_interval: 5
+  ckpt_interval: 10
   resume_mode: latest
 
   # Logging
@@ -175,7 +175,7 @@ trainer:
   # Policy optimizer - conservative LR for base model fine-tuning
   policy:
     optimizer_config:
-      lr: 1.0e-6  # Slightly higher LR for smaller model
+      lr: 5.0e-7
       weight_decay: 0.01
       adam_betas: [0.9, 0.999]
       # Gradient clipping important for long sequences
@@ -202,10 +202,10 @@ generator:
   backend: vllm
   model_dtype: bfloat16
 
-  # Tensor parallelism = 1 for 1.7B model (fits easily on single GPU)
-  # This gives us 4 inference engines (4 GPUs / TP=1)
-  # Each engine has 80GB for model (~3.4GB) + KV cache (~76GB available)
-  inference_engine_tensor_parallel_size: 1
+  # Tensor parallelism = 2 for 32k context with 8B model
+  # This gives us 8 engines (16 GPUs / TP=2)
+  # Each engine pair has 160GB effective memory for KV cache
+  inference_engine_tensor_parallel_size: 2
   # Computed automatically: (num_nodes * gpus_per_node) / tensor_parallel_size
   num_inference_engines: null
 
@@ -213,13 +213,13 @@ generator:
   n_samples_per_prompt: 4
   eval_n_samples_per_prompt: 4
 
-  # Memory utilization - more aggressive for smaller model
-  gpu_memory_utilization: 0.92
+  # Memory utilization - aggressive but leave headroom for 32k KV cache
+  gpu_memory_utilization: 0.90
 
   # Sequence limits for 32k context (24k prompt + 8k gen)
   # max_num_seqs: concurrent sequences per engine
-  # Can be higher for smaller model (less memory per sequence)
-  max_num_seqs: 128
+  # Lower value = more memory per sequence for long contexts
+  max_num_seqs: 64
   # max_num_batched_tokens: tokens processed per batch
   # Should accommodate at least one full sequence (32k) with some headroom
   max_num_batched_tokens: 32768
@@ -237,7 +237,7 @@ generator:
 
   # Multi-turn agentic conversation handling
   append_eos_token_after_stop_str_in_multi_turn: true
-  max_turns: 32  # Match max_episodes
+  max_turns: 64  # Match max_episodes
 
   # Sampling parameters for generation
   sampling_params:

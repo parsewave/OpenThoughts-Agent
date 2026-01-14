@@ -15,9 +15,8 @@
 # Model: Qwen3 8B Base (~16GB bf16 weights)
 #
 # CONTEXT BUDGET (32k total model context):
-#   - max_prompt_length: 30k tokens (conversation history)
 #   - max_generate_length: 2k tokens (agent responses)
-#   - Total: 30k + 2k = 32k (model's max_model_len)
+#   - vLLM enforces total context <= max_model_len (32k)
 #
 # The shorter generation length is INTENTIONAL - it forces the model to
 # be concise and prevents context budget exhaustion in long conversations.
@@ -141,8 +140,7 @@ trainer:
   micro_forward_batch_size_per_gpu: 1
   micro_train_batch_size_per_gpu: 1
 
-  # Context budget: 32k total = 30k prompt + 2k generation
-  max_prompt_length: 30720  # 30k - more room for prompts (OpenHands: 31232)
+  max_prompt_length: 999999
 
   # Evaluation and checkpointing - more frequent checkpoints
   eval_interval: 1000  # OpenHands: 1000

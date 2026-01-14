@@ -109,7 +109,7 @@ trainer:
   micro_forward_batch_size_per_gpu: 1
   micro_train_batch_size_per_gpu: 1
   ckpt_interval: 5
-  max_prompt_length: 2048
+  max_prompt_length: 999999
   resume_mode: latest
   project_name: dc-agent
   log_level: INFO  # SkyRL logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)

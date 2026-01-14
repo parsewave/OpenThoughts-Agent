@@ -8,9 +8,8 @@
 # Model: Qwen3 8B Base (~16GB bf16 weights)
 #
 # CONTEXT BUDGET (32k total model context):
-#   - max_prompt_length: 24k tokens (conversation history)
 #   - max_generate_length: 8k tokens (agent responses)
-#   - Total: 24k + 8k = 32k (model's max_model_len)
+#   - vLLM enforces total context <= max_model_len (32k)
 #
 # vLLM enforces prompt + generation <= max_model_len, so we must budget.
 # For multi-turn agentic tasks, prompts grow with history - enable_summarize
@@ -163,10 +162,7 @@ trainer:
   micro_forward_batch_size_per_gpu: 1
   micro_train_batch_size_per_gpu: 1
 
-  # Context budget: 32k total = 24k prompt + 8k generation
-  # max_prompt_length truncates prompts BEFORE sending to vLLM
-  # Must leave room for generation within model's max_model_len
-  max_prompt_length: 24576  # 24k - matches model_info.max_input_tokens
+  max_prompt_length: 999999
 
   # Evaluation and checkpointing
   eval_interval: 20

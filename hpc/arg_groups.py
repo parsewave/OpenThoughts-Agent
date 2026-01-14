@@ -58,8 +58,8 @@ def add_harbor_args(parser: ArgTarget, *, config_required: bool = True) -> None:
     )
     parser.add_argument(
         "--agent",
-        default="terminus-2",
-        help="Harbor agent name.",
+        default=None,
+        help="Harbor agent name. If not specified, uses the agent from --harbor_config.",
     )
     _add_arg_with_alias(
         parser,

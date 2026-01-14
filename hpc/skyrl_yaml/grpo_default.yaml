@@ -27,7 +27,7 @@ trainer:
   eval_before_train: false
   update_epochs_per_batch: 1
   ckpt_interval: 10
-  max_prompt_length: 2048
+  max_prompt_length: 999999
   resume_mode: latest
   project_name: dc-agent
   log_level: INFO  # SkyRL logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
