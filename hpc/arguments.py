@@ -823,6 +823,27 @@ def parse_args():
     # Add LaunchArgs arguments
     _add_dataclass_arguments(launch_group, LaunchArgs, bool_fields=bool_keys)
 
+    # Add --harbor_config as alias for --trace_harbor_config (more concise for eval jobs)
+    launch_group.add_argument(
+        "--harbor_config", "--harbor-config",
+        dest="trace_harbor_config",
+        help=argparse.SUPPRESS,  # Hidden alias
+    )
+
+    # Add --model as alias for --trace_model (more concise for eval jobs)
+    launch_group.add_argument(
+        "--model",
+        dest="trace_model",
+        help=argparse.SUPPRESS,  # Hidden alias
+    )
+
+    # Add --dataset as alias for --harbor_dataset (more concise for eval jobs)
+    launch_group.add_argument(
+        "--dataset",
+        dest="harbor_dataset",
+        help=argparse.SUPPRESS,  # Hidden alias
+    )
+
     # Add DataGenArgs arguments
     _add_dataclass_arguments(datagen_group, DataGenArgs, bool_fields=bool_keys)
     _add_dataclass_arguments(consolidate_group, ConsolidateArgs, bool_fields=bool_keys)
