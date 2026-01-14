@@ -120,12 +120,22 @@ class EvalRunner(LocalHarborRunner):
         self._maybe_upload_results()
 
     def _maybe_upload_results(self) -> None:
-        """Upload eval results using the shared upload functions from hpc.launch_utils."""
+        """Upload eval results to HuggingFace and/or Supabase database.
+
+        Supports three modes:
+        - --upload_to_database: Full DB sync + HF upload
+        - --upload_hf_repo (without --upload_to_database): HF-only upload
+        - Neither: No upload
+        """
         args = self.args
-        if not getattr(args, "upload_to_database", False):
+        upload_to_db = getattr(args, "upload_to_database", False)
+        hf_repo = getattr(args, "upload_hf_repo", None)
+
+        if not upload_to_db and not hf_repo:
             return
+
         if args.dry_run:
-            print("[upload] Skipping Supabase upload because --dry-run was set.")
+            print("[upload] Skipping upload because --dry-run was set.")
             return
 
         job_name = self._harbor_job_name
@@ -139,40 +149,56 @@ class EvalRunner(LocalHarborRunner):
             print(f"[upload] Expected Harbor job directory {run_dir} does not exist; upload skipped.")
             return
 
-        # Use shared utilities
-        from hpc.launch_utils import sync_eval_to_database, derive_benchmark_repo
+        from hpc.launch_utils import sync_eval_to_database, upload_traces_to_hf, derive_benchmark_repo
 
-        benchmark_name = derive_benchmark_repo(
-            harbor_dataset=args.dataset,
-            dataset_path=args.dataset_path,
-        )
+        if upload_to_db:
+            # Full database sync (includes optional HF upload)
+            benchmark_name = derive_benchmark_repo(
+                harbor_dataset=args.dataset,
+                dataset_path=args.dataset_path,
+            )
 
-        # Use shared HF repo ID resolution (auto-derives if upload_to_database is True)
-        # Default org is DCAgent, override via DCAGENT_HF_ORG env var
-        hf_repo_id = resolve_hf_repo_id(
-            explicit_repo=args.upload_hf_repo,
-            upload_to_database=True,  # We already checked upload_to_database above
-            job_name=job_name,
-        )
+            hf_repo_id = resolve_hf_repo_id(
+                explicit_repo=hf_repo,
+                upload_to_database=True,
+                job_name=job_name,
+            )
 
-        result = sync_eval_to_database(
-            job_dir=run_dir,
-            username=args.upload_username,
-            error_mode=args.upload_error_mode,
-            agent_name=args.agent,
-            model_name=args.model,
-            benchmark_name=benchmark_name,
-            register_benchmark=True,
-            hf_repo_id=hf_repo_id,
-            hf_private=args.upload_hf_private,
-            hf_token=args.upload_hf_token,
-            hf_episodes=args.upload_hf_episodes,
-            forced_update=args.upload_forced_update,
-            dry_run=args.dry_run,
-        )
+            result = sync_eval_to_database(
+                job_dir=run_dir,
+                username=args.upload_username,
+                error_mode=args.upload_error_mode,
+                agent_name=args.agent,
+                model_name=args.model,
+                benchmark_name=benchmark_name,
+                register_benchmark=True,
+                hf_repo_id=hf_repo_id,
+                hf_private=args.upload_hf_private,
+                hf_token=args.upload_hf_token,
+                hf_episodes=args.upload_hf_episodes,
+                forced_update=args.upload_forced_update,
+                dry_run=args.dry_run,
+            )
 
-        if not result.get("success"):
-            print(f"[upload] Upload failed: {result.get('error', 'unknown error')}")
+            if not result.get("success"):
+                print(f"[upload] Database sync failed: {result.get('error', 'unknown error')}")
+            else:
+                print(f"[upload] Database sync successful: job_id={result.get('job_id')}")
+
+        elif hf_repo:
+            # HF-only upload (no database sync)
+            try:
+                hf_url = upload_traces_to_hf(
+                    job_dir=run_dir,
+                    hf_repo_id=hf_repo,
+                    hf_private=getattr(args, "upload_hf_private", False),
+                    hf_episodes=getattr(args, "upload_hf_episodes", "last"),
+                    hf_token=getattr(args, "upload_hf_token", None),
+                )
+                if hf_url:
+                    print(f"[upload] HuggingFace upload successful: {hf_url}")
+            except Exception as e:
+                print(f"[upload] HuggingFace upload error: {e}")
 
 
 def main() -> None:
