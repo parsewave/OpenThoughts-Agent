@@ -32,18 +32,28 @@ if TYPE_CHECKING:
 
 
 # Memory configuration constants
-DEFAULT_MEMORY_HEADROOM_MB = 8192  # 8GB headroom for system/SLURM overhead
+# Headroom scales with node size to handle CUDA graph capture and system overhead
+DEFAULT_MEMORY_HEADROOM_MB = 32768  # 32GB default headroom
+MIN_MEMORY_HEADROOM_MB = 16384  # 16GB minimum
+MEMORY_HEADROOM_PERCENT = 0.03  # 3% of total memory as headroom for large nodes
 DEFAULT_OBJECT_STORE_MEMORY_BYTES = 40 * 1024 * 1024 * 1024  # 40GB for Ray plasma store
 
 
-def compute_ray_memory_from_slurm(headroom_mb: int = DEFAULT_MEMORY_HEADROOM_MB) -> Optional[int]:
+def compute_ray_memory_from_slurm(headroom_mb: Optional[int] = None) -> Optional[int]:
     """Compute Ray memory limit from SLURM allocation.
 
     Reads SLURM_MEM_PER_NODE environment variable and subtracts headroom
-    to leave space for system overhead and SLURM processes.
+    to leave space for system overhead, SLURM processes, and CUDA graph capture.
+
+    The headroom scales with node size:
+    - For nodes < 512GB: uses MIN_MEMORY_HEADROOM_MB (16GB)
+    - For larger nodes: uses max(DEFAULT_MEMORY_HEADROOM_MB, 3% of total)
+
+    This prevents OOM during vLLM's CUDA graph capture phase which has
+    significant memory spikes.
 
     Args:
-        headroom_mb: Amount of memory (MB) to reserve for overhead (default: 8GB)
+        headroom_mb: Override headroom in MB (if None, auto-scales with node size)
 
     Returns:
         Memory in bytes for Ray's --memory flag, or None if SLURM_MEM_PER_NODE not set
@@ -59,11 +69,25 @@ def compute_ray_memory_from_slurm(headroom_mb: int = DEFAULT_MEMORY_HEADROOM_MB)
         print(f"Warning: Could not parse SLURM_MEM_PER_NODE={slurm_mem_str}", file=sys.stderr)
         return None
 
-    usable_mem_mb = slurm_mem_mb - headroom_mb
+    # Compute headroom: either explicit override, or scale with node size
+    if headroom_mb is not None:
+        actual_headroom_mb = headroom_mb
+    else:
+        # Scale headroom with node size
+        # For small nodes (<512GB): use minimum headroom
+        # For large nodes: use max(default, 3% of total)
+        if slurm_mem_mb < 512 * 1024:  # < 512GB
+            actual_headroom_mb = MIN_MEMORY_HEADROOM_MB
+        else:
+            percent_headroom = int(slurm_mem_mb * MEMORY_HEADROOM_PERCENT)
+            actual_headroom_mb = max(DEFAULT_MEMORY_HEADROOM_MB, percent_headroom)
+
+    usable_mem_mb = slurm_mem_mb - actual_headroom_mb
     if usable_mem_mb <= 0:
-        print(f"Warning: SLURM_MEM_PER_NODE ({slurm_mem_mb}MB) <= headroom ({headroom_mb}MB)", file=sys.stderr)
+        print(f"Warning: SLURM_MEM_PER_NODE ({slurm_mem_mb}MB) <= headroom ({actual_headroom_mb}MB)", file=sys.stderr)
         return None
 
+    print(f"[Ray] Memory: {slurm_mem_mb}MB SLURM - {actual_headroom_mb}MB headroom = {usable_mem_mb}MB for Ray")
     return usable_mem_mb * 1024 * 1024  # Convert MB to bytes
 
 
