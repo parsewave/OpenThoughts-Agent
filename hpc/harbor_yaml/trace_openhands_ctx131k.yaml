@@ -59,6 +59,7 @@ agents:
     model_name: placeholder/override-at-runtime
     override_timeout_sec: 1800
     max_timeout_sec: null
+    override_setup_timeout_sec: 600
     kwargs:
       disable_tool_calls: true
       collect_rollout_details: false

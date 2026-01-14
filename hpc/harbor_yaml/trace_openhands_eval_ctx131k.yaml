@@ -54,6 +54,7 @@ agents:
   import_path:
   model_name: together_ai/openai/gpt-oss-120b
   max_timeout_sec:
+  override_setup_timeout_sec: 600
   kwargs:
     model_info:
       max_input_tokens: 131000

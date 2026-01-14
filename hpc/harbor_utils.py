@@ -325,6 +325,21 @@ def load_endpoint_metadata(endpoint_json: Path) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
+def get_agent_name_from_config(harbor_config: dict) -> Optional[str]:
+    """Get the first agent name from harbor config.
+
+    Args:
+        harbor_config: Parsed harbor config dict (from YAML)
+
+    Returns:
+        Agent name from config, or None if no agents defined
+    """
+    agents = harbor_config.get("agents", [])
+    if agents and isinstance(agents[0], dict):
+        return agents[0].get("name")
+    return None
+
+
 def extract_agent_kwargs_from_config(harbor_config: dict, agent_name: Optional[str]) -> dict:
     """Extract kwargs for the specified agent from harbor config.
 
@@ -589,6 +604,11 @@ def build_harbor_command(
         cli_overrides=agent_kwarg_overrides,
     )
 
+    # Resolve agent name: use explicit value or fall back to config's first agent.
+    # We must always pass --agent to Harbor CLI so that --model override works
+    # (Harbor only applies --model when creating a new AgentConfig from CLI args).
+    resolved_agent_name = agent_name or get_agent_name_from_config(harbor_config_data)
+
     # Build base command
     cmd = [
         harbor_binary,
@@ -608,9 +628,9 @@ def build_harbor_command(
         str(n_attempts),
     ]
 
-    # Add agent override only if explicitly specified (otherwise use harbor config)
-    if agent_name is not None:
-        cmd.extend(["--agent", agent_name])
+    # Always pass --agent so that --model override works in Harbor CLI
+    if resolved_agent_name is not None:
+        cmd.extend(["--agent", resolved_agent_name])
 
     # Add dataset (slug or path)
     if dataset_slug:
@@ -730,6 +750,7 @@ __all__ = [
     "build_dataset_slug_set",
     "validate_harbor_dataset_slug",
     # Agent kwargs
+    "get_agent_name_from_config",
     "extract_agent_kwargs_from_config",
     "apply_nested_key",
     "parse_agent_kwarg_strings",
