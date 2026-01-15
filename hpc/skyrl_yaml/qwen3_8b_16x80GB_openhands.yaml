@@ -57,7 +57,7 @@ terminal_bench:
     # disable_tool_calls: false
 
     # Agent timeout overrides
-    override_timeout_sec: 240        # Agent execution timeout (seconds)
+    override_timeout_sec: 1200 #OpenHands takes longer because it's an installed agent
 
     # ==========================================================================
     # Environment settings (maps to Harbor EnvironmentConfig)
