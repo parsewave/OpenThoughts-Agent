@@ -115,7 +115,7 @@ terminal_bench:
     # ==========================================================================
     # Orchestrator settings (QueueOrchestrator concurrency control)
     # ==========================================================================
-    n_concurrent_trials: 16        # Number of parallel trial workers
+    n_concurrent_trials: 256        # Number of parallel trial workers
 
     # ==========================================================================
     # Logging settings
@@ -230,7 +230,7 @@ trainer:
     # Constraint: mini_batch_size <= num_parallel_generation_workers <= mini_batch_size * (max_staleness_steps + 1)
     # With mini_batch_size=64 and max_staleness_steps=4: 64 <= workers <= 320
     max_staleness_steps: 4
-    num_parallel_generation_workers: 256
+    num_parallel_generation_workers: 64
 
 # Generator (vLLM inference) configuration
 generator:
