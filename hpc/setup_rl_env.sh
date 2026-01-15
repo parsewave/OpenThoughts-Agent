@@ -154,8 +154,50 @@ echo "=== Installing SkyRL Packages ==="
 echo "Installing skyrl-gym (environment implementations)..."
 uv pip install -e "$SKYRL_DIR/skyrl-gym"
 
+# =============================================================================
+# Flash Attention 2 (optional but recommended)
+# =============================================================================
+# flash-attn requires torch to be installed first and can be tricky to build.
+# We try to install it, but if it fails, we continue with a warning.
+# Training will work without it, but may be slower.
+
+echo ""
+echo "=== Installing Flash Attention 2 (optional) ==="
+echo "Note: flash-attn can be difficult to build on some systems."
+echo "If installation fails, training will still work (just slower)."
+echo ""
+
+# First ensure torch is installed (needed to build flash-attn)
+if ! python -c "import torch" 2>/dev/null; then
+    echo "Installing PyTorch first (required to build flash-attn)..."
+    uv pip install torch
+fi
+
+# Try to install flash-attn, but don't fail if it doesn't work
+if uv pip install flash-attn --no-build-isolation 2>/dev/null; then
+    echo "flash-attn installed successfully!"
+else
+    echo ""
+    echo "========================================================================"
+    echo "WARNING: flash-attn installation failed."
+    echo "This is common on systems without CUDA or with incompatible compilers."
+    echo "Training will still work, but attention computation may be slower."
+    echo ""
+    echo "To try installing manually later:"
+    echo "  pip install flash-attn --no-build-isolation"
+    echo "========================================================================"
+    echo ""
+fi
+
 echo "Installing skyrl-train (RL training framework)..."
-uv pip install -e "$SKYRL_DIR/skyrl-train"
+# Use --no-build-isolation so it uses the torch we already installed
+# and doesn't try to rebuild flash-attn
+uv pip install -e "$SKYRL_DIR/skyrl-train" --no-build-isolation || {
+    echo "Trying fallback installation without flash-attn..."
+    # Install deps first, then editable package with --no-deps
+    uv pip install ray transformers accelerate datasets omegaconf hydra-core loguru wandb vllm
+    uv pip install -e "$SKYRL_DIR/skyrl-train" --no-deps
+}
 
 echo ""
 echo "IMPORTANT: Add this to your shell or source your cluster's dotenv file:"
@@ -169,6 +211,7 @@ python -c "import torch; print(f'PyTorch: {torch.__version__}')"
 python -c "import vllm; print(f'vLLM: {vllm.__version__}')" || echo "Warning: vLLM not installed (may be CPU-only system)"
 python -c "import ray; print(f'Ray: {ray.__version__}')"
 python -c "import transformers; print(f'Transformers: {transformers.__version__}')"
+python -c "import flash_attn; print(f'flash-attn: {flash_attn.__version__}')" 2>/dev/null || echo "flash-attn: NOT installed (optional - training will be slower)"
 python -c "import skyrl_gym; print(f'skyrl-gym: installed')"
 python -c "import skyrl_train; print(f'skyrl-train: installed')"
 
