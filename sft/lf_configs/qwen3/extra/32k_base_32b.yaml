@@ -36,7 +36,7 @@ plot_loss: true
 
 ### train
 learning_rate: 4.0e-5
-num_train_epochs: 6.0
+num_train_epochs: 7.0
 max_grad_norm: 1.0e-4
 lr_scheduler_type: cosine
 warmup_ratio: 0.1
