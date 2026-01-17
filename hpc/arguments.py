@@ -412,10 +412,10 @@ class LaunchArgs:
             "help": "Persistent Pinggy hostname (e.g., xxxxx.a.pinggy.link) to reuse for tunnels",
         },
     )
-    pinggy_ssh_command: Optional[str] = field(
+    pinggy_token: Optional[str] = field(
         default=None,
         metadata={
-            "help": "Custom Pinggy SSH tunnel command template (use {PORT} for HAProxy port)",
+            "help": "Pinggy auth token (e.g., 'oVxgHq855Ln') for SSH tunnel authentication",
         },
     )
     pinggy_debugger_url: Optional[str] = field(

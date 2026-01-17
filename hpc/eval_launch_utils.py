@@ -443,16 +443,21 @@ class EvalJobRunner:
                     parse_endpoint_host_port,
                 )
 
-                use_pinggy = (
-                    self.config.pinggy_persistent_url
-                    and self.config.pinggy_token
-                    and needs_pinggy_tunnel(self.config.agent, self.config.eval_env)
-                )
+                # Evaluate Pinggy conditions with diagnostic logging
+                has_url = bool(self.config.pinggy_persistent_url)
+                has_token = bool(self.config.pinggy_token)
+                needs_tunnel = needs_pinggy_tunnel(self.config.agent, self.config.eval_env)
+                use_pinggy = has_url and has_token and needs_tunnel
+
+                print(f"[EvalJobRunner] Pinggy check: url={has_url}, token={has_token}, "
+                      f"needs_tunnel={needs_tunnel} (agent={self.config.agent}, env={self.config.eval_env})")
+                print(f"[EvalJobRunner] use_pinggy={use_pinggy}, vllm_endpoint={vllm_server.endpoint}")
 
                 if use_pinggy:
                     # Parse the vLLM endpoint to get the actual host:port
                     # (vLLM may bind to a specific IP, not localhost)
                     local_host, local_port = parse_endpoint_host_port(vllm_server.endpoint)
+                    print(f"[EvalJobRunner] Starting Pinggy tunnel: {local_host}:{local_port} -> {self.config.pinggy_persistent_url}")
                     pinggy_cfg = PinggyConfig(
                         persistent_url=self.config.pinggy_persistent_url,
                         token=self.config.pinggy_token,
@@ -464,9 +469,12 @@ class EvalJobRunner:
 
                     with pinggy_tunnel:
                         # Use Pinggy's public endpoint instead of local vLLM endpoint
-                        return self._run_harbor(endpoint=pinggy_tunnel.public_endpoint)
+                        public_endpoint = pinggy_tunnel.public_endpoint
+                        print(f"[EvalJobRunner] Using Pinggy endpoint for Harbor: {public_endpoint}")
+                        return self._run_harbor(endpoint=public_endpoint)
                 else:
                     # Use local vLLM endpoint directly
+                    print(f"[EvalJobRunner] Using local vLLM endpoint for Harbor: {vllm_server.endpoint}")
                     return self._run_harbor(endpoint=vllm_server.endpoint)
 
     def _run_harbor(self, endpoint: Optional[str]) -> int:
