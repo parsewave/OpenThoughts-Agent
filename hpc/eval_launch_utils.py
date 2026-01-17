@@ -256,6 +256,10 @@ class EvalJobConfig:
     hf_episodes: str = "last"
     upload_forced_update: bool = False
 
+    # Pinggy tunnel settings (for cloud backends that can't reach local vLLM)
+    pinggy_persistent_url: Optional[str] = None
+    pinggy_ssh_command: Optional[str] = None
+
 
 class EvalJobRunner:
     """Runs Harbor eval jobs with optional vLLM management.
@@ -431,7 +435,34 @@ class EvalJobRunner:
                 log_path=vllm_log,
             )
             with vllm_server:
-                return self._run_harbor(endpoint=vllm_server.endpoint)
+                # Check if we need Pinggy tunnel for cloud backends with installed agents
+                from hpc.pinggy_utils import (
+                    needs_pinggy_tunnel,
+                    PinggyTunnel,
+                    PinggyConfig,
+                )
+
+                use_pinggy = (
+                    self.config.pinggy_persistent_url
+                    and self.config.pinggy_ssh_command
+                    and needs_pinggy_tunnel(self.config.agent, self.config.eval_env)
+                )
+
+                if use_pinggy:
+                    pinggy_cfg = PinggyConfig(
+                        persistent_url=self.config.pinggy_persistent_url,
+                        ssh_command=self.config.pinggy_ssh_command,
+                        local_port=self.config.api_port,
+                    )
+                    pinggy_log = log_dir / f"{self.config.job_name}_pinggy.log"
+                    pinggy_tunnel = PinggyTunnel(pinggy_cfg, log_path=pinggy_log)
+
+                    with pinggy_tunnel:
+                        # Use Pinggy's public endpoint instead of local vLLM endpoint
+                        return self._run_harbor(endpoint=pinggy_tunnel.public_endpoint)
+                else:
+                    # Use local vLLM endpoint directly
+                    return self._run_harbor(endpoint=vllm_server.endpoint)
 
     def _run_harbor(self, endpoint: Optional[str]) -> int:
         """Execute the Harbor CLI."""
@@ -585,6 +616,9 @@ def launch_eval_job_v2(exp_args: dict, hpc) -> None:
         hf_private=bool(exp_args.get("upload_hf_private")),
         hf_episodes=exp_args.get("upload_hf_episodes") or "last",
         upload_forced_update=bool(exp_args.get("upload_forced_update")),
+        # Pinggy tunnel settings
+        pinggy_persistent_url=exp_args.get("pinggy_persistent_url"),
+        pinggy_ssh_command=exp_args.get("pinggy_ssh_command"),
     )
 
     # Write config JSON
