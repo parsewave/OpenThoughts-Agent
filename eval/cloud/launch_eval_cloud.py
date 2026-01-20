@@ -35,6 +35,8 @@ from hpc.arg_groups import (
     add_hf_upload_args,
     add_database_upload_args,
 )
+from hpc.harbor_utils import load_harbor_config
+from hpc.datagen_config_utils import parse_datagen_config
 
 
 class EvalCloudLauncher(CloudLauncher):
@@ -51,9 +53,10 @@ class EvalCloudLauncher(CloudLauncher):
         add_harbor_args(parser, config_required=True)
 
         # Model and compute (--model, --n_concurrent, --n_attempts, --gpus, --dry_run)
+        # model_required=False: can be inferred from --datagen_config (engine.model)
         add_model_compute_args(
             parser,
-            model_required=True,  # Eval requires model
+            model_required=False,  # Can be inferred from datagen_config
             default_n_concurrent=self.default_n_concurrent,  # 16 for eval
             default_n_attempts=3,  # Eval: multiple runs for standard error
             n_attempts_help="Times to run each task for standard error calculation (default: 3).",
@@ -99,6 +102,36 @@ class EvalCloudLauncher(CloudLauncher):
             args.datagen_config = repo_relative(args.datagen_config, self.repo_root)
         if args.dataset_path and not args.dataset_path.startswith("/"):
             args.dataset_path = repo_relative(args.dataset_path, self.repo_root)
+
+        # Infer --agent from harbor config if not provided
+        if not args.agent:
+            harbor_cfg = load_harbor_config(args.harbor_config)
+            agents = harbor_cfg.get("agents", [])
+            if agents and isinstance(agents, list) and len(agents) > 0:
+                inferred_agent = agents[0].get("name")
+                if inferred_agent:
+                    args.agent = inferred_agent
+                    print(f"[eval-cloud] Inferred --agent={inferred_agent} from harbor config")
+
+        # Infer --model from datagen config if not provided
+        if not args.model and args.datagen_config:
+            try:
+                parsed = parse_datagen_config(args.datagen_config)
+                if parsed.model:
+                    args.model = parsed.model
+                    print(f"[eval-cloud] Inferred --model={parsed.model} from datagen config")
+            except Exception as e:
+                print(f"[eval-cloud] Warning: Could not parse datagen config for model: {e}")
+
+        # Validate required fields after inference
+        if not args.model:
+            raise ValueError(
+                "Must provide --model or --datagen_config (to infer model from engine.model)"
+            )
+        if not args.agent:
+            raise ValueError(
+                "Must provide --agent or ensure harbor config has agents[0].name"
+            )
 
     def build_task_command(self, args, remote_output_dir: str) -> List[str]:
         """Build the run_eval.py command."""
