@@ -24,7 +24,9 @@
 #       --job_name qwen3_8b_openhands \
 #       --train_data '["mlfoundations-dev/your-dataset"]' \
 #       --model_path Qwen/Qwen3-8B \
-#       --num_nodes 2
+#       --num_nodes 2 \
+#       --pinggy_persistent_url your-tunnel.a.pinggy.link \
+#       --pinggy_token your_token
 
 # SkyRL entrypoint module
 entrypoint: examples.terminal_bench.entrypoints.main_tbench
@@ -37,6 +39,11 @@ config_groups:
 terminal_bench:
   # trials_dir: Directory for Harbor trial artifacts (derived from experiments_dir if null)
   trials_dir: null
+
+  # Harbor environment backend: daytona (cloud), docker (local/podman), modal
+  # Installed agents (openhands, etc.) running in cloud backends need Pinggy tunnels
+  # to reach the vLLM endpoint on the HPC cluster
+  harbor_env: daytona
 
   # Harbor configuration - schema-driven mapping to TrialConfig
   # See examples/terminal_bench/harbor_config.py for full list of supported fields.

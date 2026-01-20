@@ -176,7 +176,7 @@ trainer:
   ckpt_interval: 10
   # IMPORTANT: resume_mode=none for async training - checkpoint resume causes data
   # consumption tracking mismatch (AssertionError: Unexpected number of consumed data UIDs)
-  resume_mode: none
+  resume_mode: latest
 
   # Logging
   project_name: OpenThoughts-Agent

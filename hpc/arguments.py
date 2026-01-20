@@ -26,6 +26,7 @@ class JobType(str, Enum):
 
 
 from hpc.cli_utils import parse_bool_flag, coerce_str_bool_none, coerce_numeric_cli_values
+from hpc.arg_groups import add_harbor_env_arg
 
 @dataclass
 class LlamaFactoryArgs:
@@ -843,6 +844,13 @@ def parse_args():
 
     # Add RLArgs arguments
     _add_dataclass_arguments(rl_group, RLArgs, bool_fields=bool_keys)
+
+    # Add --harbor_env for RL jobs (unified name with legacy aliases)
+    add_harbor_env_arg(
+        rl_group,
+        default=None,  # Infer from YAML config if not specified
+        legacy_names=["--rl_trace_env", "--rl-trace-env"],  # Legacy aliases for RL
+    )
 
     # Add HPC arguments
     # Note: HPC is a Pydantic model, not a dataclass, so we need to handle it differently

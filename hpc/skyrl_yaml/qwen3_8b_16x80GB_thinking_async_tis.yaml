@@ -1,8 +1,12 @@
-# SkyRL Configuration: Qwen3 8B on 16x80GB GPUs (Binary Rewards, Async Training)
-# Optimized for 32k context agentic RL with ASYNCHRONOUS training
+# SkyRL Configuration: Qwen3 8B on 16x80GB GPUs (Async Training with TIS)
+# Optimized for 32k context agentic RL with ASYNCHRONOUS training + TIS correction
+#
+# TIS (Truncated Importance Sampling): Corrects for off-policy bias in async training
+# by reweighting the policy loss based on how much the policy has drifted since rollout.
+# Requires collect_rollout_details=true to capture per-token logprobs during rollout.
 #
 # REWARD MODE: Binary (0/1) - original verifier reward without shaping
-# TRAINING MODE: Fully async - policy/ref/inference on dedicated GPU sets
+# TRAINING MODE: Fully async with TIS - policy/ref/inference on dedicated GPU sets
 #
 # Hardware: 16 GPUs with 80GB VRAM each (e.g., 2x8 H100/A100-80GB or 4x4)
 # Model: Qwen3 8B Base (~16GB bf16 weights)
@@ -12,11 +16,11 @@
 #   - Reference model: 8 GPUs (2 nodes x 4 GPUs) - CPU offloaded, shares with policy
 #   - Inference engines: 8 GPUs (8 engines x TP=1)
 #
-# ASYNC TRAINING BENEFITS:
+# ASYNC TRAINING + TIS BENEFITS:
 #   - No waiting for slowest trajectory in batch
 #   - Continuous policy updates as trajectories complete
-#   - Better GPU utilization during generation
-#   - Reduced wall-clock time for same number of samples
+#   - TIS corrects for policy drift between rollout and training
+#   - Better sample efficiency in high-staleness scenarios
 #
 # CONTEXT BUDGET (32k total model context):
 #   - max_generate_length: 8k tokens (agent responses)
@@ -25,14 +29,15 @@
 # Key Design Decisions:
 # - TP=1 for inference engines: 8 independent engines for maximum parallelism
 # - batched=false: Each async worker handles its own requests
-# - num_parallel_generation_workers=8: Matches inference engines
-# - n_samples_per_prompt=4: GRPO advantage estimation (unchanged from sync)
+# - num_parallel_generation_workers=16: Matches mini_batch_size
+# - collect_rollout_details=true: Captures logprobs for TIS correction
+# - use_tis=true with tis_imp_ratio_cap=2.0: Standard TIS hyperparameters
 #
 # Usage:
 #   python -m hpc.launch \
 #       --job_type rl \
-#       --rl_config qwen3_8b_16x80GB_async_binary.yaml \
-#       --job_name qwen3_8b_agentic_async \
+#       --rl_config qwen3_8b_16x80GB_thinking_async_tis.yaml \
+#       --job_name qwen3_8b_agentic_async_tis \
 #       --train_data '["mlfoundations-dev/your-dataset"]' \
 #       --model_path Qwen/Qwen3-8B \
 #       --num_nodes 2
@@ -65,10 +70,15 @@ terminal_bench:
     # Store full message history for trajectory reconstruction
     store_all_messages: true
 
+    # ==========================================================================
+    # TIS REQUIREMENT: Collect rollout details for importance sampling
+    # ==========================================================================
+    # When true, collects per-token logprobs during rollout. Required for TIS.
+    # NOTE: Rollout details may be incomplete if context summarization occurs.
+    collect_rollout_details: true
+
     # Agent timeout overrides
     override_timeout_sec: 240        # Agent execution timeout (seconds)
-    # override_setup_timeout_sec: 120  # Agent setup timeout
-    # max_timeout_sec: 1800          # Cap timeout (useful for runaway tasks)
 
     # ==========================================================================
     # Environment settings (maps to Harbor EnvironmentConfig)
@@ -77,18 +87,10 @@ terminal_bench:
     override_cpus: 1
     override_memory_mb: 2048
     override_storage_mb: 2048
-    # override_gpus: 0              # GPU allocation per sandbox
-    # environment_type: daytona     # Environment backend (daytona, docker, modal)
-
-    # ==========================================================================
-    # Trial-level settings (maps to Harbor TrialConfig)
-    # ==========================================================================
-    # timeout_multiplier: 1.0       # Multiply all timeouts by this factor
 
     # ==========================================================================
     # Verifier settings (maps to Harbor VerifierConfig)
     # ==========================================================================
-    # verifier_disable: false       # Disable verification (for debugging)
     verifier_override_timeout_sec: 120  # Override verifier timeout
 
     # ==========================================================================
@@ -101,9 +103,6 @@ terminal_bench:
     wait_multiplier: 2.0           # Exponential backoff multiplier
 
     # Exception filtering - don't retry permanent failures
-    # Default Harbor exclusions: AgentTimeoutError, VerifierTimeoutError,
-    #   RewardFileNotFoundError, RewardFileEmptyError, VerifierOutputParseError
-    # We add ContextLengthExceededError since summarization is disabled
     exclude_exceptions:
       - AgentTimeoutError
       - VerifierTimeoutError
@@ -115,7 +114,7 @@ terminal_bench:
     # ==========================================================================
     # Orchestrator settings (QueueOrchestrator concurrency control)
     # ==========================================================================
-    n_concurrent_trials: 256        # Number of parallel trial workers
+    n_concurrent_trials: 16        # Number of parallel trial workers
 
     # ==========================================================================
     # Logging settings
@@ -126,8 +125,9 @@ terminal_bench:
     # Reward shaping settings (DISABLED - binary rewards)
     # ==========================================================================
     enable_reward_shaping: false   # Use original binary (0/1) verifier rewards
+
     # ==========================================================================
-    # Interleaved Thinking Settings (KEY ABLATION)
+    # Interleaved Thinking Settings
     # ==========================================================================
     # Include reasoning content in chat history and send to LLM in next round
     interleaved_thinking: true
@@ -158,14 +158,22 @@ trainer:
     # Token-level loss for better gradient signal on long sequences
     loss_reduction: token_mean
 
+    # ==========================================================================
+    # TIS (Truncated Importance Sampling) for async training
+    # ==========================================================================
+    # Corrects for off-policy bias when training on stale rollouts
+    # Requires collect_rollout_details=true in Harbor config
+    use_tis: true
+    tis_imp_ratio_cap: 2.0  # Standard cap from flash_rl examples
+
   # Training loop settings
   epochs: 10
   update_epochs_per_batch: 1
 
   # Batch sizes - async training requires train_batch_size == policy_mini_batch_size
   # (no mini-batching in fully async mode)
-  train_batch_size: 64
-  policy_mini_batch_size: 64
+  train_batch_size: 16
+  policy_mini_batch_size: 16
   eval_batch_size: 32
 
   # Micro batch sizes - set to 1 for long context to avoid OOM
@@ -176,10 +184,8 @@ trainer:
 
   # Evaluation and checkpointing
   eval_interval: 20
-  eval_before_train: true
+  eval_before_train: false
   ckpt_interval: 10
-  # IMPORTANT: resume_mode=none for async training - checkpoint resume causes data
-  # consumption tracking mismatch (AssertionError: Unexpected number of consumed data UIDs)
   resume_mode: latest
 
   # Logging
@@ -196,7 +202,7 @@ trainer:
   # Policy optimizer - conservative LR for base model fine-tuning
   policy:
     optimizer_config:
-      lr: 1.0e-6
+      lr: 5.0e-7
       weight_decay: 0.01
       adam_betas: [0.9, 0.999]
       # Gradient clipping important for long sequences
@@ -230,9 +236,8 @@ trainer:
   fully_async:
     # Number of parallel generation workers
     # Constraint: mini_batch_size <= num_parallel_generation_workers <= mini_batch_size * (max_staleness_steps + 1)
-    # With mini_batch_size=64 and max_staleness_steps=4: 64 <= workers <= 320
-    max_staleness_steps: 4
-    num_parallel_generation_workers: 64
+    # With mini_batch_size=16 and max_staleness_steps=4: 16 <= workers <= 80
+    num_parallel_generation_workers: 16
 
 # Generator (vLLM inference) configuration
 generator:
@@ -288,6 +293,8 @@ generator:
     temperature: 1.0
     top_p: 0.95
     top_k: -1  # Disabled
+    # TIS requires logprobs from vLLM - set to 0 to return logprobs for sampled tokens
+    logprobs: 0
 
   # Engine initialization kwargs - passed directly to vLLM/SGLang engine
   # WARNING: Many kwargs are set by SkyRL internally (trust_remote_code, enforce_eager, etc.)

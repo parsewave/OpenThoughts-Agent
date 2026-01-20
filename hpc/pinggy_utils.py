@@ -398,11 +398,3 @@ if __name__ == "__main__":
         print("\nStopping...")
 
 
-# TODO: Add Pinggy tunnel support to RL training jobs (hpc/rl_launch_utils.py)
-#       when RL jobs need to expose vLLM endpoints to cloud-based environments.
-#       Follow the same pattern as eval_launch_utils.py and datagen_launch_utils.py:
-#       1. Add pinggy_persistent_url and pinggy_token fields to RLJobConfig
-#       2. In the job runner's _run_with_vllm() method, check needs_pinggy_tunnel()
-#       3. Wrap the agent/training call with PinggyTunnel context manager when needed
-#       4. Pass exp_args.get("pinggy_persistent_url") and exp_args.get("pinggy_token")
-#          when building the job config in launch_rl_job()

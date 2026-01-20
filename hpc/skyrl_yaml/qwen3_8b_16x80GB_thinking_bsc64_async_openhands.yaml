@@ -1,6 +1,7 @@
-# SkyRL Configuration: Qwen3 8B on 16x80GB GPUs (Binary Rewards, Async Training)
+# SkyRL Configuration: Qwen3 8B on 16x80GB GPUs (OpenHands Agent, Async Training)
 # Optimized for 32k context agentic RL with ASYNCHRONOUS training
 #
+# AGENT: OpenHands (openhands) - All Hands AI agent (installed agent)
 # REWARD MODE: Binary (0/1) - original verifier reward without shaping
 # TRAINING MODE: Fully async - policy/ref/inference on dedicated GPU sets
 #
@@ -22,20 +23,29 @@
 #   - max_generate_length: 8k tokens (agent responses)
 #   - vLLM enforces total context <= max_model_len (32k)
 #
+# OpenHands-specific notes:
+# - Installed agent requiring Pinggy tunnel for cloud backends (Daytona, Modal)
+# - Uses its own context management (no enable_summarize)
+# - Has its own trajectory format (no store_all_messages)
+# - Supports reasoning_effort parameter
+# - Longer timeouts needed (1200s vs 240s for terminus-2)
+#
 # Key Design Decisions:
 # - TP=1 for inference engines: 8 independent engines for maximum parallelism
 # - batched=false: Each async worker handles its own requests
-# - num_parallel_generation_workers=8: Matches inference engines
+# - num_parallel_generation_workers=64: Matches mini_batch_size
 # - n_samples_per_prompt=4: GRPO advantage estimation (unchanged from sync)
 #
 # Usage:
 #   python -m hpc.launch \
 #       --job_type rl \
-#       --rl_config qwen3_8b_16x80GB_async_binary.yaml \
-#       --job_name qwen3_8b_agentic_async \
+#       --rl_config qwen3_8b_16x80GB_thinking_bsc64_async_openhands.yaml \
+#       --job_name qwen3_8b_openhands_async \
 #       --train_data '["mlfoundations-dev/your-dataset"]' \
 #       --model_path Qwen/Qwen3-8B \
-#       --num_nodes 2
+#       --num_nodes 2 \
+#       --pinggy_persistent_url your-tunnel.a.pinggy.link \
+#       --pinggy_token your_token
 
 # SkyRL entrypoint module
 entrypoint: examples.terminal_bench.entrypoints.main_tbench
@@ -49,6 +59,11 @@ terminal_bench:
   # trials_dir: Directory for Harbor trial artifacts (derived from experiments_dir if null)
   trials_dir: null
 
+  # Harbor environment backend: daytona (cloud), docker (local/podman), modal
+  # OpenHands is an installed agent that runs in cloud sandboxes and needs
+  # Pinggy tunnels to reach the vLLM endpoint on the HPC cluster
+  harbor_env: daytona
+
   # Harbor configuration - schema-driven mapping to TrialConfig
   # See examples/terminal_bench/harbor_config.py for full list of supported fields.
   # Unknown fields will generate warnings (typo protection + version compatibility).
@@ -56,19 +71,17 @@ terminal_bench:
     # ==========================================================================
     # Agent settings (maps to Harbor AgentConfig)
     # ==========================================================================
-    # Agent name - must be a valid Harbor AgentName (e.g., terminus-2, oracle)
-    name: terminus-2
+    # Agent name - OpenHands agent (installed agent)
+    name: openhands
     # Max agent-environment turns before Harbor forces termination
     max_episodes: 64
-    # Disable summarization, consistent with prior RL work
-    enable_summarize: false
-    # Store full message history for trajectory reconstruction
-    store_all_messages: true
 
-    # Agent timeout overrides
-    override_timeout_sec: 240        # Agent execution timeout (seconds)
-    # override_setup_timeout_sec: 120  # Agent setup timeout
-    # max_timeout_sec: 1800          # Cap timeout (useful for runaway tasks)
+    # OpenHands-specific kwargs
+    # reasoning_effort: Reasoning effort level (low, medium, high)
+    reasoning_effort: medium
+
+    # Agent timeout overrides - OpenHands takes longer as an installed agent
+    override_timeout_sec: 1200
 
     # ==========================================================================
     # Environment settings (maps to Harbor EnvironmentConfig)
@@ -77,18 +90,10 @@ terminal_bench:
     override_cpus: 1
     override_memory_mb: 2048
     override_storage_mb: 2048
-    # override_gpus: 0              # GPU allocation per sandbox
-    # environment_type: daytona     # Environment backend (daytona, docker, modal)
-
-    # ==========================================================================
-    # Trial-level settings (maps to Harbor TrialConfig)
-    # ==========================================================================
-    # timeout_multiplier: 1.0       # Multiply all timeouts by this factor
 
     # ==========================================================================
     # Verifier settings (maps to Harbor VerifierConfig)
     # ==========================================================================
-    # verifier_disable: false       # Disable verification (for debugging)
     verifier_override_timeout_sec: 120  # Override verifier timeout
 
     # ==========================================================================
@@ -101,21 +106,18 @@ terminal_bench:
     wait_multiplier: 2.0           # Exponential backoff multiplier
 
     # Exception filtering - don't retry permanent failures
-    # Default Harbor exclusions: AgentTimeoutError, VerifierTimeoutError,
-    #   RewardFileNotFoundError, RewardFileEmptyError, VerifierOutputParseError
-    # We add ContextLengthExceededError since summarization is disabled
     exclude_exceptions:
       - AgentTimeoutError
       - VerifierTimeoutError
       - RewardFileNotFoundError
       - RewardFileEmptyError
       - VerifierOutputParseError
-      - ContextLengthExceededError  # Permanent when enable_summarize=false
+      - ContextLengthExceededError
 
     # ==========================================================================
     # Orchestrator settings (QueueOrchestrator concurrency control)
     # ==========================================================================
-    n_concurrent_trials: 256        # Number of parallel trial workers
+    n_concurrent_trials: 16        # Number of parallel trial workers
 
     # ==========================================================================
     # Logging settings
@@ -126,6 +128,7 @@ terminal_bench:
     # Reward shaping settings (DISABLED - binary rewards)
     # ==========================================================================
     enable_reward_shaping: false   # Use original binary (0/1) verifier rewards
+
     # ==========================================================================
     # Interleaved Thinking Settings (KEY ABLATION)
     # ==========================================================================
@@ -176,7 +179,7 @@ trainer:
 
   # Evaluation and checkpointing
   eval_interval: 20
-  eval_before_train: true
+  eval_before_train: false
   ckpt_interval: 10
   # IMPORTANT: resume_mode=none for async training - checkpoint resume causes data
   # consumption tracking mismatch (AssertionError: Unexpected number of consumed data UIDs)
@@ -196,7 +199,7 @@ trainer:
   # Policy optimizer - conservative LR for base model fine-tuning
   policy:
     optimizer_config:
-      lr: 1.0e-6
+      lr: 5.0e-7
       weight_decay: 0.01
       adam_betas: [0.9, 0.999]
       # Gradient clipping important for long sequences
@@ -231,7 +234,6 @@ trainer:
     # Number of parallel generation workers
     # Constraint: mini_batch_size <= num_parallel_generation_workers <= mini_batch_size * (max_staleness_steps + 1)
     # With mini_batch_size=64 and max_staleness_steps=4: 64 <= workers <= 320
-    max_staleness_steps: 4
     num_parallel_generation_workers: 64
 
 # Generator (vLLM inference) configuration
