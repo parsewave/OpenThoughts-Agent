@@ -96,10 +96,24 @@ if [[ "$USE_ROCM" == "true" ]]; then
     fi
 fi
 
-# Check for uv
+# Check for uv and install if not available
 if ! command -v uv &> /dev/null; then
-    echo "Error: 'uv' is not installed. Install it with: pip install uv"
-    exit 1
+    echo "'uv' not found. Installing uv..."
+    # Try pip install first (works on most systems including HPC with miniforge)
+    if command -v pip &> /dev/null; then
+        pip install uv --quiet
+    elif command -v pip3 &> /dev/null; then
+        pip3 install uv --quiet
+    else
+        echo "Error: Neither pip nor pip3 found. Cannot install uv."
+        exit 1
+    fi
+    # Verify installation
+    if ! command -v uv &> /dev/null; then
+        echo "Error: Failed to install uv. Please install manually: pip install uv"
+        exit 1
+    fi
+    echo "uv installed successfully."
 fi
 
 # Check Python 3.12 availability
