@@ -86,21 +86,19 @@ export PATH="$HOME/.local/bin:$PATH"
 # (module loads can deactivate conda and change PATH)
 if ! command -v uv &> /dev/null; then
     echo "'uv' not found. Installing uv to ~/.local/bin..."
-    # Try pip install with --user flag to install to ~/.local/bin
-    if command -v pip &> /dev/null; then
+    # Prefer curl installer - it's more reliable and always installs to ~/.local/bin
+    if command -v curl &> /dev/null; then
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+    elif command -v pip &> /dev/null; then
         pip install --user uv --quiet 2>/dev/null || pip install --user uv
     elif command -v pip3 &> /dev/null; then
         pip3 install --user uv --quiet 2>/dev/null || pip3 install --user uv
-    else
-        # Fallback: use curl to install uv directly
-        echo "pip not found, trying curl installer..."
-        curl -LsSf https://astral.sh/uv/install.sh | sh
     fi
     # Verify installation
     if ! command -v uv &> /dev/null; then
         echo "Error: Failed to install uv. Please install manually:"
         echo "  curl -LsSf https://astral.sh/uv/install.sh | sh"
-        echo "  # or: pip install --user uv"
         exit 1
     fi
     echo "uv installed successfully."
@@ -127,18 +125,25 @@ if [[ "$USE_ROCM" == "true" ]]; then
 
     # Check for uv again after module loads (conda deactivation may have removed it)
     if ! command -v uv &> /dev/null; then
-        echo "'uv' not found after module loads. Installing uv to ~/.local/bin..."
-        if command -v pip &> /dev/null; then
-            pip install --user uv 2>/dev/null || pip install --user uv --break-system-packages
-        elif command -v pip3 &> /dev/null; then
-            pip3 install --user uv 2>/dev/null || pip3 install --user uv --break-system-packages
-        else
-            echo "pip not found, trying curl installer..."
+        echo "'uv' not found after module loads. Installing uv..."
+        # Use curl installer - most reliable, always installs to ~/.local/bin
+        if command -v curl &> /dev/null; then
+            echo "Using curl installer for uv..."
             curl -LsSf https://astral.sh/uv/install.sh | sh
+            # Add both possible install locations to PATH
             export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+        elif command -v pip &> /dev/null; then
+            # Fallback to pip, but find the actual install location
+            pip install --user uv
+            # Try to find where pip installed the uv script
+            UV_SCRIPT=$(python -c "import site; print(site.USER_BASE)" 2>/dev/null)/bin
+            if [[ -d "$UV_SCRIPT" ]]; then
+                export PATH="$UV_SCRIPT:$PATH"
+            fi
         fi
         if ! command -v uv &> /dev/null; then
             echo "Error: Failed to install uv after module loads."
+            echo "Please install manually: curl -LsSf https://astral.sh/uv/install.sh | sh"
             exit 1
         fi
         echo "uv installed successfully."
