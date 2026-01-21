@@ -1191,11 +1191,33 @@ def apply_env_overrides(
         raise ValueError("--job_creator must be 96 characters or fewer.")
     exp_args = update_exp_args(exp_args, {"job_creator": job_creator})
 
+    # Handle Frontier extended partition time limits (max 24 hours)
+    partition = exp_args.get("partition") or getattr(hpc, "partition", "")
+    is_frontier_extended = (
+        getattr(hpc, "name", "").lower() == "frontier" and partition.lower() == "extended"
+    )
+    frontier_extended_max = "23:59:00"
+
     # Set default time_limit from HPC config
     if exp_args.get("time_limit") in (None, ""):
-        default_time = getattr(hpc, "default_time_limit", "24:00:00")
+        if is_frontier_extended:
+            default_time = frontier_extended_max
+            print(f"Frontier extended partition: using max time_limit {default_time}")
+        else:
+            default_time = getattr(hpc, "default_time_limit", "24:00:00")
+            print(f"Using default time_limit: {default_time}")
         exp_args = update_exp_args(exp_args, {"time_limit": default_time})
-        print(f"Using default time_limit: {default_time}")
+    elif is_frontier_extended:
+        # Cap user-provided time to extended partition max
+        user_time = exp_args.get("time_limit", "24:00:00")
+        user_seconds = parse_time_to_seconds(user_time)
+        max_seconds = parse_time_to_seconds(frontier_extended_max)
+        if user_seconds > max_seconds:
+            print(
+                f"Warning: Frontier extended partition max is {frontier_extended_max}. "
+                f"Capping requested time_limit ({user_time}) to {frontier_extended_max}."
+            )
+            exp_args = update_exp_args(exp_args, {"time_limit": frontier_extended_max})
 
     # Validate time_limit against node-count-based limits (e.g., Frontier bins)
     num_nodes = _parse_optional_int(exp_args.get("num_nodes"), "--num_nodes")
