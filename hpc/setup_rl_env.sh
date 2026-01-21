@@ -262,6 +262,13 @@ else
 fi
 
 # =============================================================================
+# Install build dependencies
+# =============================================================================
+# Some packages (harbor, flash-attn) need these to build properly
+echo "Installing build dependencies (packaging, uv_build)..."
+uv pip install packaging "uv_build>=0.8.4,<0.9.0" || true
+
+# =============================================================================
 # Install remaining dependencies
 # =============================================================================
 if [[ "$USE_ROCM" == "true" ]]; then
