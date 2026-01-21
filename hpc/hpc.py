@@ -81,6 +81,10 @@ class HPC(BaseModel):
     # Special key "_default" is used when no gpu_type is specified
     gpu_type_constraints: Dict[str, str] = {}
 
+    # Disable CPU binding for srun commands (needed for Frontier/Cray systems)
+    # When True, adds --cpu-bind=none to srun commands for Ray startup
+    disable_cpu_bind: bool = False
+
     def model_post_init(self, __context) -> None:
         # Derive a default CPU-per-GPU ratio when not explicitly provided.
         if not self.cpus_per_gpu:
@@ -775,6 +779,8 @@ frontier = HPC(
     num_nodes_fast=91,  # Max nodes for Bin 5 (2h limit)
     # Frontier requires exclusive node allocation
     extra_sbatch_directives=["#SBATCH --exclusive"],
+    # Frontier/Cray needs --cpu-bind=none for srun commands
+    disable_cpu_bind=True,
 )
 
 clusters = [jureca, jupiter, juwels, leonardo, capella, alpha, dip, lrz, vista, lonestar, claix, nyugreene, nyutorch, oumi, perlmutter, frontier]

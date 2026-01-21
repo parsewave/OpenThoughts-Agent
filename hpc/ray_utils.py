@@ -108,6 +108,8 @@ class RayClusterConfig:
     # Set explicitly to limit Ray to the SLURM allocation minus headroom.
     memory_per_node: Optional[int] = None  # Total memory Ray can use per node
     object_store_memory: Optional[int] = None  # Ray object store (plasma) size
+    # Disable CPU binding for srun commands (needed for Frontier/Cray systems)
+    disable_cpu_bind: bool = False
 
 
 @dataclass
@@ -157,6 +159,7 @@ class RayCluster:
             ray_env_vars=hpc.get_ray_env_vars(),
             memory_per_node=ray_memory,
             object_store_memory=DEFAULT_OBJECT_STORE_MEMORY_BYTES,
+            disable_cpu_bind=getattr(hpc, "disable_cpu_bind", False),
         )
         return cls.from_slurm(ray_config)
 
@@ -192,6 +195,7 @@ class RayCluster:
             "--nodes=1",
             "--ntasks=1",
             "--overlap",
+            "--cpu-bind=none",  # Disable CPU binding for simple hostname lookup (fixes Frontier)
             "-w",
             node,
         ]
@@ -258,6 +262,7 @@ class RayCluster:
                         "--nodes=1",
                         "--ntasks=1",
                         "--overlap",
+                        "--cpu-bind=none",  # No binding needed for cleanup
                         "-w",
                         node,
                         "ray",
@@ -346,6 +351,7 @@ class RayCluster:
                         "--nodes=1",
                         "--ntasks=1",
                         "--overlap",
+                        "--cpu-bind=none",  # No binding needed for cleanup
                         "-w",
                         node,
                         "ray",
@@ -420,12 +426,11 @@ class RayCluster:
             "--nodes=1",
             "--ntasks=1",
             "--overlap",
-            "-w",
-            node,
-            "bash",
-            "-c",
-            bash_cmd,
         ]
+        # Add --cpu-bind=none for Frontier/Cray systems
+        if self.config.disable_cpu_bind:
+            srun_cmd.append("--cpu-bind=none")
+        srun_cmd.extend(["-w", node, "bash", "-c", bash_cmd])
 
         # Log Ray startup command and output for debugging
         role = "head" if is_head else "worker"
@@ -484,6 +489,7 @@ class RayCluster:
             "--nodes=1",
             "--ntasks=1",
             "--overlap",
+            "--cpu-bind=none",  # No binding needed for wait script
             "-w", self.node_list[0],  # Head node
             "bash", "-c", wait_cmd,
         ]
@@ -577,6 +583,7 @@ sys.exit(1)
             "--nodes=1",
             "--ntasks=1",
             "--overlap",
+            "--cpu-bind=none",  # No binding needed for polling script
             "-w", self.node_list[0],
             sys.executable, "-c", poll_script,
         ]
