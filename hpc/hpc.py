@@ -757,7 +757,7 @@ frontier = HPC(
     # ROCm modules for AMD MI250X GPUs
     # See: https://docs.olcf.ornl.gov/software/analytics/pytorch_frontier.html
     # Note: ROCm 7.0.x required for vLLM wheel; fall back to 6.4.1 if unavailable
-    modules=["PrgEnv-gnu/8.6.0", "rocm/7.0.2", "craype-accel-amd-gfx90a"],
+    modules=["PrgEnv-gnu/8.6.0", "cray-mpich/9.0.0", "gcc-native/14.2", "rocm/7.0.2", "craype-accel-amd-gfx90a"],
     env_vars={
         "ROCM_PATH": "/opt/rocm",
         "HIP_VISIBLE_DEVICES": "0,1,2,3,4,5,6,7",

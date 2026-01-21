@@ -32,12 +32,16 @@ ROCM_VERSION="7.0.2"
 ROCM_VERSION_FALLBACK="6.4.1"
 ROCM_MODULES=(
     "PrgEnv-gnu/8.6.0"
+    "cray-mpich/9.0.0"
+    "gcc-native/14.2"
     "miniforge3/23.11.0-0"
     "rocm/7.0.2"
     "craype-accel-amd-gfx90a"
 )
 ROCM_MODULES_FALLBACK=(
     "PrgEnv-gnu/8.6.0"
+    "cray-mpich/9.0.0"
+    "gcc-native/14.2"
     "miniforge3/23.11.0-0"
     "rocm/6.4.1"
     "craype-accel-amd-gfx90a"
