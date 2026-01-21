@@ -46,7 +46,10 @@ datagen = [
     "torch==2.9.0; platform_system == 'Darwin' and platform_machine == 'arm64'",
 ]
 # ROCm/AMD GPU variant for datagen (e.g., OLCF Frontier with MI250X)
-# Install with: uv pip install -e ".[datagen-rocm]" --index-url https://download.pytorch.org/whl/rocm6.4
+# Install with:
+#   uv pip install -e ".[datagen-rocm]" \
+#     --extra-index-url https://wheels.vllm.ai/rocm/0.14.0/rocm700 \
+#     --prerelease=allow
 datagen-rocm = [
     "ray[default]>=2.50.0",
     "torch-c-dlpack-ext==0.1.4",
@@ -57,7 +60,8 @@ datagen-rocm = [
     "torch==2.8.0",
     "torchvision==0.23.0",
     "torchaudio==2.8.0",
-    # Note: vLLM ROCm support is experimental; omitted here
+    # vLLM ROCm wheel (requires --extra-index-url https://wheels.vllm.ai/rocm/0.14.0/rocm700 --prerelease=allow)
+    "vllm==0.14.0+rocm700",
     # Note: flash-attn is CUDA-only; PyTorch native attention used instead
 ]
 datagen-swesmith = [
