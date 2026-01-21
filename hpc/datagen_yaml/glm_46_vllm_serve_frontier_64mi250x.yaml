@@ -37,7 +37,7 @@ vllm_server:
   pipeline_parallel_size: 1
   data_parallel_size: 16
   time_limit: '02:00:00'
-  max_model_len: 65536
+  max_model_len: 131072
   max_num_seqs: 64
   gpu_memory_utilization: 0.85
   swap_space: 16
