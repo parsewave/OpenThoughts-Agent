@@ -147,6 +147,93 @@ def scale_memory_for_partial_gpus(
     return format_memory_mb(scaled_mb)
 
 
+# =============================================================================
+# Time Limit Utilities
+# =============================================================================
+
+
+def parse_time_to_seconds(time_str: str) -> int:
+    """Parse a SLURM time string to total seconds.
+
+    Supports formats:
+    - "HH:MM:SS" (e.g., "02:00:00")
+    - "D-HH:MM:SS" (e.g., "1-12:00:00")
+    - "MM:SS" (e.g., "30:00")
+
+    Args:
+        time_str: SLURM time limit string.
+
+    Returns:
+        Total seconds.
+
+    Raises:
+        ValueError: If the time string cannot be parsed.
+    """
+    if not time_str:
+        return 0
+
+    time_str = time_str.strip()
+
+    # Handle D-HH:MM:SS format
+    if "-" in time_str:
+        days_part, time_part = time_str.split("-", 1)
+        days = int(days_part)
+    else:
+        days = 0
+        time_part = time_str
+
+    parts = time_part.split(":")
+    if len(parts) == 3:
+        hours, minutes, seconds = map(int, parts)
+    elif len(parts) == 2:
+        hours = 0
+        minutes, seconds = map(int, parts)
+    else:
+        raise ValueError(f"Cannot parse time string: {time_str}")
+
+    return days * 86400 + hours * 3600 + minutes * 60 + seconds
+
+
+def validate_time_limit_for_nodes(
+    time_limit: str,
+    num_nodes: int,
+    hpc: Any,
+) -> str:
+    """Validate and potentially adjust time limit based on node count.
+
+    For clusters with node-count-based scheduling policies (e.g., Frontier),
+    this function checks if the requested time limit exceeds the maximum
+    allowed for the given node count and adjusts it if necessary.
+
+    Args:
+        time_limit: Requested time limit string (e.g., "24:00:00").
+        num_nodes: Number of nodes requested.
+        hpc: HPC configuration object.
+
+    Returns:
+        Validated (and possibly adjusted) time limit string.
+    """
+    if not hasattr(hpc, "time_limit_by_nodes") or not hpc.time_limit_by_nodes:
+        return time_limit
+
+    if num_nodes is None or num_nodes <= 0:
+        return time_limit
+
+    max_time = hpc.get_max_time_limit(num_nodes)
+    requested_seconds = parse_time_to_seconds(time_limit)
+    max_seconds = parse_time_to_seconds(max_time)
+
+    if requested_seconds > max_seconds:
+        print(
+            f"Warning: Requested time_limit ({time_limit}) exceeds max allowed "
+            f"for {num_nodes} nodes on {hpc.name} ({max_time}). "
+            f"Adjusting to {max_time}."
+        )
+        return max_time
+
+    return time_limit
+
+
 def generate_served_model_id() -> str:
     """Return a unique identifier for a hosted vLLM model."""
     return str(int(time.time() * 1_000_000))
@@ -1109,6 +1196,17 @@ def apply_env_overrides(
         default_time = getattr(hpc, "default_time_limit", "24:00:00")
         exp_args = update_exp_args(exp_args, {"time_limit": default_time})
         print(f"Using default time_limit: {default_time}")
+
+    # Validate time_limit against node-count-based limits (e.g., Frontier bins)
+    num_nodes = _parse_optional_int(exp_args.get("num_nodes"), "--num_nodes")
+    if num_nodes is not None and num_nodes > 0:
+        validated_time = validate_time_limit_for_nodes(
+            exp_args.get("time_limit", "24:00:00"),
+            num_nodes,
+            hpc,
+        )
+        if validated_time != exp_args.get("time_limit"):
+            exp_args = update_exp_args(exp_args, {"time_limit": validated_time})
 
     # Normalize and validate job_type
     job_type = normalize_job_type(exp_args)

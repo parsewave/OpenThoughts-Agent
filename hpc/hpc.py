@@ -63,6 +63,9 @@ class HPC(BaseModel):
     # Job time limits (cluster-specific)
     default_time_limit: str = "24:00:00"
     max_time_limit: str = "48:00:00"
+    # Node-count-based time limits: list of (max_nodes, max_time) tuples, sorted by max_nodes ascending
+    # Example: [(91, "02:00:00"), (183, "06:00:00")] means 1-91 nodes -> 2h, 92-183 nodes -> 6h
+    time_limit_by_nodes: List[tuple[int, str]] = []
 
     # Node scaling presets for gosmall/gotrain/gofast helpers
     num_nodes_slow: int = 1
@@ -84,6 +87,29 @@ class HPC(BaseModel):
             gpus = max(self.gpus_per_node, 1)
             if self.cpus_per_node:
                 self.cpus_per_gpu = math.ceil(self.cpus_per_node / gpus)
+
+    def get_max_time_limit(self, num_nodes: int) -> str:
+        """Get the maximum allowed time limit for a given number of nodes.
+
+        For clusters with node-count-based scheduling policies (e.g., Frontier),
+        returns the max walltime for the appropriate bin. Falls back to max_time_limit
+        if no node-based limits are configured.
+
+        Args:
+            num_nodes: Number of nodes requested for the job.
+
+        Returns:
+            Maximum allowed time limit string (e.g., "02:00:00").
+        """
+        if not self.time_limit_by_nodes:
+            return self.max_time_limit
+
+        for max_nodes, max_time in self.time_limit_by_nodes:
+            if num_nodes <= max_nodes:
+                return max_time
+
+        # If num_nodes exceeds all bins, return the last (largest) bin's limit
+        return self.time_limit_by_nodes[-1][1] if self.time_limit_by_nodes else self.max_time_limit
 
     @computed_field
     def dotenv_path(self) -> str:
@@ -728,6 +754,17 @@ frontier = HPC(
     total_partition_nodes=9216,
     qos="normal",
     gpu_directive_format="--gpus-per-node={n}",
+    # Frontier scheduling bins (node-count-based time limits)
+    # Bin 5: 1-91 nodes -> 2 hours max
+    # Bin 4: 92-183 nodes -> 6 hours max
+    # Bin 3: 184+ nodes -> 12 hours max
+    time_limit_by_nodes=[(91, "02:00:00"), (183, "06:00:00"), (9216, "12:00:00")],
+    default_time_limit="12:00:00",
+    max_time_limit="12:00:00",
+    # Node scaling presets for Frontier
+    num_nodes_slow=16,
+    num_nodes_default=64,
+    num_nodes_fast=91,  # Max nodes for Bin 5 (2h limit)
 )
 
 clusters = [jureca, jupiter, juwels, leonardo, capella, alpha, dip, lrz, vista, lonestar, claix, nyugreene, nyutorch, oumi, perlmutter, frontier]
