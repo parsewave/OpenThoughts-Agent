@@ -615,6 +615,7 @@ def create_ray_cluster_from_slurm(
     ray_env_vars: str = "",
     memory_per_node: Optional[int] = None,
     object_store_memory: Optional[int] = None,
+    disable_cpu_bind: bool = False,
 ) -> RayCluster:
     """Convenience function to create a Ray cluster from SLURM environment.
 
@@ -628,6 +629,7 @@ def create_ray_cluster_from_slurm(
         ray_env_vars: Space-separated KEY=value pairs for Ray workers
         memory_per_node: Memory limit per node in bytes (auto-detected from SLURM if None)
         object_store_memory: Ray object store size in bytes (default: 40GB)
+        disable_cpu_bind: If True, add --cpu-bind=none to srun (needed for Frontier/Cray)
 
     Returns:
         A RayCluster configured from SLURM environment
@@ -649,6 +651,7 @@ def create_ray_cluster_from_slurm(
         ray_env_vars=ray_env_vars,
         memory_per_node=memory_per_node,
         object_store_memory=object_store_memory,
+        disable_cpu_bind=disable_cpu_bind,
     )
 
     return RayCluster.from_slurm(config)
