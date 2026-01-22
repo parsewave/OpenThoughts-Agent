@@ -772,6 +772,19 @@ class CloudLauncher:
                 file=sys.stderr,
             )
 
+        # Warn about Docker backend + provider compatibility
+        # Harbor's Docker backend requires host socket passthrough, which needs
+        # the provider to support Docker runtime (for socket mounting)
+        harbor_env = getattr(args, "harbor_env", None)
+        if harbor_env == "docker":
+            no_docker = [pc.display_name for pc in provider_configs if not pc.supports_docker_runtime]
+            if no_docker:
+                print(
+                    f"[cloud] Warning: {', '.join(no_docker)} do not support Docker runtime. "
+                    f"Harbor's Docker backend may not work on these providers.",
+                    file=sys.stderr,
+                )
+
         return provider_names, provider_configs
 
     # -------------------------------------------------------------------------
@@ -832,6 +845,13 @@ class CloudLauncher:
             file_mounts[remote_workdir] = self.repo_root.as_posix()
         if remote_secret_path and args.secrets_env:
             file_mounts[remote_secret_path] = os.path.abspath(args.secrets_env)
+
+        # Mount Docker socket for Harbor Docker backend
+        # This enables running containers via the host's Docker daemon
+        harbor_env = getattr(args, "harbor_env", None)
+        if harbor_env == "docker":
+            file_mounts["/var/run/docker.sock"] = "/var/run/docker.sock"
+
         return file_mounts
 
     def setup_gpt_oss_if_needed(
@@ -945,6 +965,15 @@ class CloudLauncher:
         print(f"[cloud]   Image: {image_status}")
         print(f"[cloud]   Code sync: {sync_status}")
         print(f"[cloud]   Autostop: {autostop_status}")
+
+        # Show Harbor environment backend if specified
+        harbor_env = getattr(args, "harbor_env", None)
+        if harbor_env:
+            harbor_status = harbor_env
+            if harbor_env == "docker":
+                harbor_status += " (host socket passthrough)"
+            print(f"[cloud]   Harbor backend: {harbor_status}")
+
         if num_resources > 1:
             print(f"[cloud]   Candidate resources: {num_resources} combinations")
         if args.down:
@@ -1198,6 +1227,9 @@ class CloudLauncher:
         By default, reinstalls harbor and pins dependencies to ensure
         compatibility (huggingface-hub <1.0 for vLLM, numpy <=2.2 for Numba).
 
+        If harbor_env is "docker", also sets up DOCKER_HOST for host socket
+        passthrough (enables Harbor's Docker backend in cloud environments).
+
         Override in subclasses to customize or disable.
 
         Args:
@@ -1206,10 +1238,19 @@ class CloudLauncher:
         Returns:
             List of shell commands to run before the main task
         """
-        return [
+        commands = [
             'echo "[cloud-setup] Installing dependencies (harbor, pinned huggingface-hub, numpy)..."',
             CLOUD_DEPS_INSTALL_CMD,
         ]
+
+        # Setup Docker host socket for Harbor Docker backend
+        harbor_env = getattr(args, "harbor_env", None)
+        if harbor_env == "docker":
+            commands.insert(0, 'echo "[cloud-setup] Setting up Docker host socket passthrough..."')
+            commands.insert(1, 'export DOCKER_HOST=unix:///var/run/docker.sock')
+            commands.insert(2, 'docker info > /dev/null 2>&1 && echo "[cloud-setup] Docker daemon accessible" || echo "[cloud-setup] WARNING: Docker daemon not accessible"')
+
+        return commands
 
     def run(self, args: "argparse.Namespace") -> None:
         """Main entry point to run the cloud launcher."""
@@ -1265,6 +1306,11 @@ class CloudLauncher:
 
         # Setup GPT-OSS tiktoken encodings if needed (modifies file_mounts)
         extra_env_vars = self.setup_gpt_oss_if_needed(args, file_mounts)
+
+        # Setup Docker host for Harbor Docker backend
+        harbor_env = getattr(args, "harbor_env", None)
+        if harbor_env == "docker":
+            extra_env_vars["DOCKER_HOST"] = "unix:///var/run/docker.sock"
 
         # Get pre-task commands (e.g., harbor reinstall)
         pre_task_commands = self.get_pre_task_commands(args)

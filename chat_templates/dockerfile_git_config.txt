@@ -1,0 +1,5 @@
+# Git configuration for cleaner output in agent environments
+# This file is intended to be APPENDED to task Dockerfiles
+
+RUN git config --global core.pager ""
+RUN git config --global diff.binary false
