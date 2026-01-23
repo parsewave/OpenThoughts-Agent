@@ -509,11 +509,16 @@ def construct_rl_sbatch_script(exp_args: dict, hpc) -> str:
         exp_args["val_data"] = resolved_val_data
         print(f"Resolved val_data: {resolved_val_data}")
 
-    # Pre-download model if on a no-internet cluster (e.g., Perlmutter, JSC)
-    from hpc.checkpoint_utils import needs_pre_download, pre_download_model
+    # Pre-download model for RL jobs
+    # SkyRL's FSDP and DeepSpeed strategies don't have built-in pre-download logic
+    # (only Megatron does), so we always pre-download HF models to avoid issues with:
+    # - Multiple workers trying to download simultaneously
+    # - Network timeouts on compute nodes
+    # - Auth issues in distributed settings
+    from hpc.checkpoint_utils import pre_download_model, is_huggingface_repo
     model_path = exp_args.get("model_path") or parsed.model.get("model_name_or_path", "")
-    if model_path and needs_pre_download(hpc):
-        print(f"Pre-downloading model for no-internet cluster: {model_path}")
+    if model_path and is_huggingface_repo(model_path):
+        print(f"Pre-downloading model for SkyRL: {model_path}")
         result = pre_download_model(model_path)
         exp_args["model_path"] = result.local_path
         print(f"Model available at: {result.local_path}")
