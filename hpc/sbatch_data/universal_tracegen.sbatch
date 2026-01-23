@@ -32,6 +32,12 @@ export CONDA_BACKUP_CXX="${CONDA_BACKUP_CXX:-}"
 export CONDA_BACKUP_CC="${CONDA_BACKUP_CC:-}"
 export CONDA_BACKUP_FC="${CONDA_BACKUP_FC:-}"
 export CONDA_BACKUP_GXX="${CONDA_BACKUP_GXX:-}"
+export CONDA_BACKUP_CXXFLAGS="${CONDA_BACKUP_CXXFLAGS:-}"
+export CONDA_BACKUP_CFLAGS="${CONDA_BACKUP_CFLAGS:-}"
+export CONDA_BACKUP_FFLAGS="${CONDA_BACKUP_FFLAGS:-}"
+export CONDA_BACKUP_LDFLAGS="${CONDA_BACKUP_LDFLAGS:-}"
+export CONDA_BACKUP_CPP="${CONDA_BACKUP_CPP:-}"
+export CONDA_BACKUP_CPPFLAGS="${CONDA_BACKUP_CPPFLAGS:-}"
 
 # --- Module loading (cluster-specific, substituted by launcher) ---
 # Disable unbound variable check for module loading (modules may reference unset vars)
