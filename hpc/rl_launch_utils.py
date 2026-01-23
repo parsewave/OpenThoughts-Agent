@@ -614,6 +614,7 @@ fi"""
         "config_path": str(config_path),
         "skyrl_command": skyrl_command,
         "email_address": os.environ.get("EMAIL_ADDRESS", ""),
+        "harbor_env": job_config.harbor_env,
     }
 
     sbatch_text = substitute_template(template_text, substitutions)

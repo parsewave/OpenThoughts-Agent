@@ -668,6 +668,7 @@ def launch_eval_job_v2(exp_args: dict, hpc) -> None:
         "cluster_env_file": cluster_env_file,
         "config_path": str(config_path),
         "email_address": os.environ.get("EMAIL_ADDRESS", ""),
+        "harbor_env": exp_args.get("_eval_env", "daytona"),
     }
 
     sbatch_text = substitute_template(template_text, substitutions)

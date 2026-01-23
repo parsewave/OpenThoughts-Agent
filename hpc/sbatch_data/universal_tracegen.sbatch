@@ -87,29 +87,32 @@ export TRITON_CACHE_VERBOSE=1
 source "$WORKDIR/hpc/shell_utils/triton_cache.sh"
 
 # --- Docker/Podman Runtime Setup (for Harbor Docker backend) ---
-# This section detects and configures the container runtime (podman-hpc, podman, or docker).
-# On NERSC Perlmutter, podman-hpc is the preferred runtime.
-if [ -f "$WORKDIR/docker/setup_docker_runtime.sh" ]; then
-  echo "[sbatch] Setting up Docker/Podman runtime..."
-  # Source the setup script to detect and configure runtime
-  # shellcheck source=docker/setup_docker_runtime.sh
-  source "$WORKDIR/docker/setup_docker_runtime.sh"
+# Only run if harbor_env is "docker" - other backends (daytona, modal) don't need this.
+if [ "{harbor_env}" = "docker" ]; then
+  if [ -f "$WORKDIR/docker/setup_docker_runtime.sh" ]; then
+    echo "[sbatch] Setting up Docker/Podman runtime..."
+    # Source the setup script to detect and configure runtime
+    # shellcheck source=docker/setup_docker_runtime.sh
+    source "$WORKDIR/docker/setup_docker_runtime.sh"
 
-  # Verify connectivity if DOCKER_HOST is set
-  if [ -n "${DOCKER_HOST:-}" ]; then
-    echo "[sbatch] DOCKER_HOST=$DOCKER_HOST"
-    echo "[sbatch] CONTAINER_RUNTIME=${CONTAINER_RUNTIME:-unknown}"
+    # Verify connectivity if DOCKER_HOST is set
+    if [ -n "${DOCKER_HOST:-}" ]; then
+      echo "[sbatch] DOCKER_HOST=$DOCKER_HOST"
+      echo "[sbatch] CONTAINER_RUNTIME=${CONTAINER_RUNTIME:-unknown}"
 
-    # Quick connectivity check (timeout after 10s)
-    if ! timeout 10 docker info &>/dev/null; then
-      echo "[sbatch] ERROR: Docker daemon not responding at DOCKER_HOST=$DOCKER_HOST"
-      echo "[sbatch] HINT: Check 'podman-hpc info' or 'docker info' manually"
-      exit 4  # EXIT_CONNECTIVITY_FAILED
+      # Quick connectivity check (timeout after 10s)
+      if ! timeout 10 docker info &>/dev/null; then
+        echo "[sbatch] ERROR: Docker daemon not responding at DOCKER_HOST=$DOCKER_HOST"
+        echo "[sbatch] HINT: Check 'podman-hpc info' or 'docker info' manually"
+        exit 4  # EXIT_CONNECTIVITY_FAILED
+      fi
+      echo "[sbatch] Docker runtime verified successfully"
+    else
+      echo "[sbatch] WARNING: DOCKER_HOST not set, Harbor Docker backend may fail"
     fi
-    echo "[sbatch] Docker runtime verified successfully"
-  else
-    echo "[sbatch] WARNING: DOCKER_HOST not set, Harbor Docker backend may fail"
   fi
+else
+  echo "[sbatch] Harbor env: {harbor_env} (skipping Docker runtime setup)"
 fi
 
 # --- Run the trace generation job via Python runner ---

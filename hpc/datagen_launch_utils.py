@@ -351,6 +351,9 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
         # Build SBATCH directives using shared utility
         sbatch_directives = build_sbatch_directives(hpc, exp_args)
 
+        # Determine harbor_env for conditional docker setup
+        harbor_env = exp_args.get("trace_env") or get_harbor_env_from_config(harbor_config_resolved)
+
         substitutions = {
             "time_limit": exp_args.get("time_limit") or "24:00:00",
             "num_nodes": str(exp_args.get("num_nodes") or 1),
@@ -363,6 +366,7 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
             "cluster_env_file": cluster_env_file,
             "config_path": str(trace_config_path),
             "email_address": os.environ.get("EMAIL_ADDRESS", ""),
+            "harbor_env": harbor_env,
         }
 
         sbatch_text = substitute_template(template_text, substitutions)
