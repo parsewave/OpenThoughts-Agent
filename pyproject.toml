@@ -45,6 +45,25 @@ datagen = [
     "torch==2.9.0+cu128; platform_system != 'Darwin' or platform_machine != 'arm64'",
     "torch==2.9.0; platform_system == 'Darwin' and platform_machine == 'arm64'",
 ]
+# ROCm/AMD GPU variant for datagen (e.g., OLCF Frontier with MI250X)
+# Install with:
+#   uv pip install -e ".[datagen-rocm]" \
+#     --extra-index-url https://wheels.vllm.ai/rocm/0.14.0/rocm700 \
+#     --prerelease=allow
+datagen-rocm = [
+    "ray[default]>=2.50.0",
+    "torch-c-dlpack-ext==0.1.4",
+    "google-cloud-aiplatform>=1.67.0",
+    "google-genai>=0.1.0",
+    "transformers==4.57.3",
+    # PyTorch ROCm 6.4 - must install with --index-url https://download.pytorch.org/whl/rocm6.4
+    "torch==2.8.0",
+    "torchvision==0.23.0",
+    "torchaudio==2.8.0",
+    # vLLM ROCm wheel (requires --extra-index-url https://wheels.vllm.ai/rocm/0.14.0/rocm700 --prerelease=allow)
+    "vllm==0.14.0+rocm700",
+    # Note: flash-attn is CUDA-only; PyTorch native attention used instead
+]
 datagen-swesmith = [
     "swesmith",
 ]
@@ -79,6 +98,19 @@ rl = [
     # Uses mlfoundations fork with custom patches
     "skyrl[vllm] @ git+https://github.com/mlfoundations/skyrl.git",
     "Jinja2",  # For chat templates
+]
+# ROCm/AMD GPU variant for RL (e.g., OLCF Frontier with MI250X)
+# Install with: uv pip install -e ".[rl-rocm]" --index-url https://download.pytorch.org/whl/rocm6.4
+# Or use: ./hpc/setup_rl_env.sh --rocm
+rl-rocm = [
+    # SkyRL without vllm extra (vLLM ROCm support is experimental)
+    "skyrl @ git+https://github.com/mlfoundations/skyrl.git",
+    "Jinja2",  # For chat templates
+    # PyTorch ROCm 6.4 - must install with --index-url https://download.pytorch.org/whl/rocm6.4
+    "torch==2.8.0",
+    "torchvision==0.23.0",
+    "torchaudio==2.8.0",
+    # Note: flash-attn is CUDA-only; PyTorch native attention used instead
 ]
 # IMPORTANT: RL and datagen extras are INCOMPATIBLE due to version conflicts:
 #   - RL (SkyRL): torch==2.8.0, vllm==0.11.0, Python 3.12 required
@@ -126,6 +158,24 @@ exclude = [
 ]
 
 [tool.uv.pip]
+# Default: CUDA 12.8 PyTorch index
+# For ROCm/AMD GPUs (e.g., Frontier), use instead:
+#   uv pip install ... --index-url https://download.pytorch.org/whl/rocm6.4
 extra-index-url = ["https://download.pytorch.org/whl/cu128"]
+
 [tool.uv]
 index-strategy = "unsafe-best-match"
+
+# =============================================================================
+# ROCm Installation Notes (for AMD GPUs like Frontier MI250X)
+# =============================================================================
+# ROCm extras (datagen-rocm, rl-rocm) require the ROCm PyTorch index:
+#
+#   # For datagen on ROCm:
+#   uv pip install -e ".[datagen-rocm]" --index-url https://download.pytorch.org/whl/rocm6.4
+#
+#   # For RL on ROCm (preferred method is setup script):
+#   ./hpc/setup_rl_env.sh --rocm
+#
+# See: https://docs.olcf.ornl.gov/software/analytics/pytorch_frontier.html
+# =============================================================================

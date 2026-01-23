@@ -690,9 +690,14 @@ def launch_rl_job(exp_args: dict, hpc) -> Optional[str]:
     # Construct the sbatch script
     sbatch_path = construct_rl_sbatch_script(exp_args, hpc)
 
+    # Get dependency if specified
+    dependency = exp_args.get("dependency")
+
     # Dry run handling
     if exp_args.get("dry_run"):
         print(f"\nDRY RUN: RL sbatch script written to {sbatch_path}")
+        if dependency:
+            print(f"  Would submit with dependency: {dependency}")
 
         # Show command preview
         rl_config_path = exp_args.get("rl_config")
@@ -706,8 +711,8 @@ def launch_rl_job(exp_args: dict, hpc) -> Optional[str]:
 
         return None
 
-    # Submit the job
-    job_id = launch_sbatch(sbatch_path)
+    # Submit the job with optional dependency
+    job_id = launch_sbatch(sbatch_path, dependency=dependency)
     print(f"\nRL job submitted: {job_id}")
 
     return job_id
@@ -833,6 +838,7 @@ class RLJobRunner:
             ray_env_vars=hpc.get_ray_env_vars(),
             memory_per_node=ray_memory,
             object_store_memory=DEFAULT_OBJECT_STORE_MEMORY_BYTES,
+            disable_cpu_bind=getattr(hpc, "disable_cpu_bind", False),
         )
 
         print(f"Starting Ray cluster with {num_nodes} nodes, {gpus_per_node} GPUs/node", flush=True)

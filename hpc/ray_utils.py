@@ -108,6 +108,8 @@ class RayClusterConfig:
     # Set explicitly to limit Ray to the SLURM allocation minus headroom.
     memory_per_node: Optional[int] = None  # Total memory Ray can use per node
     object_store_memory: Optional[int] = None  # Ray object store (plasma) size
+    # Disable CPU binding for srun commands (needed for Frontier/Cray systems)
+    disable_cpu_bind: bool = False
 
 
 @dataclass
@@ -126,6 +128,7 @@ class RayCluster:
     node_list: List[str]
     _ray_pids: List[int] = field(default_factory=list)
     _ray_procs: List[subprocess.Popen] = field(default_factory=list)
+    _ray_log_files: List = field(default_factory=list)  # Log file handles
     _started: bool = False
 
     @classmethod
@@ -156,6 +159,7 @@ class RayCluster:
             ray_env_vars=hpc.get_ray_env_vars(),
             memory_per_node=ray_memory,
             object_store_memory=DEFAULT_OBJECT_STORE_MEMORY_BYTES,
+            disable_cpu_bind=getattr(hpc, "disable_cpu_bind", False),
         )
         return cls.from_slurm(ray_config)
 
@@ -180,25 +184,52 @@ class RayCluster:
 
     @staticmethod
     def _get_node_ip(node: str, srun_export: str) -> str:
-        """Get IP address for a node using srun."""
-        result = subprocess.run(
-            [
-                "srun",
-                f"--export={srun_export}",
-                "--nodes=1",
-                "--ntasks=1",
-                "--overlap",
-                "-w",
-                node,
-                "hostname",
-                "--ip-address",
-            ],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        # hostname --ip-address can return multiple IPs; take the first
-        return result.stdout.strip().split()[0]
+        """Get IP address for a node using srun.
+
+        Tries 'hostname -i' first (portable), then '--ip-address' as fallback.
+        Frontier's Cray compute nodes don't support --ip-address long form.
+        """
+        srun_base = [
+            "srun",
+            f"--export={srun_export}",
+            "--nodes=1",
+            "--ntasks=1",
+            "--overlap",
+            "--cpu-bind=none",  # Disable CPU binding for simple hostname lookup (fixes Frontier)
+            "-w",
+            node,
+        ]
+
+        # Try long form first (original behavior), fall back to short form (Frontier)
+        last_error = None
+        for hostname_flag in ["--ip-address", "-i"]:
+            try:
+                result = subprocess.run(
+                    srun_base + ["hostname", hostname_flag],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                # hostname -i can return multiple IPs; take the first
+                ip = result.stdout.strip().split()[0]
+                if ip:
+                    return ip
+            except subprocess.CalledProcessError as e:
+                last_error = e
+                print(
+                    f"[ray_utils] hostname {hostname_flag} failed on {node} "
+                    f"(code {e.returncode}), trying next method...",
+                    file=sys.stderr,
+                )
+                continue
+
+        # Include details from last error in the exception
+        error_msg = f"Failed to get IP address for node {node}"
+        if last_error:
+            error_msg += f": exit code {last_error.returncode}"
+            if last_error.stderr:
+                error_msg += f", stderr: {last_error.stderr.strip()}"
+        raise RuntimeError(error_msg)
 
     @property
     def address(self) -> str:
@@ -231,6 +262,7 @@ class RayCluster:
                         "--nodes=1",
                         "--ntasks=1",
                         "--overlap",
+                        "--cpu-bind=none",  # No binding needed for cleanup
                         "-w",
                         node,
                         "ray",
@@ -277,8 +309,11 @@ class RayCluster:
 
         # Verify the Ray head process is still running
         if self._ray_procs and self._ray_procs[0].poll() is not None:
+            log_dir = Path(os.environ.get("DCFT", ".")) / "experiments" / "logs"
+            ray_log = log_dir / f"ray_head_{self.node_list[0]}.log"
             raise RuntimeError(
-                f"Ray head process exited prematurely with code {self._ray_procs[0].returncode}"
+                f"Ray head process exited prematurely with code {self._ray_procs[0].returncode}. "
+                f"Check log file: {ray_log}"
             )
 
         # Start worker nodes with delay
@@ -316,6 +351,7 @@ class RayCluster:
                         "--nodes=1",
                         "--ntasks=1",
                         "--overlap",
+                        "--cpu-bind=none",  # No binding needed for cleanup
                         "-w",
                         node,
                         "ray",
@@ -338,6 +374,15 @@ class RayCluster:
         self._ray_procs.clear()
         self._ray_pids.clear()
         self._started = False
+
+        # Close log files
+        for log_file in self._ray_log_files:
+            try:
+                log_file.close()
+            except Exception:
+                pass
+        self._ray_log_files.clear()
+
         print("Ray cluster stopped", flush=True)
 
     def _start_node(self, node: str, is_head: bool) -> None:
@@ -381,20 +426,34 @@ class RayCluster:
             "--nodes=1",
             "--ntasks=1",
             "--overlap",
-            "-w",
-            node,
-            "bash",
-            "-c",
-            bash_cmd,
         ]
+        # Add --cpu-bind=none for Frontier/Cray systems
+        if self.config.disable_cpu_bind:
+            srun_cmd.append("--cpu-bind=none")
+        srun_cmd.extend(["-w", node, "bash", "-c", bash_cmd])
+
+        # Log Ray startup command and output for debugging
+        role = "head" if is_head else "worker"
+        log_dir = Path(os.environ.get("DCFT", ".")) / "experiments" / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        ray_log_path = log_dir / f"ray_{role}_{node}.log"
+
+        # Open log file for Ray output
+        ray_log_file = open(ray_log_path, "w")
+        ray_log_file.write(f"Ray {role} startup on {node}\n")
+        ray_log_file.write(f"Command: {' '.join(srun_cmd)}\n")
+        ray_log_file.write(f"Bash command: {bash_cmd}\n")
+        ray_log_file.write("=" * 60 + "\n")
+        ray_log_file.flush()
 
         proc = subprocess.Popen(
             srun_cmd,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=ray_log_file,
+            stderr=subprocess.STDOUT,
         )
         self._ray_procs.append(proc)
         self._ray_pids.append(proc.pid)
+        self._ray_log_files.append(ray_log_file)  # Keep reference to close later
 
     def _wait_for_cluster(self) -> None:
         """Wait for the Ray cluster to be ready with expected resources.
@@ -430,6 +489,7 @@ class RayCluster:
             "--nodes=1",
             "--ntasks=1",
             "--overlap",
+            "--cpu-bind=none",  # No binding needed for wait script
             "-w", self.node_list[0],  # Head node
             "bash", "-c", wait_cmd,
         ]
@@ -523,6 +583,7 @@ sys.exit(1)
             "--nodes=1",
             "--ntasks=1",
             "--overlap",
+            "--cpu-bind=none",  # No binding needed for polling script
             "-w", self.node_list[0],
             sys.executable, "-c", poll_script,
         ]
@@ -554,6 +615,7 @@ def create_ray_cluster_from_slurm(
     ray_env_vars: str = "",
     memory_per_node: Optional[int] = None,
     object_store_memory: Optional[int] = None,
+    disable_cpu_bind: bool = False,
 ) -> RayCluster:
     """Convenience function to create a Ray cluster from SLURM environment.
 
@@ -567,6 +629,7 @@ def create_ray_cluster_from_slurm(
         ray_env_vars: Space-separated KEY=value pairs for Ray workers
         memory_per_node: Memory limit per node in bytes (auto-detected from SLURM if None)
         object_store_memory: Ray object store size in bytes (default: 40GB)
+        disable_cpu_bind: If True, add --cpu-bind=none to srun (needed for Frontier/Cray)
 
     Returns:
         A RayCluster configured from SLURM environment
@@ -588,6 +651,7 @@ def create_ray_cluster_from_slurm(
         ray_env_vars=ray_env_vars,
         memory_per_node=memory_per_node,
         object_store_memory=object_store_memory,
+        disable_cpu_bind=disable_cpu_bind,
     )
 
     return RayCluster.from_slurm(config)

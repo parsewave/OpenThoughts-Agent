@@ -23,7 +23,7 @@ orchestrator:
     queue_p95_drop_threshold:
     algorithm_kwargs: {}
   retry:
-    max_retries: 100
+    max_retries: 10
     include_exceptions:
     exclude_exceptions:
     - AgentTimeoutError

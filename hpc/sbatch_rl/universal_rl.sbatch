@@ -26,15 +26,13 @@ if [ -z "${BASH_COMPLETION_DEBUG+x}" ]; then
   export BASH_COMPLETION_DEBUG=""
 fi
 
-# Guard conda deactivate scripts from set -u complaints
-export CONDA_BACKUP_CXX="${CONDA_BACKUP_CXX:-}"
-export CONDA_BACKUP_CC="${CONDA_BACKUP_CC:-}"
-export CONDA_BACKUP_FC="${CONDA_BACKUP_FC:-}"
+# --- Module and Conda Setup ---
+# Disable unbound variable check for module loading and conda activation.
+# Module reloads can trigger conda deactivation scripts that reference unset variables.
+set +u
 
 # --- Module loading (cluster-specific, substituted by launcher) ---
-set +u
 {module_commands}
-set -u
 
 # --- Environment setup ---
 if [ -n "${DCFT_PRIVATE:-}" ]; then
@@ -51,8 +49,9 @@ if [ -z "${DCFT:-}" ]; then
 fi
 
 # --- Conda activation (cluster-specific, substituted by launcher) ---
-set +u
 {conda_activate}
+
+# Re-enable strict unbound variable checking
 set -u
 
 # --- Source environment files (before RL env activation) ---
@@ -137,6 +136,32 @@ trap cleanup_ray_logs EXIT
 
 # --- SSH Tunneling (JSC clusters only) ---
 {ssh_tunnel_setup}
+
+# --- Docker/Podman Runtime Setup (for Harbor Docker backend) ---
+# This section detects and configures the container runtime (podman-hpc, podman, or docker).
+# On NERSC Perlmutter, podman-hpc is the preferred runtime.
+if [ -f "$WORKDIR/docker/setup_docker_runtime.sh" ]; then
+  echo "[sbatch] Setting up Docker/Podman runtime..."
+  # Source the setup script to detect and configure runtime
+  # shellcheck source=docker/setup_docker_runtime.sh
+  source "$WORKDIR/docker/setup_docker_runtime.sh"
+
+  # Verify connectivity if DOCKER_HOST is set
+  if [ -n "${DOCKER_HOST:-}" ]; then
+    echo "[sbatch] DOCKER_HOST=$DOCKER_HOST"
+    echo "[sbatch] CONTAINER_RUNTIME=${CONTAINER_RUNTIME:-unknown}"
+
+    # Quick connectivity check (timeout after 10s)
+    if ! timeout 10 docker info &>/dev/null; then
+      echo "[sbatch] ERROR: Docker daemon not responding at DOCKER_HOST=$DOCKER_HOST"
+      echo "[sbatch] HINT: Check 'podman-hpc info' or 'docker info' manually"
+      exit 4  # EXIT_CONNECTIVITY_FAILED
+    fi
+    echo "[sbatch] Docker runtime verified successfully"
+  else
+    echo "[sbatch] WARNING: DOCKER_HOST not set, Harbor Docker backend may fail"
+  fi
+fi
 
 # --- Run the RL training job via Python runner ---
 # Ray cluster management is handled by hpc/ray_utils.py using proper srun calls

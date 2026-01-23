@@ -75,6 +75,7 @@ JOB_NAME_IGNORE_KEYS: list[str] = [
     "datagen_output_dir",
     "datagen_wait_for_endpoint",
     "pinggy_persistent_url",
+    "pinggy_token",
     "pinggy_ssh_command",
     "pinggy_debugger_url",
     "use_mca",

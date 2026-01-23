@@ -410,6 +410,7 @@ class EvalJobRunner:
             ray_env_vars=hpc.get_ray_env_vars(),
             memory_per_node=ray_memory,
             object_store_memory=DEFAULT_OBJECT_STORE_MEMORY_BYTES,
+            disable_cpu_bind=getattr(hpc, "disable_cpu_bind", False),
         )
 
         raw_model_path = self.config.vllm_model_path or self.config.model
@@ -676,15 +677,20 @@ def launch_eval_job_v2(exp_args: dict, hpc) -> None:
     sbatch_output.write_text(sbatch_text)
     os.chmod(sbatch_output, 0o750)
 
+    # Get dependency if specified
+    dependency = exp_args.get("dependency")
+
     if exp_args.get("dry_run"):
         print(f"DRY RUN: Eval sbatch script written to {sbatch_output}")
+        if dependency:
+            print(f"  Would submit with dependency: {dependency}")
         print(f"Config JSON: {config_path}")
         print("--------")
         print(sbatch_text)
         print("--------")
         return
 
-    job_id = launch_sbatch(str(sbatch_output))
+    job_id = launch_sbatch(str(sbatch_output), dependency=dependency)
     print(f"\nEval job submitted via {sbatch_output}")
     print(f"Config: {config_path}")
     print(f"SLURM Job ID: {job_id}")

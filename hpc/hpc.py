@@ -63,6 +63,9 @@ class HPC(BaseModel):
     # Job time limits (cluster-specific)
     default_time_limit: str = "24:00:00"
     max_time_limit: str = "48:00:00"
+    # Node-count-based time limits: list of (max_nodes, max_time) tuples, sorted by max_nodes ascending
+    # Example: [(91, "02:00:00"), (183, "06:00:00")] means 1-91 nodes -> 2h, 92-183 nodes -> 6h
+    time_limit_by_nodes: List[tuple[int, str]] = []
 
     # Node scaling presets for gosmall/gotrain/gofast helpers
     num_nodes_slow: int = 1
@@ -78,12 +81,43 @@ class HPC(BaseModel):
     # Special key "_default" is used when no gpu_type is specified
     gpu_type_constraints: Dict[str, str] = {}
 
+    # Disable CPU binding for srun commands (needed for Frontier/Cray systems)
+    # When True, adds --cpu-bind=none to srun commands for Ray startup
+    disable_cpu_bind: bool = False
+
+    # Environment variables to unset after module loading (e.g., ROCR_VISIBLE_DEVICES on Frontier)
+    # Modules may set these but they conflict with Ray/vLLM
+    env_unsets: List[str] = []
+
     def model_post_init(self, __context) -> None:
         # Derive a default CPU-per-GPU ratio when not explicitly provided.
         if not self.cpus_per_gpu:
             gpus = max(self.gpus_per_node, 1)
             if self.cpus_per_node:
                 self.cpus_per_gpu = math.ceil(self.cpus_per_node / gpus)
+
+    def get_max_time_limit(self, num_nodes: int) -> str:
+        """Get the maximum allowed time limit for a given number of nodes.
+
+        For clusters with node-count-based scheduling policies (e.g., Frontier),
+        returns the max walltime for the appropriate bin. Falls back to max_time_limit
+        if no node-based limits are configured.
+
+        Args:
+            num_nodes: Number of nodes requested for the job.
+
+        Returns:
+            Maximum allowed time limit string (e.g., "02:00:00").
+        """
+        if not self.time_limit_by_nodes:
+            return self.max_time_limit
+
+        for max_nodes, max_time in self.time_limit_by_nodes:
+            if num_nodes <= max_nodes:
+                return max_time
+
+        # If num_nodes exceeds all bins, return the last (largest) bin's limit
+        return self.time_limit_by_nodes[-1][1] if self.time_limit_by_nodes else self.max_time_limit
 
     @computed_field
     def dotenv_path(self) -> str:
@@ -95,11 +129,18 @@ class HPC(BaseModel):
     # =========================================================================
 
     def get_module_commands(self) -> str:
-        """Generate module load commands for SBATCH scripts."""
-        if not self.modules:
+        """Generate module load commands for SBATCH scripts.
+
+        Also includes unset commands for env vars that modules set but
+        conflict with Ray/vLLM (e.g., ROCR_VISIBLE_DEVICES on Frontier).
+        """
+        if not self.modules and not self.env_unsets:
             return ""
         lines = ["set +u"]
         lines.extend(f"module load {m}" for m in self.modules)
+        # Unset env vars that modules set but conflict with Ray/vLLM
+        for var in self.env_unsets:
+            lines.append(f"unset {var}")
         lines.append("set -u")
         return "\n".join(lines)
 
@@ -722,12 +763,41 @@ frontier = HPC(
     partition="batch",
     gpus_per_node=4,
     cpus_per_node=48,
-    mem_per_node="512GB",
+    mem_per_node="",  # Frontier doesn't accept explicit memory requests; uses exclusive nodes
     internet_node=False,
     gpus_type="AMD Instinct MI250X",
     total_partition_nodes=9216,
     qos="normal",
     gpu_directive_format="--gpus-per-node={n}",
+    # ROCm modules for AMD MI250X GPUs
+    # See: https://docs.olcf.ornl.gov/software/analytics/pytorch_frontier.html
+    # Note: cray-mpich removed - not needed for vLLM/Ray and causes libmpi_cxx.so.40 errors
+    # rocm/7.0.2 required for vLLM wheel compatibility
+    modules=["PrgEnv-gnu/8.6.0", "gcc-native/14.2", "rocm/7.0.2", "craype-accel-amd-gfx90a"],
+    env_vars={
+        "ROCM_PATH": "/opt/rocm",
+        "HIP_VISIBLE_DEVICES": "0,1,2,3,4,5,6,7",
+    },
+    library_paths={
+        "LD_LIBRARY_PATH": "$CONDA_PREFIX/lib:$ROCM_PATH/lib:${LD_LIBRARY_PATH:-}",
+    },
+    # Unset env vars that ROCm modules set but conflict with Ray
+    env_unsets=["ROCR_VISIBLE_DEVICES"],
+    # Frontier scheduling bins (node-count-based time limits)
+    # Bin 5: 1-91 nodes -> 2 hours max
+    # Bin 4: 92-183 nodes -> 6 hours max
+    # Bin 3: 184+ nodes -> 12 hours max
+    time_limit_by_nodes=[(91, "02:00:00"), (183, "06:00:00"), (9216, "12:00:00")],
+    default_time_limit="12:00:00",
+    max_time_limit="12:00:00",
+    # Node scaling presets for Frontier
+    num_nodes_slow=16,
+    num_nodes_default=64,
+    num_nodes_fast=91,  # Max nodes for Bin 5 (2h limit)
+    # Frontier requires exclusive node allocation
+    extra_sbatch_directives=["#SBATCH --exclusive"],
+    # Frontier/Cray needs --cpu-bind=none for srun commands
+    disable_cpu_bind=True,
 )
 
 clusters = [jureca, jupiter, juwels, leonardo, capella, alpha, dip, lrz, vista, lonestar, claix, nyugreene, nyutorch, oumi, perlmutter, frontier]

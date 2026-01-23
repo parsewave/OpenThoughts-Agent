@@ -239,11 +239,16 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
         task_sbatch_output.write_text(sbatch_text)
         os.chmod(task_sbatch_output, 0o750)
 
+        # Get CLI dependency for first job in pipeline
+        cli_dependency = exp_args.get("dependency")
+
         if exp_args.get("dry_run"):
             print(f"DRY RUN: Taskgen sbatch script written to {task_sbatch_output}")
+            if cli_dependency:
+                print(f"  Would submit with dependency: {cli_dependency}")
             task_job_id = "dry_run_task_job_id"
         else:
-            task_job_id = launch_sbatch(str(task_sbatch_output))
+            task_job_id = launch_sbatch(str(task_sbatch_output), dependency=cli_dependency)
             print(f"✓ Task generation job submitted: {task_job_id}")
 
     # === Trace Generation ===
@@ -366,16 +371,20 @@ def launch_datagen_job_v2(exp_args: dict, hpc) -> None:
         trace_sbatch_output.write_text(sbatch_text)
         os.chmod(trace_sbatch_output, 0o750)
 
-        # Set dependency on task job if both are enabled
-        dependency = f"afterok:{task_job_id}" if task_enabled and task_job_id and task_job_id != "dry_run_task_job_id" else None
+        # Set dependency on task job if both are enabled, otherwise use CLI dependency
+        if task_enabled and task_job_id and task_job_id != "dry_run_task_job_id":
+            # Task job already waited for CLI dependency, so trace only needs to wait for task
+            dependency = f"afterok:{task_job_id}"
+        else:
+            # No task job, use CLI dependency if provided
+            dependency = exp_args.get("dependency")
 
         if exp_args.get("dry_run"):
             print(f"DRY RUN: Tracegen sbatch script written to {trace_sbatch_output}")
-        else:
             if dependency:
-                job_id = launch_sbatch(str(trace_sbatch_output), dependency=dependency)
-            else:
-                job_id = launch_sbatch(str(trace_sbatch_output))
+                print(f"  Would submit with dependency: {dependency}")
+        else:
+            job_id = launch_sbatch(str(trace_sbatch_output), dependency=dependency)
             print(f"✓ Trace generation job submitted: {job_id}")
 
 
@@ -514,6 +523,7 @@ class TaskgenJobRunner:
             ray_env_vars=hpc.get_ray_env_vars(),
             memory_per_node=ray_memory,
             object_store_memory=DEFAULT_OBJECT_STORE_MEMORY_BYTES,
+            disable_cpu_bind=getattr(hpc, "disable_cpu_bind", False),
         )
 
         model_path = self.config.vllm_model_path or ""
@@ -767,6 +777,7 @@ class TracegenJobRunner:
             ray_env_vars=hpc.get_ray_env_vars(),
             memory_per_node=ray_memory,
             object_store_memory=DEFAULT_OBJECT_STORE_MEMORY_BYTES,
+            disable_cpu_bind=getattr(hpc, "disable_cpu_bind", False),
         )
 
         raw_model_path = self.config.vllm_model_path or self.config.model
