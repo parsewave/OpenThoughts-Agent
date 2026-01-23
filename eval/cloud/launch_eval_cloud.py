@@ -26,7 +26,7 @@ if "--list-providers" in sys.argv:
 import argparse
 
 from hpc.launch_utils import PROJECT_ROOT
-from hpc.cloud_launch_utils import CloudLauncher, repo_relative, parse_gpu_count
+from hpc.cloud_launch_utils import CloudLauncher, repo_relative, parse_gpu_count, infer_harbor_env_from_config
 from hpc.cloud_sync_utils import sync_outputs
 from hpc.arg_groups import (
     add_harbor_args,
@@ -63,7 +63,8 @@ class EvalCloudLauncher(CloudLauncher):
         )
 
         # Harbor environment backend (unified --harbor_env, with legacy aliases)
-        add_harbor_env_arg(parser, default="daytona", legacy_names=["--eval-env", "--eval_env"])
+        # Default=None to allow inference from harbor config's environment.type field
+        add_harbor_env_arg(parser, default=None, legacy_names=["--eval-env", "--eval_env"])
 
         # Eval-specific arguments (underscore primary, kebab alias)
         parser.add_argument("--datagen_config",
@@ -107,6 +108,9 @@ class EvalCloudLauncher(CloudLauncher):
             args.datagen_config = repo_relative(args.datagen_config, self.repo_root)
         if args.dataset_path and not args.dataset_path.startswith("/"):
             args.dataset_path = repo_relative(args.dataset_path, self.repo_root)
+
+        # Infer --harbor_env from harbor config if not provided
+        infer_harbor_env_from_config(args, args.harbor_config, log_prefix="[eval-cloud]")
 
         # Infer --agent from harbor config if not provided
         if not args.agent:

@@ -13,8 +13,11 @@
 # --- Git Configuration ---
 # Disable pager to prevent interactive prompts that hang agents
 # Disable binary diffs which can produce unreadable output
-RUN git config --global core.pager "" && \
-    git config --global diff.binary false
+# Use conditional to handle cases where git isn't installed yet
+RUN if command -v git >/dev/null 2>&1; then \
+        git config --global core.pager "" && \
+        git config --global diff.binary false; \
+    fi
 
 # --- Environment Setup ---
 # Set up PIP cache for faster installs and git no-pager alias

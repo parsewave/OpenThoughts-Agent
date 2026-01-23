@@ -104,6 +104,35 @@ def derive_cloud_job_name(args: "argparse.Namespace", task_prefix: str = "cloud"
     job_name = truncate_for_cloud(job_name).lower()
     return job_name
 
+
+def infer_harbor_env_from_config(
+    args: "argparse.Namespace",
+    harbor_config_path: str,
+    log_prefix: str = "[cloud]",
+) -> None:
+    """Infer --harbor_env from harbor config if not explicitly provided.
+
+    Reads the harbor config YAML and extracts environment.type to set args.harbor_env.
+    This allows users to omit --harbor_env when the config already specifies the backend.
+
+    Args:
+        args: Parsed argparse namespace (modified in place)
+        harbor_config_path: Path to harbor config YAML file
+        log_prefix: Prefix for log messages (e.g., "[eval-cloud]", "[tracegen-cloud]")
+    """
+    if args.harbor_env:
+        return  # Already explicitly specified
+
+    from hpc.harbor_utils import load_harbor_config
+
+    harbor_cfg = load_harbor_config(harbor_config_path)
+    env_config = harbor_cfg.get("environment", {})
+    inferred_env = env_config.get("type")
+    if inferred_env:
+        args.harbor_env = inferred_env
+        print(f"{log_prefix} Inferred --harbor_env={inferred_env} from harbor config")
+
+
 # Combined cloud dependency install command.
 # Use uv for better dependency resolution (pip doesn't track all installed packages).
 # Installs harbor from git, pins huggingface-hub <1.0 (vLLM/transformers compat),
