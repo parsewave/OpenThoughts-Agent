@@ -154,12 +154,18 @@ if [ "{harbor_env}" = "docker" ]; then
       echo "[sbatch] CONTAINER_RUNTIME=${CONTAINER_RUNTIME:-unknown}"
 
       # Quick connectivity check (timeout after 10s)
-      if ! timeout 10 docker info &>/dev/null; then
+      # Try docker first, then podman-hpc (Perlmutter may not have docker CLI)
+      if command -v docker &>/dev/null && timeout 10 docker info &>/dev/null; then
+        echo "[sbatch] Docker runtime verified successfully (docker info)"
+      elif command -v podman-hpc &>/dev/null && timeout 10 podman-hpc info &>/dev/null; then
+        echo "[sbatch] Docker runtime verified successfully (podman-hpc info)"
+      elif command -v podman &>/dev/null && timeout 10 podman info &>/dev/null; then
+        echo "[sbatch] Docker runtime verified successfully (podman info)"
+      else
         echo "[sbatch] ERROR: Docker daemon not responding at DOCKER_HOST=$DOCKER_HOST"
         echo "[sbatch] HINT: Check 'podman-hpc info' or 'docker info' manually"
         exit 4  # EXIT_CONNECTIVITY_FAILED
       fi
-      echo "[sbatch] Docker runtime verified successfully"
     else
       echo "[sbatch] WARNING: DOCKER_HOST not set, Harbor Docker backend may fail"
     fi
