@@ -26,6 +26,12 @@ if [ -z "${BASH_COMPLETION_DEBUG+x}" ]; then
   export BASH_COMPLETION_DEBUG=""
 fi
 
+# Guard conda deactivate scripts from set -u complaints
+# These variables may be referenced during conda deactivation when modules are reloaded
+export CONDA_BACKUP_CXX="${CONDA_BACKUP_CXX:-}"
+export CONDA_BACKUP_CC="${CONDA_BACKUP_CC:-}"
+export CONDA_BACKUP_FC="${CONDA_BACKUP_FC:-}"
+
 # --- Module loading (cluster-specific, substituted by launcher) ---
 # Disable unbound variable check for module loading (modules may reference unset vars)
 set +u
