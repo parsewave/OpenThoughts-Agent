@@ -238,7 +238,39 @@ trainer:
 
   max_prompt_length: 999999
 
-  # Evaluation and checkpointing
+  # ==========================================================================
+  # CALLBACK CONFIGURATION
+  # ==========================================================================
+  # SkyRL supports two callback configuration styles:
+  #
+  # 1. LEGACY STYLE (used below): Simple interval configs
+  #    - ckpt_interval, eval_interval, hf_save_interval
+  #    - Good for simple cases with periodic actions
+  #
+  # 2. NEW EXPLICIT STYLE: Full callback control
+  #    Uncomment the 'callbacks' section below and remove interval configs
+  #    to use explicit callback configuration:
+  #
+  # callbacks:
+  #   - type: checkpoint
+  #     save_steps: 10
+  #     save_on_train_end: true
+  #   - type: evaluation
+  #     eval_steps: 20
+  #     eval_before_train: false
+  #     eval_on_train_end: true
+  #   - type: hf_model_save
+  #     save_steps: 50
+  #   - type: ref_model_update
+  #     update_every_epoch: true
+  #   - type: progress
+  #     log_interval: 1
+  #
+  # Available callback types: checkpoint, evaluation, hf_model_save,
+  #   ref_model_update, progress, logging
+  # ==========================================================================
+
+  # Evaluation and checkpointing (legacy interval style)
   eval_interval: 20
   eval_before_train: false
   ckpt_interval: 10
