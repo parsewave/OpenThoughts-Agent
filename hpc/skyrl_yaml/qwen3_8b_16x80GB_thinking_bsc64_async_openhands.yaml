@@ -209,7 +209,7 @@ trainer:
   # With colocate_all=false, ref shares GPUs with policy but offloads weights
   ref:
     fsdp_config:
-      cpu_offload: true
+      cpu_offload: false
       reshard_after_forward: true
 
   # ==========================================================================

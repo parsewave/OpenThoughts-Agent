@@ -192,7 +192,7 @@ trainer:
   # Reference model - CPU offload to save GPU memory
   ref:
     fsdp_config:
-      cpu_offload: true
+      cpu_offload: false
       reshard_after_forward: true
 
   # Model placement - derived from CLI args (--num_nodes, --gpus_per_node)

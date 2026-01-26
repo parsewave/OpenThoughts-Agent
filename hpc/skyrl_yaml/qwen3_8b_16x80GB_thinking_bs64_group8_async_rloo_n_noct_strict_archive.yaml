@@ -175,7 +175,7 @@ trainer:
   # Reference model
   ref:
     fsdp_config:
-      cpu_offload: true
+      cpu_offload: false
       reshard_after_forward: true
 
   # Model placement (async training)

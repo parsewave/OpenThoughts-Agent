@@ -126,7 +126,7 @@ trainer:
 
   ref:
     fsdp_config:
-      cpu_offload: true
+      cpu_offload: false
       reshard_after_forward: true
 
   # GPU allocation for 8 nodes (64 GCDs)

@@ -168,12 +168,12 @@ trainer:
       max_grad_norm: 1.0
     # CPU offload for policy (OpenHands uses this)
     fsdp_config:
-      cpu_offload: true
+      cpu_offload: false
 
   # Reference model - CPU offload to save GPU memory
   ref:
     fsdp_config:
-      cpu_offload: true
+      cpu_offload: false
       reshard_after_forward: true
 
   # Model placement - derived from CLI args

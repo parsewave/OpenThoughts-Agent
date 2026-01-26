@@ -127,7 +127,7 @@ trainer:
 
   ref:
     fsdp_config:
-      cpu_offload: true
+      cpu_offload: false
 
   # Model placement - derived from CLI args (--num_nodes, --gpus_per_node)
   placement:
