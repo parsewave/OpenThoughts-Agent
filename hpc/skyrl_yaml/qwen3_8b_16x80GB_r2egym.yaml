@@ -50,6 +50,8 @@ terminal_bench:
     max_episodes: 50
     enable_summarize: false
     store_all_messages: true
+    # Disable episode-* folder creation to reduce disk I/O (SkyRL uses TrialResult directly)
+    enable_episode_logging: false
 
     # Agent timeout - longer to accommodate more turns
     override_timeout_sec: 300  # 5 minutes per task

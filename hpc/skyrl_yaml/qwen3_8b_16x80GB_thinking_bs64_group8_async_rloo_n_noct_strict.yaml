@@ -72,6 +72,8 @@ terminal_bench:
     enable_summarize: false
     # Store full message history for trajectory reconstruction
     store_all_messages: true
+    # Disable episode-* folder creation to reduce disk I/O (SkyRL uses TrialResult directly)
+    enable_episode_logging: false
 
     # ==========================================================================
     # STRICT JSON PARSER (KEY CHANGE FOR REWARD HACKING PREVENTION)
