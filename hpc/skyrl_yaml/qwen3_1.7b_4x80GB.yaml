@@ -87,9 +87,9 @@ terminal_bench:
     # ==========================================================================
     # Retry settings (maps to Harbor RetryConfig for QueueOrchestrator)
     # ==========================================================================
-    max_retries: 2                 # Max retry attempts per trial
-    min_wait_sec: 1.0              # Initial backoff delay (seconds)
-    max_wait_sec: 60.0             # Maximum backoff delay
+    max_retries: 3                 # Max retry attempts per trial
+    min_wait_sec: 60.0              # Initial backoff delay (seconds)
+    max_wait_sec: 600.0             # Maximum backoff delay
     wait_multiplier: 2.0           # Exponential backoff multiplier
 
     # Exception filtering - don't retry permanent failures

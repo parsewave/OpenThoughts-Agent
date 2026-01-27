@@ -63,9 +63,9 @@ terminal_bench:
     verifier_override_timeout_sec: 120
 
     # Retry settings
-    max_retries: 2
-    min_wait_sec: 1.0
-    max_wait_sec: 60.0
+    max_retries: 3
+    min_wait_sec: 60.0
+    max_wait_sec: 600.0
     wait_multiplier: 2.0
 
     exclude_exceptions:
