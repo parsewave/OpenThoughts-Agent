@@ -5,7 +5,7 @@
 #   - colocate_all: false (truly async: training and inference on separate GPUs)
 #   - Policy/ref: 4 GPUs (1 node × 4)
 #   - Inference: 4 engines (4 GPUs)
-#   - num_parallel_generation_workers: 32 (reduced for 4 inference engines)
+#   - num_parallel_generation_workers: 64 (must be >= mini_batch_size)
 #
 # TIS VARIANT: This config adds Truncated Importance Sampling for async training:
 #   - use_tis: true with tis_imp_ratio_cap: 2.0
@@ -197,10 +197,10 @@ trainer:
     policy_num_gpus_per_node: 4
     ref_num_gpus_per_node: 4
 
-  # Fully async generation (reduced for 4 inference engines)
+  # Fully async generation
   fully_async:
     max_staleness_steps: 8
-    num_parallel_generation_workers: 32
+    num_parallel_generation_workers: 64  # Must be >= mini_batch_size (64)
 
 # Generator configuration
 generator:
