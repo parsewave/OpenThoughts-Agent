@@ -370,8 +370,8 @@ jupiter = HPC(
     env_vars={
         "WANDB_MODE": "offline",  # Compute nodes have no internet
     },
-    # InfiniBand hostname suffix for MASTER_ADDR (JSC requires "i" suffix)
-    master_addr_suffix="i",
+    # NOTE: Do NOT use master_addr_suffix="i" - the "i" suffixed hostname is not DNS-resolvable
+    # InfiniBand routing is handled by NCCL_SOCKET_IFNAME=ib0 instead
     # NCCL/networking settings for SFT training (InfiniBand NDR)
     nccl_settings={
         "NCCL_DEBUG": "INFO",
