@@ -357,7 +357,7 @@ jupiter = HPC(
     partition="booster",
     gpus_per_node=4,  # 4x GH200 superchips per node
     cpus_per_node=72,  # 288 ARM cores total, but request subset; 72 per Grace CPU
-    internet_node=True,  # Jupiter login nodes have internet
+    internet_node=False,  # Compute nodes have no internet (like other JSC clusters)
     gpus_type="GH200 96GB (H100 + Grace)",
     total_partition_nodes=6000,  # ~6000 booster nodes
     gpu_directive_format="--gres=gpu:{n}",
@@ -374,7 +374,7 @@ jupiter = HPC(
         "NCCL_IB_TIMEOUT": "60",
     },
     training_launcher="accelerate",
-    needs_ssh_tunnel=False,  # Login nodes have internet
+    needs_ssh_tunnel=True,  # Compute nodes need SSH tunnel for external access
     # Job scaling
     default_time_limit="12:00:00",
     max_time_limit="24:00:00",
