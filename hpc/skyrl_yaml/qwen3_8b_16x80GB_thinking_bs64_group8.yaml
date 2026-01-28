@@ -170,7 +170,7 @@ trainer:
   max_prompt_length: 999999
 
   # Evaluation and checkpointing
-  eval_interval: 20
+  eval_interval: 999999
   eval_before_train: false
   ckpt_interval: 10
   resume_mode: latest
