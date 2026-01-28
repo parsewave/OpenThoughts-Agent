@@ -482,9 +482,14 @@ class SFTJobRunner:
             # All these settings must be in the DeepSpeed config file instead:
             # gradient_accumulation_steps, gradient_clipping, zero_stage, mixed_precision,
             # offload_optimizer_device, offload_param_device, zero3_save_16bit_model
+            #
+            # CRITICAL for multi-node: Use "standard" launcher (torch.distributed.run) instead of
+            # DeepSpeed's launcher. DeepSpeed's launcher ignores accelerate's multi-node settings
+            # and uses its own world discovery (which defaults to localhost only).
             config["deepspeed_config"] = {
                 "deepspeed_config_file": self.config.deepspeed_config,
                 "zero3_init_flag": True,
+                "deepspeed_multinode_launcher": "standard",
             }
         else:
             # FSDP config - mixed_precision is set here (not in deepspeed case)
