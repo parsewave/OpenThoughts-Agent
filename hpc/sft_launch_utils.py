@@ -455,7 +455,6 @@ class SFTJobRunner:
             "enable_cpu_affinity": False,
             "machine_rank": 0,
             "main_training_function": "main",
-            "mixed_precision": "bf16",
             "num_machines": num_nodes,
             "num_processes": num_nodes * gpus_per_node,
             "rdzv_backend": "c10d",
@@ -467,12 +466,17 @@ class SFTJobRunner:
         }
 
         if self.config.deepspeed_config:
+            # When using deepspeed_config_file, do NOT set mixed_precision in accelerate config
+            # All these settings must be in the DeepSpeed config file instead:
+            # gradient_accumulation_steps, gradient_clipping, zero_stage, mixed_precision,
+            # offload_optimizer_device, offload_param_device, zero3_save_16bit_model
             config["deepspeed_config"] = {
                 "deepspeed_config_file": self.config.deepspeed_config,
                 "zero3_init_flag": True,
             }
         else:
-            # FSDP config
+            # FSDP config - mixed_precision is set here (not in deepspeed case)
+            config["mixed_precision"] = "bf16"
             config["fsdp_config"] = {
                 "fsdp_auto_wrap_policy": "TRANSFORMER_BASED_WRAP",
                 "fsdp_backward_prefetch": "BACKWARD_PRE",
