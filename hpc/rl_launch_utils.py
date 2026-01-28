@@ -57,8 +57,24 @@ def resolve_rl_train_data(
         return []
 
     # Determine scratch directory for extracted tasks
+    # IMPORTANT: Must use a shared filesystem visible to all compute nodes.
+    # /tmp is local to each node and will NOT work for multi-node jobs.
     if scratch_dir is None:
-        scratch_dir = os.environ.get("SCRATCH", "/tmp")
+        # Try multiple fallbacks in order of preference:
+        # 1. $SCRATCH - standard HPC scratch directory
+        # 2. $DCFT - project directory (set in dotenv files)
+        # 3. $DCFT_PRIVATE - private project directory variant
+        # 4. $HOME - user's home directory (usually shared on HPC)
+        # 5. /tmp - LAST RESORT (local to each node, will fail on multi-node!)
+        for env_var in ["SCRATCH", "DCFT", "DCFT_PRIVATE", "HOME"]:
+            if os.environ.get(env_var):
+                scratch_dir = os.environ[env_var]
+                break
+        else:
+            scratch_dir = "/tmp"
+            print(f"[rl_launch_utils] WARNING: Using /tmp for task extraction. "
+                  f"This is local to each node and may fail on multi-node jobs. "
+                  f"Set $SCRATCH, $DCFT, or $DCFT_PRIVATE to a shared filesystem path.")
     tasks_base = Path(scratch_dir) / "tasks"
 
     resolved_paths = []

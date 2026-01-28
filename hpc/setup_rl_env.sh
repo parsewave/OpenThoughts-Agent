@@ -25,6 +25,13 @@ RL_ENV_NAME="rl"
 PYTHON_VERSION="3.12"
 USE_ROCM=false
 
+# Detect architecture (aarch64 for ARM-based systems like GH200)
+ARCH=$(uname -m)
+IS_AARCH64=false
+if [[ "$ARCH" == "aarch64" ]] || [[ "$ARCH" == "arm64" ]]; then
+    IS_AARCH64=true
+fi
+
 # ROCm configuration (for OLCF Frontier with AMD MI250X GPUs)
 # See: https://docs.olcf.ornl.gov/software/analytics/pytorch_frontier.html
 # Note: vLLM wheels are available for ROCm 7.0.0 - try that first, fallback to 6.4.1
@@ -84,10 +91,13 @@ echo "=== RL Environment Setup ==="
 echo "Base directory: $BASE_DIR"
 echo "Environment directory: $RL_ENV_DIR"
 echo "Python version: $PYTHON_VERSION"
+echo "Architecture: $ARCH"
 if [[ "$USE_ROCM" == "true" ]]; then
     echo "GPU Backend: ROCm $ROCM_VERSION (AMD)"
+elif [[ "$IS_AARCH64" == "true" ]]; then
+    echo "GPU Backend: CUDA (NVIDIA) - aarch64/ARM"
 else
-    echo "GPU Backend: CUDA (NVIDIA)"
+    echo "GPU Backend: CUDA (NVIDIA) - x86_64"
 fi
 echo ""
 
@@ -221,8 +231,15 @@ if [[ "$USE_ROCM" == "true" ]]; then
     echo "Installing PyTorch with ROCm $ROCM_VERSION support..."
     uv pip install "torch==2.8.0" "torchvision==0.23.0" "torchaudio==2.8.0" \
         --index-url https://download.pytorch.org/whl/rocm6.4
+elif [[ "$IS_AARCH64" == "true" ]]; then
+    # aarch64/ARM (e.g., GH200 Grace-Hopper)
+    # The cu128-specific wheels don't have aarch64 builds.
+    # Use standard PyPI wheels which include aarch64 CUDA builds.
+    # Note: PyTorch 2.8.0 aarch64 wheels have CUDA 12.8 support built-in.
+    echo "Installing PyTorch for aarch64 (using standard PyPI wheels)..."
+    uv pip install "torch==2.8.0" "torchvision" "torchaudio"
 else
-    # CUDA/NVIDIA version (default)
+    # CUDA/NVIDIA x86_64 version (default)
     uv pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cu128
 fi
 
