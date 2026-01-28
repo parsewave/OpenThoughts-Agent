@@ -95,6 +95,7 @@ class VLLMServerConfig:
     enable_auto_tool_choice: bool = False
     tool_call_parser: Optional[str] = None
     reasoning_parser: Optional[str] = None
+    default_chat_template_kwargs: Optional[Dict[str, Any]] = None
     logging_level: Optional[str] = None
     extra_args: Any = None
 
