@@ -1,17 +1,17 @@
-# SkyRL Configuration: Qwen3 8B on 16x80GB GPUs (RLOO-N + Strict JSON + TIS)
-# Based on: qwen3_8b_16x80GB_thinking_bs64_group8_async_rloo_n_noct_strict.yaml
+# SkyRL Configuration: Qwen3 8B on 8x80GB GPUs (RLOO-N + Strict JSON + TIS)
+# Based on: qwen3_8b_16x80GB_thinking_bs64_group8_async_rloo_n_noct_strict_tis.yaml
+#
+# 8-GPU VARIANT: Adjusted for 2 nodes × 4 GPUs = 8 GPUs total:
+#   - colocate_all: true (policy, ref, and inference share GPUs)
+#   - num_inference_engines: 4 (reduced from 8)
+#   - num_parallel_generation_workers: 64 (reduced from 128)
 #
 # TIS VARIANT: This config adds Truncated Importance Sampling for async training:
 #   - use_tis: true with tis_imp_ratio_cap: 2.0
 #   - collect_rollout_details: true (captures per-token logprobs during rollout)
 #   - TIS corrects for off-policy bias when training on stale rollouts
 #
-# TIS (Truncated Importance Sampling) Benefits:
-#   - Corrects for policy drift between rollout and training
-#   - Better sample efficiency in high-staleness scenarios
-#   - Reweights policy loss based on importance ratio
-#
-# All other settings are identical to the strict variant:
+# All other settings preserved:
 #   - strict_json_parser: true
 #   - kl_loss_coef: 0.01 (10x KL penalty)
 #   - RLOO-N advantage estimator with error classification
@@ -19,8 +19,8 @@
 # Usage:
 #   python -m hpc.launch \
 #       --job_type rl \
-#       --rl_config qwen3_8b_16x80GB_thinking_bs64_group8_async_rloo_n_noct_strict_tis.yaml \
-#       --job_name qwen3_8b_agentic_async_rloo_n_strict_tis \
+#       --rl_config qwen3_8b_8x80GB_thinking_bs64_group8_async_rloo_n_noct_strict_tis.yaml \
+#       --job_name qwen3_8b_agentic_async_8gpu_tis \
 #       --train_data '["mlfoundations-dev/your-dataset"]' \
 #       --model_path Qwen/Qwen3-8B \
 #       --num_nodes 2
@@ -88,8 +88,8 @@ terminal_bench:
       - VerifierOutputParseError
       - ContextLengthExceededError
 
-    # Orchestrator settings
-    n_concurrent_trials: 192
+    # Orchestrator settings (reduced for 8 GPU setup)
+    n_concurrent_trials: 96
 
     # Logging settings
     log_level: INFO
@@ -186,21 +186,20 @@ trainer:
   ref:
     fsdp_config:
       cpu_offload: false
-      reshard_after_forward: false
-      fsdp_size: 4
+      reshard_after_forward: true
 
-  # Model placement (async training)
+  # Model placement (8-GPU setup with colocation)
   placement:
-    colocate_all: false
+    colocate_all: true  # Share GPUs between policy, ref, and inference
     policy_num_nodes: 2
     ref_num_nodes: 2
     policy_num_gpus_per_node: 4
     ref_num_gpus_per_node: 4
 
-  # Fully async generation
+  # Fully async generation (reduced for 8 GPUs)
   fully_async:
     max_staleness_steps: 8
-    num_parallel_generation_workers: 128
+    num_parallel_generation_workers: 64
 
 # Generator configuration
 generator:
@@ -208,7 +207,7 @@ generator:
   model_dtype: bfloat16
 
   inference_engine_tensor_parallel_size: 1
-  num_inference_engines: 8
+  num_inference_engines: 4  # Reduced from 8 for 8-GPU setup
 
   n_samples_per_prompt: 8
   eval_n_samples_per_prompt: 8

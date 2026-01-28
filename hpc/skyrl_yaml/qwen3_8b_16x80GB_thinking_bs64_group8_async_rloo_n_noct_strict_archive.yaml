@@ -181,7 +181,8 @@ trainer:
   ref:
     fsdp_config:
       cpu_offload: false
-      reshard_after_forward: true
+      reshard_after_forward: false
+      fsdp_size: 4
 
   # Model placement (async training)
   placement:
