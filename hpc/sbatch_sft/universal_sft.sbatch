@@ -89,7 +89,8 @@ export PYTHONPATH="$WORKDIR:${PYTHONPATH:-}"
 export DISABLE_VERSION_CHECK=1  # Skip LlamaFactory transformers version check
 
 # --- Distributed training setup ---
-export MASTER_ADDR=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
+MASTER_HOST=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)
+export MASTER_ADDR="${MASTER_HOST}{master_addr_suffix}"
 export MASTER_PORT={master_port}
 export NUM_NODES=$SLURM_JOB_NUM_NODES
 export NUM_GPUS_PER_NODE={gpus_per_node}

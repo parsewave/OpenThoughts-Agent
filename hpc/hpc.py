@@ -57,6 +57,9 @@ class HPC(BaseModel):
     # SSH tunneling for no-internet clusters (JSC)
     needs_ssh_tunnel: bool = False
 
+    # InfiniBand hostname suffix for MASTER_ADDR (JSC clusters use "i" suffix)
+    master_addr_suffix: str = ""
+
     # CUDA path detection for complex clusters (Perlmutter)
     needs_cuda_detection: bool = False
 
@@ -361,12 +364,14 @@ jupiter = HPC(
     gpus_type="GH200 96GB (H100 + Grace)",
     total_partition_nodes=6000,  # ~6000 booster nodes
     gpu_directive_format="--gres=gpu:{n}",
-    # Modules: GCC compiler + NVHPC SDK (includes CUDA toolkit, nvcc, cuBLAS, etc.)
-    modules=["GCC/14.3.0", "NVHPC/25.9-CUDA-13"],
+    # Modules: nvidia-compilers includes CUDA toolkit, nvcc, cuBLAS, etc.
+    # Note: GCC is auto-loaded; NVHPC is deprecated in favor of nvidia-compilers
+    modules=["nvidia-compilers/25.9-CUDA-13"],
     env_vars={
-        "PYTHONFAULTHANDLER": "1",
         "WANDB_MODE": "offline",  # Compute nodes have no internet
     },
+    # InfiniBand hostname suffix for MASTER_ADDR (JSC requires "i" suffix)
+    master_addr_suffix="i",
     # NCCL/networking settings for SFT training (InfiniBand NDR)
     nccl_settings={
         "NCCL_DEBUG": "INFO",

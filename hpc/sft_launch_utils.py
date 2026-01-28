@@ -588,6 +588,7 @@ def construct_sft_sbatch_script(exp_args: dict, hpc) -> str:
         "env_exports": hpc.get_env_exports(),
         "ssh_tunnel_setup": hpc.get_ssh_tunnel_setup(),
         "master_port": str(job_config.master_port),
+        "master_addr_suffix": hpc.master_addr_suffix or "",
         "gpus_per_node": str(gpus_per_node),
         "config_path": str(config_path),
         "srun_command": srun_command,
