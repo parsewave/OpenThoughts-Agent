@@ -368,6 +368,22 @@ conda activate {conda_env}
 set -u'''
     else:
         return '''# Using venv for RL (created by ./hpc/setup_rl_env.sh)
+# IMPORTANT: Deactivate conda first to prevent path conflicts
+# Conda's paths can interfere with the venv Python, causing stale file handle errors
+set +u  # conda deactivate may reference unset variables
+if [[ -n "${CONDA_PREFIX:-}" ]]; then
+  echo "Deactivating conda environment: $CONDA_PREFIX"
+  # Deactivate all stacked conda environments
+  while [[ -n "${CONDA_PREFIX:-}" ]]; do
+    conda deactivate 2>/dev/null || break
+  done
+  # Also unset conda-related environment variables that may affect Python
+  unset CONDA_DEFAULT_ENV CONDA_PREFIX CONDA_SHLVL CONDA_PYTHON_EXE
+  # Remove conda paths from PATH to prevent any conda Python from being found
+  export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v -E '(conda|miniforge|miniconda|anaconda)' | tr '\n' ':' | sed 's/:$//')
+fi
+set -u
+
 RL_ENV_DIR="${RL_ENV_DIR:-$WORKDIR/envs/rl}"
 if [[ -d "$RL_ENV_DIR" ]]; then
   echo "Activating RL environment: $RL_ENV_DIR"
@@ -378,7 +394,11 @@ elif [[ -n "${DCFT_RL_ENV:-}" ]] && [[ -d "$DCFT_RL_ENV" ]]; then
 else
   echo "Warning: RL environment not found at $RL_ENV_DIR"
   echo "Run ./hpc/setup_rl_env.sh to create it, or set DCFT_RL_ENV"
-fi'''
+fi
+
+# Verify we're using the correct Python
+echo "Python executable: $(which python)"
+echo "Python path check: $(python -c 'import sys; print(sys.executable)')"'''
 
 
 # =============================================================================
