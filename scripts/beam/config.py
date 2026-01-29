@@ -29,9 +29,12 @@ class Beta9Config:
 
     namespace: str = "beta9"
     helm_release_name: str = "beta9"
-    # Helm chart is in the GitHub repo, not a Helm repository
+    # Use local helm chart (copied from beta9 repo and customized for GKE)
+    helm_chart_local_path: str = "scripts/beam/helm-chart"
+    # Original repo (kept for reference)
     helm_chart_git_repo: str = "https://github.com/beam-cloud/beta9.git"
-    helm_chart_path: str = "deploy/charts/beta9"  # Path within the repo
+    helm_chart_git_path: str = "deploy/charts/beta9"  # Path within the repo
+    use_local_chart: bool = True  # Use local chart by default
     gateway_http_port: int = 1994
     gateway_grpc_port: int = 1993
     gateway_service_name: str = "beta9-gateway"

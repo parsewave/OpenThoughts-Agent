@@ -6,7 +6,9 @@ import os
 import shutil
 import subprocess
 import tempfile
+import threading
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -19,6 +21,178 @@ logger = logging.getLogger(__name__)
 # Global to track cloned repo directory
 _beta9_repo_dir: Optional[Path] = None
 
+# Global to track log collector
+_log_collector: Optional["LogCollector"] = None
+
+
+class LogCollector:
+    """Background log collector for Beta9 deployment debugging."""
+
+    def __init__(self, namespace: str, output_dir: Path):
+        self.namespace = namespace
+        self.output_dir = output_dir
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self._stop_event = threading.Event()
+        self._threads: list[threading.Thread] = []
+        self._log_file = self.output_dir / f"beta9_deploy_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+
+    def start(self):
+        """Start collecting logs in background threads."""
+        logger.info(f"Starting log collection -> {self._log_file}")
+
+        # Thread to collect pod status
+        status_thread = threading.Thread(target=self._collect_pod_status, daemon=True)
+        status_thread.start()
+        self._threads.append(status_thread)
+
+        # Thread to collect events
+        events_thread = threading.Thread(target=self._collect_events, daemon=True)
+        events_thread.start()
+        self._threads.append(events_thread)
+
+        # Thread to collect pod logs
+        logs_thread = threading.Thread(target=self._collect_pod_logs, daemon=True)
+        logs_thread.start()
+        self._threads.append(logs_thread)
+
+    def stop(self):
+        """Stop all collection threads."""
+        self._stop_event.set()
+        for t in self._threads:
+            t.join(timeout=5)
+        logger.info(f"Log collection stopped. Logs saved to: {self._log_file}")
+
+    def _write_log(self, section: str, content: str):
+        """Write content to log file with timestamp."""
+        with open(self._log_file, "a") as f:
+            f.write(f"\n{'='*60}\n")
+            f.write(f"[{datetime.now().isoformat()}] {section}\n")
+            f.write(f"{'='*60}\n")
+            f.write(content)
+            f.write("\n")
+
+    def _collect_pod_status(self):
+        """Periodically collect pod status."""
+        while not self._stop_event.is_set():
+            try:
+                result = subprocess.run(
+                    ["kubectl", "get", "pods", "-n", self.namespace, "-o", "wide"],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                if result.returncode == 0:
+                    self._write_log("POD STATUS", result.stdout)
+            except Exception as e:
+                self._write_log("POD STATUS ERROR", str(e))
+
+            self._stop_event.wait(30)  # Check every 30 seconds
+
+    def _collect_events(self):
+        """Periodically collect Kubernetes events."""
+        while not self._stop_event.is_set():
+            try:
+                result = subprocess.run(
+                    ["kubectl", "get", "events", "-n", self.namespace, "--sort-by=.lastTimestamp"],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                if result.returncode == 0:
+                    self._write_log("EVENTS", result.stdout)
+            except Exception as e:
+                self._write_log("EVENTS ERROR", str(e))
+
+            self._stop_event.wait(30)
+
+    def _collect_pod_logs(self):
+        """Collect logs from pods that exist."""
+        seen_pods: set[str] = set()
+
+        while not self._stop_event.is_set():
+            try:
+                # Get list of pods
+                result = subprocess.run(
+                    ["kubectl", "get", "pods", "-n", self.namespace, "-o", "jsonpath={.items[*].metadata.name}"],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+
+                if result.returncode == 0:
+                    pods = result.stdout.split()
+                    for pod in pods:
+                        if pod and pod not in seen_pods:
+                            seen_pods.add(pod)
+                            # Start a thread to tail this pod's logs
+                            t = threading.Thread(
+                                target=self._tail_pod_log,
+                                args=(pod,),
+                                daemon=True,
+                            )
+                            t.start()
+                            self._threads.append(t)
+            except Exception:
+                pass
+
+            self._stop_event.wait(10)
+
+    def _tail_pod_log(self, pod_name: str):
+        """Tail logs from a specific pod."""
+        try:
+            # Get recent logs (last 100 lines) and describe
+            result = subprocess.run(
+                ["kubectl", "logs", "-n", self.namespace, pod_name, "--tail=100"],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if result.stdout:
+                self._write_log(f"LOGS: {pod_name}", result.stdout)
+            if result.stderr:
+                self._write_log(f"LOGS STDERR: {pod_name}", result.stderr)
+
+            # Also get pod describe for debugging
+            describe_result = subprocess.run(
+                ["kubectl", "describe", "pod", "-n", self.namespace, pod_name],
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            if describe_result.stdout:
+                self._write_log(f"DESCRIBE: {pod_name}", describe_result.stdout)
+
+        except Exception as e:
+            self._write_log(f"POD LOG ERROR: {pod_name}", str(e))
+
+
+def start_log_collection(namespace: str, output_dir: Optional[Path] = None) -> LogCollector:
+    """Start background log collection.
+
+    Args:
+        namespace: Kubernetes namespace to monitor.
+        output_dir: Directory to save logs. Defaults to ./beta9_logs/
+
+    Returns:
+        LogCollector instance.
+    """
+    global _log_collector
+
+    if output_dir is None:
+        output_dir = Path.cwd() / "beta9_logs"
+
+    _log_collector = LogCollector(namespace, output_dir)
+    _log_collector.start()
+    return _log_collector
+
+
+def stop_log_collection():
+    """Stop background log collection."""
+    global _log_collector
+    if _log_collector:
+        _log_collector.stop()
+        _log_collector = None
+
 
 def check_helm_installed() -> bool:
     """Check if Helm CLI is installed."""
@@ -29,23 +203,44 @@ def check_helm_installed() -> bool:
 
 
 def add_helm_repo(dry_run: bool = False, config: Optional[Beta9Config] = None) -> bool:
-    """Clone the Beta9 repository to get the Helm chart.
+    """Prepare the Helm chart for deployment.
 
-    Beta9 doesn't publish to a Helm repository, so we clone the Git repo
-    and install from the local chart at deploy/charts/beta9.
+    Uses local chart if config.use_local_chart is True, otherwise clones from Git.
 
     Args:
         dry_run: If True, print command without executing.
         config: Beta9 configuration (optional, uses defaults if not provided).
 
     Returns:
-        True if repo cloned successfully.
+        True if chart is ready.
     """
     global _beta9_repo_dir
 
     if config is None:
         config = Beta9Config()
 
+    # Use local chart if configured
+    if config.use_local_chart:
+        # Find the project root (where scripts/beam/helm-chart is)
+        current_file = Path(__file__).resolve()
+        project_root = current_file.parent.parent.parent  # scripts/beam -> scripts -> project root
+        local_chart_path = project_root / config.helm_chart_local_path
+
+        if dry_run:
+            logger.info(f"[DRY RUN] Would use local chart: {local_chart_path}")
+            return True
+
+        if not local_chart_path.exists():
+            logger.error(f"Local Helm chart not found at: {local_chart_path}")
+            logger.error("Run: git clone the chart or set use_local_chart=False")
+            return False
+
+        # Set the repo dir to None to indicate we're using local chart
+        _beta9_repo_dir = None
+        logger.info(f"Using local Helm chart: {local_chart_path}")
+        return True
+
+    # Otherwise clone from Git
     git_url = config.helm_chart_git_repo
 
     if dry_run:
@@ -65,7 +260,7 @@ def add_helm_repo(dry_run: bool = False, config: Optional[Beta9Config] = None) -
         logger.error(f"Failed to clone Beta9 repo: {result.stderr}")
         return False
 
-    chart_path = _beta9_repo_dir / config.helm_chart_path
+    chart_path = _beta9_repo_dir / config.helm_chart_git_path
     if not chart_path.exists():
         logger.error(f"Helm chart not found at: {chart_path}")
         return False
@@ -75,20 +270,30 @@ def add_helm_repo(dry_run: bool = False, config: Optional[Beta9Config] = None) -
 
 
 def get_helm_chart_path(config: Beta9Config) -> Optional[Path]:
-    """Get the path to the cloned Helm chart.
+    """Get the path to the Helm chart (local or cloned).
 
     Args:
         config: Beta9 configuration.
 
     Returns:
-        Path to the chart directory, or None if not cloned.
+        Path to the chart directory, or None if not available.
     """
     global _beta9_repo_dir
 
+    # If using local chart
+    if config.use_local_chart:
+        current_file = Path(__file__).resolve()
+        project_root = current_file.parent.parent.parent
+        local_chart_path = project_root / config.helm_chart_local_path
+        if local_chart_path.exists():
+            return local_chart_path
+        return None
+
+    # If using cloned repo
     if _beta9_repo_dir is None:
         return None
 
-    return _beta9_repo_dir / config.helm_chart_path
+    return _beta9_repo_dir / config.helm_chart_git_path
 
 
 def cleanup_helm_repo():
@@ -247,6 +452,9 @@ def deploy_beta9(config: Beta9Config, dry_run: bool = False) -> bool:
     logger.info(f"  Using chart from: {chart_path_str}")
     logger.info("  This may take a few minutes...")
 
+    # Start background log collection for debugging
+    log_collector = start_log_collection(config.namespace)
+
     # Run without shell=True by properly handling the JSON
     actual_cmd = [
         "helm", "upgrade", "--install",
@@ -258,15 +466,19 @@ def deploy_beta9(config: Beta9Config, dry_run: bool = False) -> bool:
         "--timeout", "20m",
     ]
 
-    result = subprocess.run(actual_cmd, capture_output=True, text=True)
+    try:
+        result = subprocess.run(actual_cmd, capture_output=True, text=True)
 
-    if result.returncode != 0:
-        logger.error(f"Failed to deploy Beta9: {result.stderr}")
-        logger.error(f"stdout: {result.stdout}")
-        return False
+        if result.returncode != 0:
+            logger.error(f"Failed to deploy Beta9: {result.stderr}")
+            logger.error(f"stdout: {result.stdout}")
+            return False
 
-    logger.info("Beta9 deployed successfully")
-    return True
+        logger.info("Beta9 deployed successfully")
+        return True
+    finally:
+        # Always stop log collection
+        stop_log_collection()
 
 
 def uninstall_beta9(config: Beta9Config, dry_run: bool = False) -> bool:
