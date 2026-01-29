@@ -309,7 +309,8 @@ def filestore_exists(config: FilestoreConfig, gke_config: GKEConfig) -> bool:
 
 
 def create_filestore(
-    config: FilestoreConfig, gke_config: GKEConfig, dry_run: bool = False
+    config: FilestoreConfig, gke_config: GKEConfig, dry_run: bool = False,
+    timeout: int = 600
 ) -> bool:
     """Create a Filestore instance for shared NFS storage.
 
@@ -321,6 +322,7 @@ def create_filestore(
         config: Filestore configuration.
         gke_config: GKE configuration (for project/zone).
         dry_run: If True, print command without executing.
+        timeout: Maximum seconds to wait for creation (default 10 minutes).
 
     Returns:
         True if Filestore created successfully (or dry_run).
@@ -342,20 +344,46 @@ def create_filestore(
     logger.info(f"  Tier: {config.tier}")
     logger.info(f"  Capacity: {config.capacity_gb}GB")
     logger.info(f"  Cost: ~${config.capacity_gb * 0.20 / 730:.2f}/hour (Basic HDD)")
-    logger.info("  This may take 2-5 minutes...")
+    logger.info(f"  This may take 2-5 minutes (timeout: {timeout}s)...")
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    # Use Popen to show progress while waiting
+    start_time = time.time()
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
 
-    if result.returncode != 0:
-        logger.error(f"Failed to create Filestore: {result.stderr}")
-        return False
-
-    logger.info(f"Filestore '{config.instance_name}' created successfully")
-    return True
+    # Poll for completion with progress logging
+    last_log_time = start_time
+    while True:
+        try:
+            # Check if process finished (non-blocking with short timeout)
+            stdout, stderr = process.communicate(timeout=10)
+            # Process finished
+            elapsed = int(time.time() - start_time)
+            if process.returncode != 0:
+                logger.error(f"Failed to create Filestore after {elapsed}s: {stderr}")
+                return False
+            logger.info(f"Filestore '{config.instance_name}' created successfully ({elapsed}s)")
+            return True
+        except subprocess.TimeoutExpired:
+            # Still running - log progress
+            elapsed = int(time.time() - start_time)
+            if elapsed >= timeout:
+                logger.error(f"Filestore creation timed out after {timeout}s")
+                process.kill()
+                return False
+            # Log progress every 30 seconds
+            if time.time() - last_log_time >= 30:
+                logger.info(f"  Still creating Filestore... ({elapsed}s elapsed)")
+                last_log_time = time.time()
 
 
 def delete_filestore(
-    config: FilestoreConfig, gke_config: GKEConfig, dry_run: bool = False
+    config: FilestoreConfig, gke_config: GKEConfig, dry_run: bool = False,
+    timeout: int = 300
 ) -> bool:
     """Delete the Filestore instance.
 
@@ -363,6 +391,7 @@ def delete_filestore(
         config: Filestore configuration.
         gke_config: GKE configuration (for project/zone).
         dry_run: If True, print command without executing.
+        timeout: Maximum seconds to wait for deletion (default 5 minutes).
 
     Returns:
         True if Filestore deleted successfully (or dry_run).
@@ -380,18 +409,39 @@ def delete_filestore(
 
     logger.info(f"Deleting Filestore instance '{config.instance_name}'...")
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    # Use Popen to show progress while waiting
+    start_time = time.time()
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
 
-    if result.returncode != 0:
-        # Don't fail if it doesn't exist
-        if "not found" in result.stderr.lower() or "does not exist" in result.stderr.lower():
-            logger.info(f"Filestore '{config.instance_name}' does not exist (already deleted)")
+    # Poll for completion with progress logging
+    last_log_time = start_time
+    while True:
+        try:
+            stdout, stderr = process.communicate(timeout=10)
+            elapsed = int(time.time() - start_time)
+            if process.returncode != 0:
+                # Don't fail if it doesn't exist
+                if "not found" in stderr.lower() or "does not exist" in stderr.lower():
+                    logger.info(f"Filestore '{config.instance_name}' does not exist (already deleted)")
+                    return True
+                logger.error(f"Failed to delete Filestore after {elapsed}s: {stderr}")
+                return False
+            logger.info(f"Filestore '{config.instance_name}' deleted successfully ({elapsed}s)")
             return True
-        logger.error(f"Failed to delete Filestore: {result.stderr}")
-        return False
-
-    logger.info(f"Filestore '{config.instance_name}' deleted successfully")
-    return True
+        except subprocess.TimeoutExpired:
+            elapsed = int(time.time() - start_time)
+            if elapsed >= timeout:
+                logger.error(f"Filestore deletion timed out after {timeout}s")
+                process.kill()
+                return False
+            if time.time() - last_log_time >= 30:
+                logger.info(f"  Still deleting Filestore... ({elapsed}s elapsed)")
+                last_log_time = time.time()
 
 
 def get_filestore_ip(config: FilestoreConfig, gke_config: GKEConfig) -> Optional[str]:
