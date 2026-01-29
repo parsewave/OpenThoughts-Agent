@@ -66,6 +66,10 @@ class HPC(BaseModel):
     proxy_port: int = 0
     proxychains_preload: str = ""
 
+    # Pre-run shell commands (cluster-specific setup)
+    # These run at the start of the batch script before any other setup
+    pre_run_commands: List[str] = []
+
     # CUDA path detection for complex clusters (Perlmutter)
     needs_cuda_detection: bool = False
 
@@ -296,6 +300,15 @@ if [ -n "${SSH_KEY:-}" ]; then
     head_node_ip=$(scontrol show hostnames $SLURM_JOB_NODELIST | head -n 1)
     head_node_ip="$(nslookup "$head_node_ip" | grep -oP '(?<=Address: ).*')"
 
+    # Test SSH connectivity before setting up tunnel
+    echo "[ssh-tunnel] Testing SSH to $LOGIN_NODE with key $SSH_KEY..."
+    if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes "${USER_NAME}@${LOGIN_NODE}" echo "SSH connection successful"; then
+        echo "[ssh-tunnel] ✓ SSH test passed"
+    else
+        echo "[ssh-tunnel] ✗ SSH test FAILED - tunnel will likely fail"
+        echo "[ssh-tunnel] Check that public key is in ~/.ssh/authorized_keys on login node"
+    fi
+
     SSH_TUNNEL_CMD="ssh -g -f -N -D 0.0.0.0:$PORT_TO_USE \\
         -o StrictHostKeyChecking=no \\
         -o ConnectTimeout=1000 \\
@@ -363,6 +376,20 @@ export PROXYCHAINS_SOCKS5_PORT=$PROXY_PORT
 
 echo "[proxy] Configured SOCKS5 proxy: $PROXY_HOST:$PROXY_PORT"'''
 
+    def get_pre_run_commands(self) -> str:
+        """Generate pre-run commands for cluster-specific setup.
+
+        Returns:
+            Bash commands to run at the start of the batch script.
+        """
+        if not self.pre_run_commands:
+            return "# No cluster-specific pre-run commands"
+
+        lines = ["# Cluster-specific pre-run commands"]
+        for cmd in self.pre_run_commands:
+            lines.append(cmd)
+        return "\n".join(lines)
+
 
 jureca = HPC(
     name="jureca",
@@ -395,6 +422,8 @@ jureca = HPC(
     proxy_host="10.14.0.53",
     proxy_port=1080,
     proxychains_preload="/p/scratch/laionize/raj3/proxychains-ng/libproxychains4.so",
+    # JSC-specific setup (disable core dumps to save disk space)
+    pre_run_commands=["ulimit -c 0"],
     # Job scaling (from jureca.env)
     default_time_limit="24:00:00",
     num_nodes_default=1,
@@ -436,6 +465,8 @@ jupiter = HPC(
     proxy_host="10.14.0.53",
     proxy_port=1080,
     proxychains_preload="/p/scratch/laionize/raj3/proxychains-ng/libproxychains4.so",
+    # JSC-specific setup (disable core dumps to save disk space)
+    pre_run_commands=["ulimit -c 0"],
     # Job scaling
     default_time_limit="12:00:00",
     max_time_limit="24:00:00",
@@ -473,6 +504,8 @@ juwels = HPC(
     proxy_host="10.14.0.53",
     proxy_port=1080,
     proxychains_preload="/p/scratch/laionize/raj3/proxychains-ng/libproxychains4.so",
+    # JSC-specific setup (disable core dumps to save disk space)
+    pre_run_commands=["ulimit -c 0"],
     # Job scaling (from juwels.env)
     default_time_limit="24:00:00",
     num_nodes_default=4,
