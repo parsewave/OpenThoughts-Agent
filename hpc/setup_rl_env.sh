@@ -211,7 +211,10 @@ fi
 mkdir -p "$(dirname "$RL_ENV_DIR")"
 
 echo "Creating Python $PYTHON_VERSION virtual environment..."
-uv venv "$RL_ENV_DIR" --python "$PYTHON_VERSION"
+# Use --python-preference managed to ensure uv uses its own managed Python,
+# not any system/conda Python. This prevents broken symlinks if conda is
+# deactivated later when using the venv.
+uv venv "$RL_ENV_DIR" --python "$PYTHON_VERSION" --python-preference managed
 
 echo "Activating environment..."
 source "$RL_ENV_DIR/bin/activate"

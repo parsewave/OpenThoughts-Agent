@@ -368,8 +368,9 @@ conda activate {conda_env}
 set -u'''
     else:
         return '''# Using venv for RL (created by ./hpc/setup_rl_env.sh)
-# IMPORTANT: Deactivate conda first to prevent path conflicts
-# Conda's paths can interfere with the venv Python, causing stale file handle errors
+# IMPORTANT: Deactivate conda environment to prevent import conflicts,
+# but KEEP conda paths in PATH because the venv's python symlink may point
+# to the conda Python that was used when the venv was created.
 set +u  # conda deactivate may reference unset variables
 if [[ -n "${CONDA_PREFIX:-}" ]]; then
   echo "Deactivating conda environment: $CONDA_PREFIX"
@@ -377,10 +378,10 @@ if [[ -n "${CONDA_PREFIX:-}" ]]; then
   while [[ -n "${CONDA_PREFIX:-}" ]]; do
     conda deactivate 2>/dev/null || break
   done
-  # Also unset conda-related environment variables that may affect Python
-  unset CONDA_DEFAULT_ENV CONDA_PREFIX CONDA_SHLVL CONDA_PYTHON_EXE
-  # Remove conda paths from PATH to prevent any conda Python from being found
-  export PATH=$(echo "$PATH" | tr ':' '\n' | grep -v -E '(conda|miniforge|miniconda|anaconda)' | tr '\n' ':' | sed 's/:$//')
+  # Unset the environment name variable so imports don't get confused
+  unset CONDA_DEFAULT_ENV
+  # NOTE: We keep CONDA_PREFIX and conda paths in PATH because the venv's
+  # python binary is often a symlink to the conda Python.
 fi
 set -u
 
