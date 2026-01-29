@@ -9,10 +9,10 @@ class GKEConfig:
     """Configuration for GKE cluster provisioning."""
 
     project_id: str
-    cluster_name: str = "beam-sandbox-cluster"
+    cluster_name: str = "beam-test-cluster"
     region: str = "us-central1"
     zone: str = "us-central1-a"
-    num_nodes: int = 8
+    num_nodes: int = 2  # Nodes per zone (3 zones = 6 total nodes)
     machine_type: str = "e2-standard-4"  # 4 vCPU, 16GB RAM, ~$0.13/hr
     disk_size_gb: int = 100
     network: str = "default"
@@ -21,6 +21,20 @@ class GKEConfig:
     def get_full_cluster_name(self) -> str:
         """Return fully qualified cluster name for gcloud commands."""
         return f"projects/{self.project_id}/locations/{self.region}/clusters/{self.cluster_name}"
+
+
+@dataclass
+class FilestoreConfig:
+    """Configuration for GKE Filestore (NFS) for shared storage."""
+
+    instance_name: str = "beta9-filestore"
+    tier: str = "BASIC_HDD"  # BASIC_HDD (~$0.20/GB/mo) or BASIC_SSD (~$0.30/GB/mo)
+    capacity_gb: int = 1024  # Minimum 1TB for Basic tier
+    file_share_name: str = "beta9share"
+    network: str = "default"
+
+    # These are set after creation
+    ip_address: Optional[str] = field(default=None, repr=False)
 
 
 @dataclass
@@ -102,6 +116,7 @@ class ClusterSetupConfig:
     expose_method: str = "pinggy"  # "pinggy" or "loadbalancer"
     pinggy: Optional[PinggyConfig] = None
     loadbalancer: Optional[LoadBalancerConfig] = None
+    filestore: Optional[FilestoreConfig] = None  # Shared NFS storage for ReadWriteMany
 
     # Workflow flags
     skip_gke: bool = False
@@ -120,3 +135,6 @@ class ClusterSetupConfig:
                 service_name=self.beta9.gateway_service_name,
                 port=self.beta9.gateway_http_port,
             )
+        # Default Filestore config if not provided
+        if self.filestore is None:
+            self.filestore = FilestoreConfig()

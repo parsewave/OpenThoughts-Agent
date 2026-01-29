@@ -47,3 +47,7 @@ dependencies:
   version: 0.43.0
   repository: https://fluent.github.io/helm-charts
   condition: metrics.enabled
+- name: localstack
+  version: 0.6.5
+  repository: https://localstack.github.io/helm-charts
+  condition: localstack.enabled

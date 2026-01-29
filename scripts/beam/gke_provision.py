@@ -6,7 +6,7 @@ import subprocess
 import time
 from typing import Optional
 
-from scripts.beam.config import GKEConfig
+from scripts.beam.config import GKEConfig, FilestoreConfig
 
 logger = logging.getLogger(__name__)
 
@@ -285,3 +285,261 @@ def get_node_count(config: GKEConfig) -> int:
         return 0
 
     return len(result.stdout.strip().split("\n"))
+
+
+# =============================================================================
+# Filestore (NFS) Functions for ReadWriteMany Storage
+# =============================================================================
+
+
+def filestore_exists(config: FilestoreConfig, gke_config: GKEConfig) -> bool:
+    """Check if the Filestore instance already exists."""
+    result = subprocess.run(
+        [
+            "gcloud", "filestore", "instances", "describe",
+            config.instance_name,
+            "--project", gke_config.project_id,
+            "--zone", gke_config.zone,
+            "--format=value(name)",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    return result.returncode == 0
+
+
+def create_filestore(
+    config: FilestoreConfig, gke_config: GKEConfig, dry_run: bool = False
+) -> bool:
+    """Create a Filestore instance for shared NFS storage.
+
+    Filestore provides ReadWriteMany (RWX) storage that can be mounted by
+    multiple pods simultaneously, which is required for Beta9's shared
+    container image storage.
+
+    Args:
+        config: Filestore configuration.
+        gke_config: GKE configuration (for project/zone).
+        dry_run: If True, print command without executing.
+
+    Returns:
+        True if Filestore created successfully (or dry_run).
+    """
+    cmd = [
+        "gcloud", "filestore", "instances", "create", config.instance_name,
+        "--project", gke_config.project_id,
+        "--zone", gke_config.zone,
+        "--tier", config.tier,
+        "--file-share", f"name={config.file_share_name},capacity={config.capacity_gb}GB",
+        "--network", f"name={config.network}",
+    ]
+
+    if dry_run:
+        logger.info(f"[DRY RUN] Would execute: {' '.join(cmd)}")
+        return True
+
+    logger.info(f"Creating Filestore instance '{config.instance_name}'...")
+    logger.info(f"  Tier: {config.tier}")
+    logger.info(f"  Capacity: {config.capacity_gb}GB")
+    logger.info(f"  Cost: ~${config.capacity_gb * 0.20 / 730:.2f}/hour (Basic HDD)")
+    logger.info("  This may take 2-5 minutes...")
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        logger.error(f"Failed to create Filestore: {result.stderr}")
+        return False
+
+    logger.info(f"Filestore '{config.instance_name}' created successfully")
+    return True
+
+
+def delete_filestore(
+    config: FilestoreConfig, gke_config: GKEConfig, dry_run: bool = False
+) -> bool:
+    """Delete the Filestore instance.
+
+    Args:
+        config: Filestore configuration.
+        gke_config: GKE configuration (for project/zone).
+        dry_run: If True, print command without executing.
+
+    Returns:
+        True if Filestore deleted successfully (or dry_run).
+    """
+    cmd = [
+        "gcloud", "filestore", "instances", "delete", config.instance_name,
+        "--project", gke_config.project_id,
+        "--zone", gke_config.zone,
+        "--quiet",  # Skip confirmation prompt
+    ]
+
+    if dry_run:
+        logger.info(f"[DRY RUN] Would execute: {' '.join(cmd)}")
+        return True
+
+    logger.info(f"Deleting Filestore instance '{config.instance_name}'...")
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        # Don't fail if it doesn't exist
+        if "not found" in result.stderr.lower() or "does not exist" in result.stderr.lower():
+            logger.info(f"Filestore '{config.instance_name}' does not exist (already deleted)")
+            return True
+        logger.error(f"Failed to delete Filestore: {result.stderr}")
+        return False
+
+    logger.info(f"Filestore '{config.instance_name}' deleted successfully")
+    return True
+
+
+def get_filestore_ip(config: FilestoreConfig, gke_config: GKEConfig) -> Optional[str]:
+    """Get the IP address of the Filestore instance.
+
+    Args:
+        config: Filestore configuration.
+        gke_config: GKE configuration (for project/zone).
+
+    Returns:
+        IP address string or None if not found.
+    """
+    result = subprocess.run(
+        [
+            "gcloud", "filestore", "instances", "describe",
+            config.instance_name,
+            "--project", gke_config.project_id,
+            "--zone", gke_config.zone,
+            "--format=value(networks[0].ipAddresses[0])",
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    if result.returncode != 0:
+        logger.error(f"Failed to get Filestore IP: {result.stderr}")
+        return None
+
+    ip = result.stdout.strip()
+    if ip:
+        config.ip_address = ip
+        logger.info(f"Filestore IP: {ip}")
+    return ip
+
+
+def wait_for_filestore_ready(
+    config: FilestoreConfig, gke_config: GKEConfig, timeout: int = 300
+) -> bool:
+    """Wait for Filestore instance to be ready.
+
+    Args:
+        config: Filestore configuration.
+        gke_config: GKE configuration (for project/zone).
+        timeout: Maximum seconds to wait.
+
+    Returns:
+        True if Filestore is ready within timeout.
+    """
+    logger.info("Waiting for Filestore to be ready...")
+    start_time = time.time()
+
+    while time.time() - start_time < timeout:
+        result = subprocess.run(
+            [
+                "gcloud", "filestore", "instances", "describe",
+                config.instance_name,
+                "--project", gke_config.project_id,
+                "--zone", gke_config.zone,
+                "--format=value(state)",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        if result.returncode == 0:
+            state = result.stdout.strip()
+            if state == "READY":
+                logger.info("Filestore is ready")
+                return True
+            logger.debug(f"Filestore state: {state}")
+
+        time.sleep(10)
+
+    logger.error(f"Filestore did not become ready within {timeout} seconds")
+    return False
+
+
+def create_filestore_pv_pvc(
+    config: FilestoreConfig, gke_config: GKEConfig, namespace: str
+) -> bool:
+    """Create PersistentVolume and PersistentVolumeClaim for Filestore.
+
+    This creates a ReadWriteMany PV/PVC that can be mounted by multiple pods
+    (gateway and workers) simultaneously.
+
+    Args:
+        config: Filestore configuration (must have ip_address set).
+        gke_config: GKE configuration.
+        namespace: Kubernetes namespace for the PVC.
+
+    Returns:
+        True if PV and PVC created successfully.
+    """
+    if not config.ip_address:
+        logger.error("Filestore IP address not set. Call get_filestore_ip() first.")
+        return False
+
+    logger.info(f"Creating PV/PVC for Filestore at {config.ip_address}...")
+
+    # Create namespace if it doesn't exist
+    subprocess.run(
+        ["kubectl", "create", "namespace", namespace],
+        capture_output=True,
+        text=True,
+    )  # Ignore error if exists
+
+    # PV and PVC manifest
+    manifest = f"""---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: beta9-images-pv
+spec:
+  capacity:
+    storage: {config.capacity_gb}Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: {config.ip_address}
+    path: /{config.file_share_name}
+  persistentVolumeReclaimPolicy: Delete
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: images
+  namespace: {namespace}
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+  volumeName: beta9-images-pv
+  resources:
+    requests:
+      storage: {config.capacity_gb}Gi
+"""
+
+    # Apply manifest via kubectl
+    result = subprocess.run(
+        ["kubectl", "apply", "-f", "-"],
+        input=manifest,
+        capture_output=True,
+        text=True,
+    )
+
+    if result.returncode != 0:
+        logger.error(f"Failed to create PV/PVC: {result.stderr}")
+        return False
+
+    logger.info("PV/PVC created successfully (ReadWriteMany)")
+    return True

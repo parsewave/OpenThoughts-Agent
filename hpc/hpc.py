@@ -354,8 +354,15 @@ if [ -n "${SSH_KEY:-}" ]; then
     export https_proxy="socks5h://127.0.0.1:${SOCKS_PORT}"
     export HTTP_PROXY="socks5h://127.0.0.1:${SOCKS_PORT}"
     export http_proxy="socks5h://127.0.0.1:${SOCKS_PORT}"
+
+    # Exclude internal/cluster traffic from proxy (gRPC/Ray doesn't support SOCKS)
+    # This prevents Ray cluster communication from going through the proxy
+    export NO_PROXY="localhost,127.0.0.1,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,.local"
+    export no_proxy="localhost,127.0.0.1,10.0.0.0/8,192.168.0.0/16,172.16.0.0/12,.local"
+
     echo "[ssh-tunnel] ✓ Exported proxy environment variables:"
     echo "[ssh-tunnel]   ALL_PROXY=$ALL_PROXY"
+    echo "[ssh-tunnel]   NO_PROXY=$NO_PROXY"
 
     # Test proxy connectivity
     echo "[ssh-tunnel] Testing proxy connectivity..."

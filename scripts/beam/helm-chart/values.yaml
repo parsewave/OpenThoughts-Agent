@@ -48,24 +48,12 @@ persistence:
   images:
     enabled: true
     type: persistentVolumeClaim
-    existingClaim: images  # Reference the manually created PVC (workers expect this exact name)
+    existingClaim: images  # Created externally via Filestore (ReadWriteMany for multi-pod access)
     globalMounts:
     - path: /images
 
-# Manually create PVC with exact name "images" that workers expect
-manifests:
-  resources:
-  - apiVersion: v1
-    kind: PersistentVolumeClaim
-    metadata:
-      name: images
-    spec:
-      accessModes:
-        - ReadWriteOnce
-      storageClassName: standard
-      resources:
-        requests:
-          storage: 50Gi
+# Note: The 'images' PVC is created externally by cluster_setup.py using GKE Filestore
+# for ReadWriteMany support (gateway + workers need concurrent access)
 
 service:
   gateway:
@@ -172,6 +160,27 @@ juicefs-redis:
   master:
     persistence:
       size: 1Gi
+
+# -- LocalStack for S3-compatible storage (required by JuiceFS)
+localstack:
+  enabled: true
+  nameOverride: localstack
+  fullnameOverride: localstack
+  extraEnvVars:
+  - name: SERVICES
+    value: s3
+  enableStartupScripts: true
+  startupScriptContent: |
+    #!/bin/bash
+    awslocal s3 mb s3://juicefs
+    awslocal s3 mb s3://logs
+    awslocal s3 mb s3://beta9-images
+  persistence:
+    enabled: true
+    storageClass: standard  # GKE default
+    accessModes:
+    - ReadWriteOnce
+    size: 50Gi
 
 # -- Enables deployment of victoria-metrics, grafana, and fluent-bit
 metrics:

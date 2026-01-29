@@ -20,6 +20,7 @@ import sys
 from scripts.beam.config import (
     Beta9Config,
     ClusterSetupConfig,
+    FilestoreConfig,
     GKEConfig,
     LoadBalancerConfig,
     PinggyConfig,
@@ -30,11 +31,17 @@ from scripts.beam.gke_provision import (
     check_kubectl_installed,
     cluster_exists,
     create_cluster,
+    create_filestore,
+    create_filestore_pv_pvc,
     delete_cluster,
+    delete_filestore,
+    filestore_exists,
     get_cluster_status,
     get_credentials,
+    get_filestore_ip,
     get_node_count,
     grant_cluster_admin,
+    wait_for_filestore_ready,
 )
 from scripts.beam.beta9_deploy import (
     add_helm_repo,
@@ -326,6 +333,7 @@ def cmd_test(args) -> int:
     )
 
     beta9_config = Beta9Config()
+    filestore_config = FilestoreConfig()
 
     pinggy_config = None
     lb_config = None
@@ -344,6 +352,7 @@ def cmd_test(args) -> int:
     validation_passed = False
     public_url = ""
     resources_created = False  # Track if we actually created anything
+    filestore_created = False  # Track if Filestore was created
 
     # Check prerequisites BEFORE the try block
     logger.info("=" * 60)
@@ -358,7 +367,7 @@ def cmd_test(args) -> int:
 
         # Step 1: Create GKE cluster
         logger.info("")
-        logger.info("[1/4] Creating GKE cluster...")
+        logger.info("[1/5] Creating GKE cluster...")
         if cluster_exists(gke_config):
             logger.info(f"Cluster '{gke_config.cluster_name}' already exists")
             resources_created = True
@@ -375,9 +384,35 @@ def cmd_test(args) -> int:
         if not grant_cluster_admin(dry_run=args.dry_run):
             return 1
 
-        # Step 2: Deploy Beta9
+        # Step 2: Create Filestore for shared storage (ReadWriteMany)
         logger.info("")
-        logger.info("[2/4] Deploying Beta9...")
+        logger.info("[2/5] Creating Filestore (shared NFS storage)...")
+        if filestore_exists(filestore_config, gke_config):
+            logger.info(f"Filestore '{filestore_config.instance_name}' already exists")
+            filestore_created = True
+        else:
+            if not create_filestore(filestore_config, gke_config, dry_run=args.dry_run):
+                return 1
+            filestore_created = True
+
+        # Wait for Filestore and get IP
+        if not args.dry_run:
+            if not wait_for_filestore_ready(filestore_config, gke_config):
+                return 1
+            filestore_ip = get_filestore_ip(filestore_config, gke_config)
+            if not filestore_ip:
+                logger.error("Failed to get Filestore IP address")
+                return 1
+
+            # Create PV and PVC for Filestore
+            if not create_filestore_pv_pvc(
+                filestore_config, gke_config, beta9_config.namespace
+            ):
+                return 1
+
+        # Step 3: Deploy Beta9
+        logger.info("")
+        logger.info("[3/5] Deploying Beta9...")
         if not add_helm_repo(dry_run=args.dry_run, config=beta9_config):
             return 1
 
@@ -388,9 +423,9 @@ def cmd_test(args) -> int:
             if not wait_for_gateway_ready(beta9_config):
                 return 1
 
-        # Step 3: Expose cluster
+        # Step 4: Expose cluster
         logger.info("")
-        logger.info("[3/4] Exposing cluster...")
+        logger.info("[4/5] Exposing cluster...")
         if args.expose_method == "pinggy":
             pf_proc, tunnel_proc, public_url = setup_pinggy_exposure(
                 beta9_config, pinggy_config, dry_run=args.dry_run
@@ -411,9 +446,9 @@ def cmd_test(args) -> int:
             if not verify_endpoint_health(public_url):
                 logger.warning("Endpoint health check failed (may need more time)")
 
-        # Step 4: Run validation
+        # Step 5: Run validation
         logger.info("")
-        logger.info("[4/4] Running validation tests...")
+        logger.info("[5/5] Running validation tests...")
         if not args.dry_run and public_url:
             report = run_validation_suite(
                 public_url,
@@ -427,7 +462,7 @@ def cmd_test(args) -> int:
 
     finally:
         # Only tear down if we actually created resources
-        if not resources_created:
+        if not resources_created and not filestore_created:
             logger.info("No resources were created, skipping teardown")
         else:
             logger.info("")
@@ -442,6 +477,11 @@ def cmd_test(args) -> int:
             # Uninstall Beta9
             get_credentials(gke_config, dry_run=args.dry_run)
             uninstall_beta9(beta9_config, dry_run=args.dry_run)
+
+            # Delete Filestore (must be done before cluster deletion)
+            if filestore_created and not args.keep_cluster:
+                logger.info("Deleting Filestore...")
+                delete_filestore(filestore_config, gke_config, dry_run=args.dry_run)
 
             # Delete GKE cluster
             if not args.keep_cluster:
