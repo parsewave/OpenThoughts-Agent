@@ -27,6 +27,7 @@ dependencies = [
     "rapidfuzz",
     "huggingface_hub",
     "uv>=0.4.17",
+    "socksio",  # SOCKS5 proxy support for httpx (needed for JSC SSH tunnels)
 ]
 
 [project.optional-dependencies]

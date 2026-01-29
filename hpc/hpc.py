@@ -286,22 +286,36 @@ class HPC(BaseModel):
     def get_ssh_tunnel_setup(self) -> str:
         """Generate SSH tunnel setup script for no-internet clusters (JSC).
 
-        This keeps the battle-tested bash logic for SSH tunneling intact,
-        preserving the exact behavior from jsc_train.sbatch.
+        Creates a SOCKS5 proxy via SSH tunnel from compute node to login node,
+        then exports ALL_PROXY so that httpx-based applications (like Harbor/Daytona)
+        automatically route traffic through the tunnel.
+
+        Requirements:
+        - SSH_KEY environment variable must be set to path of SSH private key
+        - Public key must be in ~/.ssh/authorized_keys on login node
+        - socksio Python package must be installed for httpx SOCKS5 support
         """
         if not self.needs_ssh_tunnel:
             return "# No SSH tunnel needed for this cluster"
 
-        return r'''# SSH tunnel setup for no-internet clusters
+        return r'''# ============================================================================
+# SSH Tunnel Setup for No-Internet Clusters (JSC)
+# Creates SOCKS5 proxy via SSH tunnel to login node for internet access
+# ============================================================================
 if [ -n "${SSH_KEY:-}" ]; then
     USER_NAME="$(whoami)"
     LOGIN_NODE="${SLURM_SUBMIT_HOST:-$(hostname -f | sed 's/^[^.]*\.//')}"
-    PORT_TO_USE=$((20000 + RANDOM % 10000))
+    SOCKS_PORT=$((20000 + RANDOM % 10000))
     head_node_ip=$(scontrol show hostnames $SLURM_JOB_NODELIST | head -n 1)
     head_node_ip="$(nslookup "$head_node_ip" | grep -oP '(?<=Address: ).*')"
 
+    echo "[ssh-tunnel] Setting up SOCKS5 proxy via SSH tunnel"
+    echo "[ssh-tunnel] Login node: $LOGIN_NODE"
+    echo "[ssh-tunnel] SOCKS port: $SOCKS_PORT"
+    echo "[ssh-tunnel] SSH key: $SSH_KEY"
+
     # Test SSH connectivity before setting up tunnel
-    echo "[ssh-tunnel] Testing SSH to $LOGIN_NODE with key $SSH_KEY..."
+    echo "[ssh-tunnel] Testing SSH connectivity..."
     if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes "${USER_NAME}@${LOGIN_NODE}" echo "SSH connection successful"; then
         echo "[ssh-tunnel] ✓ SSH test passed"
     else
@@ -309,7 +323,8 @@ if [ -n "${SSH_KEY:-}" ]; then
         echo "[ssh-tunnel] Check that public key is in ~/.ssh/authorized_keys on login node"
     fi
 
-    SSH_TUNNEL_CMD="ssh -g -f -N -D 0.0.0.0:$PORT_TO_USE \\
+    # Create SSH tunnel with SOCKS5 proxy
+    SSH_TUNNEL_CMD="ssh -g -f -N -D 0.0.0.0:$SOCKS_PORT \\
         -o StrictHostKeyChecking=no \\
         -o ConnectTimeout=1000 \\
         -o ServerAliveInterval=15 \\
@@ -320,22 +335,43 @@ if [ -n "${SSH_KEY:-}" ]; then
         -i $SSH_KEY \\
         ${USER_NAME}@$LOGIN_NODE"
 
-    mkdir -p ~/.proxychains
-    cat > ~/.proxychains/proxychains.conf <<-EOT
-        strict_chain
-        proxy_dns
-        tcp_read_time_out 30000
-        tcp_connect_time_out 15000
-        localnet 127.0.0.0/255.0.0.0
-        [ProxyList]
-        socks5 ${head_node_ip} ${PORT_TO_USE}
-EOT
+    echo "[ssh-tunnel] Starting SSH tunnel..."
     eval "$SSH_TUNNEL_CMD"
-    sleep 1
-    PROXY_CMD="proxychains4"
+    sleep 2
+
+    # Verify tunnel is running
+    if pgrep -f "ssh.*-D.*$SOCKS_PORT" > /dev/null; then
+        echo "[ssh-tunnel] ✓ SSH tunnel started successfully"
+    else
+        echo "[ssh-tunnel] ✗ SSH tunnel failed to start"
+    fi
+
+    # Export ALL_PROXY for httpx-based applications (Harbor/Daytona)
+    # The 'h' in socks5h means DNS lookups also go through the proxy
+    export ALL_PROXY="socks5h://127.0.0.1:${SOCKS_PORT}"
+    export all_proxy="socks5h://127.0.0.1:${SOCKS_PORT}"
+    export HTTPS_PROXY="socks5h://127.0.0.1:${SOCKS_PORT}"
+    export https_proxy="socks5h://127.0.0.1:${SOCKS_PORT}"
+    export HTTP_PROXY="socks5h://127.0.0.1:${SOCKS_PORT}"
+    export http_proxy="socks5h://127.0.0.1:${SOCKS_PORT}"
+    echo "[ssh-tunnel] ✓ Exported proxy environment variables:"
+    echo "[ssh-tunnel]   ALL_PROXY=$ALL_PROXY"
+
+    # Test proxy connectivity
+    echo "[ssh-tunnel] Testing proxy connectivity..."
+    if curl -s --connect-timeout 5 --proxy "socks5h://127.0.0.1:${SOCKS_PORT}" https://huggingface.co -o /dev/null 2>/dev/null; then
+        echo "[ssh-tunnel] ✓ Proxy test passed - internet access available"
+    else
+        echo "[ssh-tunnel] ✗ Proxy test failed - internet may not be available"
+    fi
 else
-    PROXY_CMD=""
-fi'''
+    echo "[ssh-tunnel] SSH_KEY not set - skipping SSH tunnel setup"
+    echo "[ssh-tunnel] Set SSH_KEY in your dotenv file to enable internet access on compute nodes"
+fi
+
+# PROXY_CMD is no longer needed (httpx uses ALL_PROXY env var directly)
+# but we keep it empty for backwards compatibility with existing scripts
+PROXY_CMD=""'''
 
     def get_proxy_setup(self) -> str:
         """Generate SOCKS5 proxy setup script for no-internet clusters (JSC).

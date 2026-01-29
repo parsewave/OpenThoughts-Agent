@@ -10,7 +10,7 @@ global:
 config:
   worker:
     imageRegistry: public.ecr.aws/n4e0e1y0
-    imagePVCName: ""
+    imagePVCName: "images"  # Must match the PVC name in manifests.resources
   imageService:
     runner:
       baseImageRegistry: public.ecr.aws/n4e0e1y0
@@ -48,9 +48,24 @@ persistence:
   images:
     enabled: true
     type: persistentVolumeClaim
-    size: 50Gi
-    storageClass: standard  # GKE default (was local-path)
-    accessMode: ReadWriteOnce
+    existingClaim: images  # Reference the manually created PVC (workers expect this exact name)
+    globalMounts:
+    - path: /images
+
+# Manually create PVC with exact name "images" that workers expect
+manifests:
+  resources:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: images
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      storageClassName: standard
+      resources:
+        requests:
+          storage: 50Gi
 
 service:
   gateway:
@@ -288,7 +303,4 @@ fluent-bit:
     mountPath: /var/lib/docker/containers
     readOnly: true
 
-# -- Used to add any custom manifests
-manifests:
-  resources: []
-  templates: []
+# Note: manifests section moved to top of file (after persistence.images)
