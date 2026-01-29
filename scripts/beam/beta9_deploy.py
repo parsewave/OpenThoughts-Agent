@@ -513,6 +513,61 @@ def uninstall_beta9(config: Beta9Config, dry_run: bool = False) -> bool:
     return True
 
 
+def delete_namespace_pvcs(namespace: str, dry_run: bool = False) -> bool:
+    """Delete all PersistentVolumeClaims in the namespace.
+
+    Helm uninstall does NOT delete PVCs by default (to protect data).
+    This function explicitly deletes all PVCs in the namespace to clean up
+    the associated GCP persistent disks.
+
+    Args:
+        namespace: Kubernetes namespace.
+        dry_run: If True, print command without executing.
+
+    Returns:
+        True if PVCs deleted successfully (or none existed).
+    """
+    # First, list PVCs to show what will be deleted
+    list_cmd = [
+        "kubectl", "get", "pvc",
+        "--namespace", namespace,
+        "-o", "jsonpath={.items[*].metadata.name}",
+    ]
+
+    result = subprocess.run(list_cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        # Namespace might not exist
+        logger.debug(f"Could not list PVCs: {result.stderr}")
+        return True
+
+    pvcs = result.stdout.strip().split()
+    if not pvcs or pvcs == ['']:
+        logger.info("No PVCs to delete in namespace")
+        return True
+
+    logger.info(f"Found {len(pvcs)} PVCs to delete: {', '.join(pvcs)}")
+
+    if dry_run:
+        logger.info(f"[DRY RUN] Would delete {len(pvcs)} PVCs")
+        return True
+
+    # Delete all PVCs in the namespace
+    delete_cmd = [
+        "kubectl", "delete", "pvc", "--all",
+        "--namespace", namespace,
+    ]
+
+    logger.info(f"Deleting all PVCs in namespace '{namespace}'...")
+    result = subprocess.run(delete_cmd, capture_output=True, text=True)
+
+    if result.returncode != 0:
+        logger.error(f"Failed to delete PVCs: {result.stderr}")
+        return False
+
+    logger.info(f"Deleted {len(pvcs)} PVCs successfully")
+    return True
+
+
 def get_gateway_cluster_ip(config: Beta9Config) -> Optional[str]:
     """Get the ClusterIP of the Beta9 gateway service.
 

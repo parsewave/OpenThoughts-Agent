@@ -151,8 +151,8 @@ trainer:
   eval_batch_size: 64
 
   # Micro batch sizes
-  micro_forward_batch_size_per_gpu: 1
-  micro_train_batch_size_per_gpu: 1
+  micro_forward_batch_size_per_gpu: 4
+  micro_train_batch_size_per_gpu: 2
 
   max_prompt_length: 999999
 
@@ -182,12 +182,16 @@ trainer:
       weight_decay: 0.01
       adam_betas: [0.9, 0.999]
       max_grad_norm: 1.0
-
+    fsdp_config:
+      cpu_offload: false
+      reshard_after_forward: false
+      fsdp_size: 4
   # Reference model
   ref:
     fsdp_config:
       cpu_offload: false
-      reshard_after_forward: true
+      reshard_after_forward: false
+      fsdp_size: 4
 
   # Model placement (8-GPU async: 4 training + 4 inference)
   placement:

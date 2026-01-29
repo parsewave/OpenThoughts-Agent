@@ -47,6 +47,7 @@ from scripts.beam.beta9_deploy import (
     add_helm_repo,
     check_helm_installed,
     cleanup_helm_repo,
+    delete_namespace_pvcs,
     deploy_beta9,
     get_deployment_status,
     uninstall_beta9,
@@ -238,11 +239,14 @@ def cmd_destroy(args) -> int:
     logger.info("Stopping exposure processes...")
     stop_exposure_processes()
 
-    # Step 2: Uninstall Beta9
+    # Step 2: Uninstall Beta9 and delete PVCs
     if not args.skip_beta9:
         # Get credentials first (may fail if cluster doesn't exist)
         get_credentials(gke_config, dry_run=args.dry_run)
         uninstall_beta9(beta9_config, dry_run=args.dry_run)
+        # Delete PVCs to clean up GCP persistent disks
+        # (Helm uninstall doesn't delete PVCs by default)
+        delete_namespace_pvcs(beta9_config.namespace, dry_run=args.dry_run)
     else:
         logger.info("Skipping Beta9 uninstall (--skip-beta9)")
 
@@ -474,9 +478,11 @@ def cmd_test(args) -> int:
             logger.info("Stopping exposure processes...")
             stop_exposure_processes()
 
-            # Uninstall Beta9
+            # Uninstall Beta9 and delete PVCs
             get_credentials(gke_config, dry_run=args.dry_run)
             uninstall_beta9(beta9_config, dry_run=args.dry_run)
+            # Delete PVCs to clean up GCP persistent disks
+            delete_namespace_pvcs(beta9_config.namespace, dry_run=args.dry_run)
 
             # Delete Filestore (must be done before cluster deletion)
             if filestore_created and not args.keep_cluster:
