@@ -129,6 +129,11 @@ harbor-all = [
     "docker>=7.0.0",
     "modal>=0.60.0",
 ]
+# Beam cluster setup (self-hosted Beta9 on GKE)
+beam = [
+    "requests>=2.31.0",
+    "beta9>=0.1.0",
+]
 
 [tool.setuptools.packages.find]
 where = ["."]

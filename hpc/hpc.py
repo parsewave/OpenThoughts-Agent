@@ -348,16 +348,12 @@ fi'''
 PROXY_HOST="{self.proxy_host}"
 PROXY_PORT="{self.proxy_port}"
 
-# Check proxy is reachable (skip if nc not available)
-if command -v nc &>/dev/null; then
-    if nc -z $PROXY_HOST $PROXY_PORT 2>/dev/null; then
-        echo "[proxy] ✓ Proxy reachable at $PROXY_HOST:$PROXY_PORT"
-    else
-        echo "[proxy] WARNING: Proxy not reachable at $PROXY_HOST:$PROXY_PORT"
-        echo "[proxy] Internet access may fail on compute nodes!"
-    fi
+# Check proxy is reachable using curl
+if curl -s --connect-timeout 3 --proxy socks5://$PROXY_HOST:$PROXY_PORT http://example.com -o /dev/null 2>/dev/null; then
+    echo "[proxy] ✓ Proxy reachable at $PROXY_HOST:$PROXY_PORT"
 else
-    echo "[proxy] Skipping proxy check (nc not available)"
+    echo "[proxy] WARNING: Proxy not reachable at $PROXY_HOST:$PROXY_PORT"
+    echo "[proxy] Internet access may fail on compute nodes!"
 fi
 
 # Configure proxychains environment variables
