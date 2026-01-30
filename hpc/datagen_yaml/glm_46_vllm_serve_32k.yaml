@@ -23,10 +23,10 @@ vllm_server:
   enable_auto_tool_choice: true
   tool_call_parser: glm45
   reasoning_parser: deepseek_v3
-  default_chat_template_kwargs:
-    enable_thinking: true
   trust_remote_code: true
   extra_args:
+  - --default-chat-template-kwargs
+  - '{"enable_thinking": true}'
   - --dtype
   - bfloat16
   - --kv-cache-dtype
