@@ -99,10 +99,10 @@ def build_vllm_command(args: argparse.Namespace, extra_args: List[str]) -> List[
     if not model:
         raise ValueError("--model or VLLM_MODEL_PATH environment variable is required")
 
-    wrapper = Path(__file__).with_name("vllm_api_server_tf32.py")
     cmd: List[str] = [
         sys.executable,
-        str(wrapper),
+        "-m",
+        "vllm.entrypoints.openai.api_server",
         "--model",
         model,
         "--host",
