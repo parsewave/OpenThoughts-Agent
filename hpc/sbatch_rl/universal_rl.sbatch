@@ -152,6 +152,18 @@ if [ "{harbor_env}" = "docker" ]; then
     # shellcheck source=docker/setup_docker_runtime.sh
     source "$WORKDIR/docker/setup_docker_runtime.sh"
 
+    # Ensure a docker-compatible CLI exists when only podman-hpc is available.
+    if ! command -v docker &>/dev/null && command -v podman-hpc &>/dev/null; then
+      mkdir -p "$WORKDIR/.bin"
+      cat > "$WORKDIR/.bin/docker" <<'EOF'
+#!/usr/bin/env bash
+exec podman-hpc "$@"
+EOF
+      chmod +x "$WORKDIR/.bin/docker"
+      export PATH="$WORKDIR/.bin:$PATH"
+      echo "[sbatch] Installed podman-hpc docker shim at $WORKDIR/.bin/docker"
+    fi
+
     # Verify connectivity if DOCKER_HOST is set
     if [ -n "${DOCKER_HOST:-}" ]; then
       echo "[sbatch] DOCKER_HOST=$DOCKER_HOST"
