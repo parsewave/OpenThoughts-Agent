@@ -35,6 +35,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+import tomllib
+import toml
+
 
 def run(cmd: list[str], cwd: Path, verbose: bool):
     if verbose:
@@ -83,23 +86,58 @@ def main():
     if not tasks_dir.is_dir():
         sys.exit(f"Tasks dir not found: {tasks_dir}")
 
-    # Find all subdirectories containing a Dockerfile (recursive)
-    task_dirs = sorted({p.parent for p in tasks_dir.rglob("Dockerfile") if p.parent.is_dir()})
+    # Find all Dockerfiles (recursive)
+    dockerfiles = sorted(p for p in tasks_dir.rglob("Dockerfile") if p.is_file())
 
-    if not task_dirs:
+    if not dockerfiles:
         print("No tasks with Dockerfile found.")
         return
 
-    for task_path in task_dirs:
-        rel = task_path.relative_to(tasks_dir)
-        task_name = "-".join(rel.parts)
-        tag = f"{args.tag_prefix}-{task_name}:latest"
-        print(f"[task] {rel} -> tag {tag}")
-        tar_path = build_task(task_path, tag, args.output_images_dir, args.skip_migrate, args.verbose)
-        dest_task_dir = args.output_tasks_dir / rel
-        copy_task(task_path, dest_task_dir, tag)
+    for dockerfile_path in dockerfiles:
+        # task root = first path component under tasks_dir
+        rel = dockerfile_path.relative_to(tasks_dir)
+        task_root_rel = rel.parts[0]
+        task_root = tasks_dir / task_root_rel
+        env_rel = rel.parent.relative_to(task_root)  # path from task root to env dir
+        env_dir = dockerfile_path.parent
+
+        tag_suffix = "-".join(rel.parts)
+        tag = f"{args.tag_prefix}-{tag_suffix}:latest"
+
+        print(f"[task] {task_root_rel} (env {env_rel}) -> tag {tag}")
+
+        # Build from original env dir
+        tar_path = build_task(env_dir, tag, args.output_images_dir, args.skip_migrate, args.verbose)
+
+        # Copy full task tree, then mutate env dir
+        dest_task_dir = args.output_tasks_dir / task_root_rel
+        if dest_task_dir.exists():
+            shutil.rmtree(dest_task_dir)
+        shutil.copytree(task_root, dest_task_dir)
+
+        dest_env_dir = dest_task_dir / env_rel
+        dest_dockerfile = dest_env_dir / "Dockerfile"
+        if dest_dockerfile.exists():
+            dest_dockerfile.unlink()
+        (dest_env_dir / "DOCKER_IMAGE").write_text(tag + "\n")
+
+        # Update task.toml to point to the prebuilt image
+        task_toml = dest_task_dir / "task.toml"
+        if task_toml.exists():
+            try:
+                data = tomllib.loads(task_toml.read_text())
+                env_cfg = data.get("environment", {})
+                env_cfg["docker_image"] = tag
+                data["environment"] = env_cfg
+                task_toml.write_text(toml.dumps(data))
+                print(f"  updated task.toml docker_image={tag}")
+            except Exception as e:
+                print(f"  warning: failed to update task.toml: {e}")
+        else:
+            print("  warning: task.toml not found; docker_image not recorded")
+
         print(f"  saved: {tar_path}")
-        print(f"  task copy: {dest_task_dir}")
+        print(f"  task copy: {dest_env_dir} (Dockerfile removed, DOCKER_IMAGE written)")
 
     print("Done.")
 
