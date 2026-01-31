@@ -35,7 +35,7 @@ vllm_server:
   trust_remote_code: true
   extra_args:
   - --dtype
-  - bfloat16
+  - float16
   - --kv-cache-dtype
   - fp8
   - --enable-chunked-prefill

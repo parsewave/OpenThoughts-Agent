@@ -46,8 +46,8 @@ orchestrator:
   kwargs: {}
 
 environment:
-  # Docker backend works with podman-hpc via DOCKER_HOST socket
-  type: docker
+  # Use native podman-hpc backend (no docker-compose required)
+  type: podman_hpc
   force_build: true
   delete: true
   # Conservative resource limits for HPC shared nodes
