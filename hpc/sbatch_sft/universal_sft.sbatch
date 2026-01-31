@@ -31,10 +31,13 @@ export CONDA_BACKUP_CXX="${CONDA_BACKUP_CXX:-}"
 export CONDA_BACKUP_CC="${CONDA_BACKUP_CC:-}"
 export CONDA_BACKUP_FC="${CONDA_BACKUP_FC:-}"
 
-# --- Module loading (cluster-specific, substituted by launcher) ---
+# --- Module and Conda Setup ---
+# Disable unbound variable check for module loading and conda activation.
+# Module reloads can trigger conda deactivation scripts that reference unset variables.
 set +u
+
+# --- Module loading (cluster-specific, substituted by launcher) ---
 {module_commands}
-set -u
 
 # --- Environment setup ---
 if [ -n "${DCFT_PRIVATE:-}" ]; then
@@ -51,9 +54,7 @@ if [ -z "${DCFT:-}" ]; then
 fi
 
 # --- Conda activation (cluster-specific, substituted by launcher) ---
-set +u
 {conda_activate}
-set -u
 
 # --- Source environment files ---
 if [ -n "${DCFT:-}" ] && [ -f "$DCFT/hpc/dotenv/{cluster_env_file}" ]; then
@@ -65,10 +66,11 @@ if [ -n "${DC_AGENT_SECRET_ENV:-}" ] && [ -f "$DC_AGENT_SECRET_ENV" ]; then
   set +a
 fi
 if [ -n "${DCFT_ACTIVATE_ENV:-}" ]; then
-  set +u
   eval "$DCFT_ACTIVATE_ENV"
-  set -u
 fi
+
+# Re-enable strict unbound variable checking after all env setup is complete
+set -u
 
 # --- CUDA path detection (Perlmutter and similar) ---
 {cuda_setup}

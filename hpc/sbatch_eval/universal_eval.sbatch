@@ -34,6 +34,10 @@ set +u
 # --- Module loading (cluster-specific, substituted by launcher) ---
 {module_commands}
 
+# Some module command templates toggle set -u; ensure we stay in +u mode
+# through conda activation and env sourcing to avoid unbound variable errors.
+set +u
+
 # --- Environment setup ---
 if [ -n "${DCFT_PRIVATE:-}" ]; then
   WORKDIR="$DCFT_PRIVATE"
