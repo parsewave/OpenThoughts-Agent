@@ -37,6 +37,7 @@ from pathlib import Path
 
 import tomllib
 import toml
+import re
 
 
 def run(cmd: list[str], cwd: Path, verbose: bool):
@@ -48,6 +49,14 @@ def run(cmd: list[str], cwd: Path, verbose: bool):
             f"Command failed: {' '.join(cmd)}\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
         )
     return proc.stdout
+
+
+def sanitize_component(text: str) -> str:
+    # Lowercase, replace disallowed chars with '-', collapse repeats, trim hyphens.
+    text = text.lower()
+    text = re.sub(r"[^a-z0-9._-]+", "-", text)
+    text = re.sub(r"-+", "-", text).strip("-")
+    return text or "task"
 
 
 def build_task(task_dir: Path, tag: str, output_images_dir: Path, skip_migrate: bool, verbose: bool):
@@ -101,8 +110,9 @@ def main():
         env_dir = dockerfile_path.parent
         env_rel = env_dir.relative_to(task_root)  # path from task root to env dir
 
-        tag_suffix = "-".join(rel.parts)
-        tag = f"{args.tag_prefix}-{tag_suffix}:latest"
+        task_slug = sanitize_component(task_root_rel)
+        env_slug = sanitize_component("-".join(env_rel.parts)) if env_rel.parts else "env"
+        tag = f"{args.tag_prefix}-{task_slug}-{env_slug}:latest"
 
         print(f"[task] {task_root_rel} (env {env_rel}) -> tag {tag}")
 
