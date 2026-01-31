@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""
+Build a set of Harbor tasks with Dockerfiles using podman-hpc, save the images,
+and emit a task directory that references the prebuilt images instead of Dockerfiles.
+
+Usage:
+  python build_tasks_podman_hpc.py \
+    --tasks-dir /path/to/tasks \
+    --output-images-dir /path/to/output/images \
+    --output-tasks-dir /path/to/output/tasks \
+    [--tag-prefix harbor-task] \
+    [--skip-migrate] \
+    [--verbose]
+
+What it does:
+  - For each subdirectory under --tasks-dir that contains a Dockerfile:
+      * podman-hpc build -t <tag> .
+      * podman-hpc migrate <tag>          (unless --skip-migrate)
+      * podman-hpc save -o <task>.tar <tag>
+  - Copies the task directory to --output-tasks-dir/<task> and writes a file
+    DOCKER_IMAGE containing the tag, so Harbor can use the prebuilt image and
+    skip Dockerfile builds. The original Dockerfile is removed in the output copy
+    to prevent accidental rebuilds.
+
+Notes:
+  - Requires podman-hpc in PATH (NERSC Perlmutter module: `module load podman-hpc`).
+  - Image tags are local names; if you want to push to a registry, do that separately.
+"""
+
+from __future__ import annotations
+
+import argparse
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+
+def run(cmd: list[str], cwd: Path, verbose: bool):
+    if verbose:
+        print(f"+ {' '.join(cmd)} (cwd={cwd})")
+    proc = subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"Command failed: {' '.join(cmd)}\nstdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+        )
+    return proc.stdout
+
+
+def build_task(task_dir: Path, tag: str, output_images_dir: Path, skip_migrate: bool, verbose: bool):
+    # podman-hpc build
+    run(["podman-hpc", "build", "-t", tag, "-f", "Dockerfile", "."], cwd=task_dir, verbose=verbose)
+    if not skip_migrate:
+        run(["podman-hpc", "migrate", tag], cwd=task_dir, verbose=verbose)
+    # save image
+    output_images_dir.mkdir(parents=True, exist_ok=True)
+    tar_path = output_images_dir / f"{tag.replace(':', '_')}.tar"
+    run(["podman-hpc", "save", "-o", str(tar_path), tag], cwd=task_dir, verbose=verbose)
+    return tar_path
+
+
+def copy_task(task_dir: Path, dest_dir: Path, tag: str):
+    if dest_dir.exists():
+        shutil.rmtree(dest_dir)
+    shutil.copytree(task_dir, dest_dir)
+    dockerfile = dest_dir / "Dockerfile"
+    if dockerfile.exists():
+        dockerfile.unlink()
+    (dest_dir / "DOCKER_IMAGE").write_text(tag + "\n")
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Build Harbor tasks with podman-hpc and emit image-based tasks.")
+    ap.add_argument("--tasks-dir", required=True, type=Path, help="Input tasks directory (each subdir is a task with Dockerfile).")
+    ap.add_argument("--output-images-dir", required=True, type=Path, help="Where to store saved images (.tar).")
+    ap.add_argument("--output-tasks-dir", required=True, type=Path, help="Where to write task copies that reference prebuilt images.")
+    ap.add_argument("--tag-prefix", default="harbor-task", help="Prefix for image tags (tag will be <prefix>-<taskname>:latest).")
+    ap.add_argument("--skip-migrate", action="store_true", help="Skip podman-hpc migrate step.")
+    ap.add_argument("--verbose", action="store_true", help="Print commands.")
+    args = ap.parse_args()
+
+    tasks_dir: Path = args.tasks_dir
+    if not tasks_dir.is_dir():
+        sys.exit(f"Tasks dir not found: {tasks_dir}")
+
+    for task_path in sorted(p for p in tasks_dir.iterdir() if p.is_dir()):
+        dockerfile = task_path / "Dockerfile"
+        if not dockerfile.exists():
+            continue
+        task_name = task_path.name
+        tag = f"{args.tag_prefix}-{task_name}:latest"
+        print(f"[task] {task_name} -> tag {tag}")
+        tar_path = build_task(task_path, tag, args.output_images_dir, args.skip_migrate, args.verbose)
+        copy_task(task_path, args.output_tasks_dir / task_name, tag)
+        print(f"  saved: {tar_path}")
+        print(f"  task copy: {args.output_tasks_dir / task_name}")
+
+    print("Done.")
+
+
+if __name__ == "__main__":
+    main()
