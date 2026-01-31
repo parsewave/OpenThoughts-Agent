@@ -129,7 +129,7 @@ def main():
         dest_dockerfile = dest_env_dir / "Dockerfile"
         if dest_dockerfile.exists():
             dest_dockerfile.unlink()
-        (dest_env_dir / "DOCKER_IMAGE").write_text(tag + "\n")
+        (dest_env_dir / "DOCKER_IMAGE").write_text(str(tar_path) + "\n")
 
         # Update task.toml to point to the prebuilt image
         task_toml = dest_task_dir / "task.toml"
@@ -137,10 +137,10 @@ def main():
             try:
                 data = tomllib.loads(task_toml.read_text())
                 env_cfg = data.get("environment", {})
-                env_cfg["docker_image"] = tag
+                env_cfg["docker_image"] = str(tar_path)
                 data["environment"] = env_cfg
                 task_toml.write_text(toml.dumps(data))
-                print(f"  updated task.toml docker_image={tag}")
+                print(f"  updated task.toml docker_image={tar_path}")
             except Exception as e:
                 print(f"  warning: failed to update task.toml: {e}")
         else:
