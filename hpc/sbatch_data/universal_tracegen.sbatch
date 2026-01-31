@@ -92,6 +92,31 @@ export RAY_NOSET_CUDA_VISIBLE_DEVICES=1
 export TRITON_CACHE_VERBOSE=1
 source "$WORKDIR/hpc/shell_utils/triton_cache.sh"
 
+# --- Create experiment directories ---
+# Note: {experiments_dir} is an absolute path substituted by the launcher
+mkdir -p "{experiments_dir}"
+mkdir -p "{experiments_dir}/logs"
+mkdir -p "{experiments_dir}/ray_logs"
+
+# --- Cleanup trap to preserve Ray logs ---
+# Ray uses /tmp by default for logs/sockets. This trap copies them to the
+# experiments directory for debugging after the job terminates.
+cleanup_ray_logs() {
+  echo "Preserving Ray logs to {experiments_dir}/ray_logs/"
+  # Find and copy Ray session directories from /tmp on head node
+  if [[ -d /tmp/ray ]]; then
+    rsync -a --ignore-errors /tmp/ray/ "{experiments_dir}/ray_logs/" 2>/dev/null || true
+  fi
+  # Also try common Ray log locations
+  for ray_dir in /tmp/ray_logs /tmp/ray_tmp; do
+    if [[ -d "$ray_dir" ]]; then
+      rsync -a --ignore-errors "$ray_dir/" "{experiments_dir}/ray_logs/$(basename $ray_dir)/" 2>/dev/null || true
+    fi
+  done
+  echo "Ray log preservation complete"
+}
+trap cleanup_ray_logs EXIT
+
 # --- Docker/Podman Runtime Setup (for Harbor Docker backend) ---
 # Only run if harbor_env is "docker" - other backends (daytona, modal) don't need this.
 if [ "{harbor_env}" = "docker" ]; then
