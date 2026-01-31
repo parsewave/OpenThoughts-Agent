@@ -83,17 +83,23 @@ def main():
     if not tasks_dir.is_dir():
         sys.exit(f"Tasks dir not found: {tasks_dir}")
 
-    for task_path in sorted(p for p in tasks_dir.iterdir() if p.is_dir()):
-        dockerfile = task_path / "Dockerfile"
-        if not dockerfile.exists():
-            continue
-        task_name = task_path.name
+    # Find all subdirectories containing a Dockerfile (recursive)
+    task_dirs = sorted({p.parent for p in tasks_dir.rglob("Dockerfile") if p.parent.is_dir()})
+
+    if not task_dirs:
+        print("No tasks with Dockerfile found.")
+        return
+
+    for task_path in task_dirs:
+        rel = task_path.relative_to(tasks_dir)
+        task_name = "-".join(rel.parts)
         tag = f"{args.tag_prefix}-{task_name}:latest"
-        print(f"[task] {task_name} -> tag {tag}")
+        print(f"[task] {rel} -> tag {tag}")
         tar_path = build_task(task_path, tag, args.output_images_dir, args.skip_migrate, args.verbose)
-        copy_task(task_path, args.output_tasks_dir / task_name, tag)
+        dest_task_dir = args.output_tasks_dir / rel
+        copy_task(task_path, dest_task_dir, tag)
         print(f"  saved: {tar_path}")
-        print(f"  task copy: {args.output_tasks_dir / task_name}")
+        print(f"  task copy: {dest_task_dir}")
 
     print("Done.")
 
