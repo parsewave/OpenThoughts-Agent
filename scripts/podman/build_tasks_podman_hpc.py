@@ -98,8 +98,8 @@ def main():
         rel = dockerfile_path.relative_to(tasks_dir)
         task_root_rel = rel.parts[0]
         task_root = tasks_dir / task_root_rel
-        env_rel = rel.parent.relative_to(task_root)  # path from task root to env dir
         env_dir = dockerfile_path.parent
+        env_rel = env_dir.relative_to(task_root)  # path from task root to env dir
 
         tag_suffix = "-".join(rel.parts)
         tag = f"{args.tag_prefix}-{tag_suffix}:latest"
