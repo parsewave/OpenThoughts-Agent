@@ -34,8 +34,6 @@ vllm_server:
   reasoning_parser: deepseek_v3
   trust_remote_code: true
   extra_args:
-  - --default-chat-template-kwargs
-  - '{"enable_thinking": true}'
   - --dtype
   - bfloat16
   - --kv-cache-dtype
