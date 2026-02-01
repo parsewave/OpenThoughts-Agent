@@ -289,7 +289,7 @@ class HPC(BaseModel):
             "# --- Ray defaults ---",
             'export RAY_CGRAPH_get_timeout="${RAY_CGRAPH_get_timeout:-900}"',
             'if [ -z "${RAY_TMPDIR:-}" ]; then',
-            f'  RAY_TMPDIR_BASE="${{SCRATCH:-{experiments_dir}}}/ray_sessions"',
+            '  RAY_TMPDIR_BASE="/tmp/ray"',
             '  RAY_TMPDIR="${RAY_TMPDIR_BASE}/ray_${SLURM_JOB_ID:-$$}"',
             '  mkdir -p "$RAY_TMPDIR"',
             "fi",
