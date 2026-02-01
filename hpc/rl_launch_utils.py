@@ -659,6 +659,7 @@ fi"""
         "cuda_setup": cuda_setup,
         "nccl_exports": hpc.get_nccl_exports(),
         "rl_env_exports": rl_env_exports,
+        "ray_env_exports": hpc.get_ray_env_exports(experiments_subdir),
         "rl_env_activation": rl_env_activation,
         "ssh_tunnel_setup": hpc.get_ssh_tunnel_setup(),
         "proxy_setup": hpc.get_proxy_setup(),

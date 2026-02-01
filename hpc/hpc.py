@@ -283,6 +283,21 @@ class HPC(BaseModel):
             lines.append(f'export {key}="{value}"')
         return "\n".join(lines)
 
+    def get_ray_env_exports(self, experiments_dir: str) -> str:
+        """Generate Ray-specific environment defaults for SBATCH scripts."""
+        lines = [
+            "# --- Ray defaults ---",
+            'export RAY_CGRAPH_get_timeout="${RAY_CGRAPH_get_timeout:-900}"',
+            'if [ -z "${RAY_TMPDIR:-}" ]; then',
+            f'  RAY_TMPDIR_BASE="${{SCRATCH:-{experiments_dir}}}/ray_sessions"',
+            '  RAY_TMPDIR="${RAY_TMPDIR_BASE}/ray_${SLURM_JOB_ID:-$$}"',
+            '  mkdir -p "$RAY_TMPDIR"',
+            "fi",
+            'export RAY_TMPDIR="${RAY_TMPDIR}"',
+            'echo "[ray] RAY_TMPDIR=$RAY_TMPDIR"',
+        ]
+        return "\n".join(lines)
+
     def get_ssh_tunnel_setup(self) -> str:
         """Generate SSH tunnel setup script for no-internet clusters (JSC).
 

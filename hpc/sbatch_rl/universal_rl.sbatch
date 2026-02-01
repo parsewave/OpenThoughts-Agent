@@ -96,6 +96,9 @@ export PYTHONPATH="$WORKDIR:${PYTHONPATH:-}"
 # --- RL-specific environment variables ---
 {rl_env_exports}
 
+# --- Ray defaults ---
+{ray_env_exports}
+
 # --- vLLM/Ray settings ---
 export VLLM_USE_V1=1
 export RAY_RUNTIME_ENV_HOOK=ray._private.runtime_env.uv_runtime_env_hook.hook

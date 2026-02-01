@@ -88,6 +88,9 @@ export PYTHONPATH="$WORKDIR:${PYTHONPATH:-}"
 export RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES=1
 export RAY_NOSET_CUDA_VISIBLE_DEVICES=1
 
+# --- Ray defaults ---
+{ray_env_exports}
+
 # --- Run the task generation job via Python runner ---
 echo "=== Universal Task Generation Runner ==="
 echo "Config: {config_path}"

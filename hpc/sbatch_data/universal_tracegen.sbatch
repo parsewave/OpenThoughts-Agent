@@ -88,6 +88,9 @@ export PYTHONPATH="$WORKDIR:${PYTHONPATH:-}"
 export RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES=1
 export RAY_NOSET_CUDA_VISIBLE_DEVICES=1
 
+# --- Ray defaults ---
+{ray_env_exports}
+
 # --- Triton/TorchInductor cache settings (node-local to avoid shared FS issues) ---
 export TRITON_CACHE_VERBOSE=1
 source "$WORKDIR/hpc/shell_utils/triton_cache.sh"

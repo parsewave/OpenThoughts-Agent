@@ -81,6 +81,9 @@ set -u
 # --- Cluster-specific environment variables ---
 {env_exports}
 
+# --- Ray defaults ---
+{ray_env_exports}
+
 # --- Standard environment variables ---
 export PYTHONFAULTHANDLER=1
 export TORCH_SHOW_CPP_STACKTRACES=1
