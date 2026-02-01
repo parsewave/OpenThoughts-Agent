@@ -62,6 +62,7 @@ environment:
     network_none: false    # Set to true for fully isolated containers
     image_cache_dir: trace_images
     image_manifest_path: trace_images/images_manifest.jsonl
+    build_concurrency: 4
 
 verifier:
   override_timeout_sec:
