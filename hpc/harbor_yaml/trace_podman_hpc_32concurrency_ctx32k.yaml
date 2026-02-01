@@ -48,13 +48,15 @@ orchestrator:
 environment:
   # Use native podman-hpc backend (no docker-compose required)
   type: podman_hpc
-  force_build: true
+  force_build: false
   delete: true
   # Conservative resource limits for HPC shared nodes
   override_cpus: 1
   override_memory_mb: 2048
   override_storage_mb: 2048
-  kwargs: {}
+  kwargs:
+    image_cache_dir: trace_images
+    image_manifest_path: trace_images/images_manifest.jsonl
 
 verifier:
   override_timeout_sec:
