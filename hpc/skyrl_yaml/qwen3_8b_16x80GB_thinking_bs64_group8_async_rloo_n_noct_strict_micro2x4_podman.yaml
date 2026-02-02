@@ -5,7 +5,7 @@
 # Designed for NERSC Perlmutter and other HPC clusters with podman-hpc.
 #
 # Key differences from Daytona variant:
-#   - harbor_env: podman_hpc (matches Harbor's environment.type: podman_hpc)
+#   - environment_type: podman_hpc (in harbor section, maps to Harbor's EnvironmentConfig.type)
 #   - mask_exceptions uses PodmanHPCCommandError/PodmanHPCTimeoutError instead of DaytonaError
 #   - No Pinggy tunnel needed (containers have direct network access to vLLM)
 #
@@ -34,10 +34,6 @@ terminal_bench:
   # trials_dir: Directory for Harbor trial artifacts (derived from experiments_dir if null)
   trials_dir: null
 
-  # Harbor environment backend: podman_hpc for native podman-hpc support
-  # This value is passed through to SkyRL and triggers Docker/Podman runtime setup in sbatch
-  harbor_env: podman_hpc
-
   # Harbor configuration - schema-driven mapping to TrialConfig
   harbor:
     # Agent settings
@@ -61,6 +57,7 @@ terminal_bench:
     override_timeout_sec: 240
 
     # Environment settings
+    environment_type: podman_hpc
     override_cpus: 1
     override_memory_mb: 2048
     override_storage_mb: 2048

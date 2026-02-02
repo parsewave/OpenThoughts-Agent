@@ -252,9 +252,9 @@ def extract_terminal_bench_agent_env(parsed: ParsedRLConfig) -> tuple:
     # Agent name from harbor.name (default: terminus-2)
     agent_name = harbor.get("name", "terminus-2")
 
-    # Environment type - can be explicit in terminal_bench config or default to daytona
-    # Most cloud backends (Daytona, Modal) need Pinggy for installed agents
-    harbor_env = tb.get("harbor_env", "daytona")
+    # Environment type from harbor.environment_type (default: daytona)
+    # This matches Harbor's EnvironmentConfig.type field
+    harbor_env = harbor.get("environment_type", "daytona")
 
     return agent_name, harbor_env
 

@@ -59,11 +59,6 @@ terminal_bench:
   # trials_dir: Directory for Harbor trial artifacts (derived from experiments_dir if null)
   trials_dir: null
 
-  # Harbor environment backend: daytona (cloud), docker (local/podman), modal
-  # OpenHands is an installed agent that runs in cloud sandboxes and needs
-  # Pinggy tunnels to reach the vLLM endpoint on the HPC cluster
-  harbor_env: daytona
-
   # Harbor configuration - schema-driven mapping to TrialConfig
   # See examples/terminal_bench/harbor_config.py for full list of supported fields.
   # Unknown fields will generate warnings (typo protection + version compatibility).
@@ -86,6 +81,8 @@ terminal_bench:
     # ==========================================================================
     # Environment settings (maps to Harbor EnvironmentConfig)
     # ==========================================================================
+    # Environment type: daytona required for OpenHands (installed agent needs cloud sandbox)
+    environment_type: daytona
     # Sandbox resources - adequate for most agentic tasks
     override_cpus: 1
     override_memory_mb: 2048
