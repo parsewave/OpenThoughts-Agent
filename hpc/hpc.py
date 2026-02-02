@@ -845,6 +845,8 @@ perlmutter = HPC(
         "CC": "gcc",
         "CXX": "g++",
         "CUDAHOSTCXX": "g++",
+        # Disable addr2line for vLLM model inspection subprocess (prevents SIGSEGV hangs)
+        "TORCH_DISABLE_ADDR2LINE": "1",
     },
     # Library paths for CUDA
     library_paths={
