@@ -26,6 +26,18 @@ if [ -z "${BASH_COMPLETION_DEBUG+x}" ]; then
   export BASH_COMPLETION_DEBUG=""
 fi
 
+# --- Clean up /tmp to prevent state pollution from previous jobs ---
+# Some HPC systems retain /tmp contents across job allocations on the same node.
+# This can cause issues with tmux sessions, container state, and other temporary files.
+# Wrapped in set +u/set -u in case some clusters error out on these commands.
+set +u
+rm -rf /tmp/tmux-* 2>/dev/null || true
+rm -rf /tmp/ray 2>/dev/null || true
+rm -rf /tmp/hf_home 2>/dev/null || true
+rm -rf /tmp/containers 2>/dev/null || true
+rm -rf /tmp/podman-* 2>/dev/null || true
+set -u
+
 # --- Module and Conda Setup ---
 # Disable unbound variable check for module loading and conda activation.
 # Module reloads can trigger conda deactivation scripts that reference unset variables.
