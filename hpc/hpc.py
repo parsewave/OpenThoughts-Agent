@@ -839,7 +839,7 @@ perlmutter = HPC(
         "A100 40GB": '"gpu"',
     },
     # Modules to load (CUDA toolkit and native GCC for compilation)
-    modules=["cudatoolkit/13.0", "gcc-native/13.2"],
+    modules=["cudatoolkit/12.9", "gcc-native/13.2"],
     # Compiler environment variables for flash_attn and other CUDA builds
     env_vars={
         "CC": "gcc",
