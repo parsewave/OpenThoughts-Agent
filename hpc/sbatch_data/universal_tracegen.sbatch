@@ -132,52 +132,9 @@ cleanup_ray_logs() {
 }
 trap cleanup_ray_logs EXIT
 
-# --- Docker/Podman Runtime Setup (for Harbor Docker backend) ---
-# Only run if harbor_env is "docker" - other backends (daytona, modal) don't need this.
-if [ "{harbor_env}" = "docker" ]; then
-  if [ -f "$WORKDIR/docker/setup_docker_runtime.sh" ]; then
-    echo "[sbatch] Setting up Docker/Podman runtime..."
-    # Source the setup script to detect and configure runtime
-    # shellcheck source=docker/setup_docker_runtime.sh
-    source "$WORKDIR/docker/setup_docker_runtime.sh"
-
-    # Ensure a docker-compatible CLI exists when only podman-hpc is available.
-    if ! command -v docker &>/dev/null && command -v podman-hpc &>/dev/null; then
-      mkdir -p "$WORKDIR/.bin"
-      cat > "$WORKDIR/.bin/docker" <<'EOF'
-#!/usr/bin/env bash
-exec podman-hpc "$@"
-EOF
-      chmod +x "$WORKDIR/.bin/docker"
-      export PATH="$WORKDIR/.bin:$PATH"
-      echo "[sbatch] Installed podman-hpc docker shim at $WORKDIR/.bin/docker"
-    fi
-
-    # Verify connectivity if DOCKER_HOST is set
-    if [ -n "${DOCKER_HOST:-}" ]; then
-      echo "[sbatch] DOCKER_HOST=$DOCKER_HOST"
-      echo "[sbatch] CONTAINER_RUNTIME=${CONTAINER_RUNTIME:-unknown}"
-
-      # Quick connectivity check (timeout after 10s)
-      # Try docker first, then podman-hpc (Perlmutter may not have docker CLI)
-      if command -v docker &>/dev/null && timeout 10 docker info &>/dev/null; then
-        echo "[sbatch] Docker runtime verified successfully (docker info)"
-      elif command -v podman-hpc &>/dev/null && timeout 10 podman-hpc info &>/dev/null; then
-        echo "[sbatch] Docker runtime verified successfully (podman-hpc info)"
-      elif command -v podman &>/dev/null && timeout 10 podman info &>/dev/null; then
-        echo "[sbatch] Docker runtime verified successfully (podman info)"
-      else
-        echo "[sbatch] ERROR: Docker daemon not responding at DOCKER_HOST=$DOCKER_HOST"
-        echo "[sbatch] HINT: Check 'podman-hpc info' or 'docker info' manually"
-        exit 4  # EXIT_CONNECTIVITY_FAILED
-      fi
-    else
-      echo "[sbatch] WARNING: DOCKER_HOST not set, Harbor Docker backend may fail"
-    fi
-  fi
-else
-  echo "[sbatch] Harbor env: {harbor_env} (skipping Docker runtime setup)"
-fi
+# --- Container Runtime Setup ---
+source "$WORKDIR/hpc/shell_utils/container_runtime.sh"
+setup_container_runtime "{harbor_env}" "$WORKDIR" || exit $?
 
 # --- Run the trace generation job via Python runner ---
 echo "=== Universal Trace Generation Runner ==="
