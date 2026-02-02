@@ -64,7 +64,7 @@ terminal_bench:
     # Environment settings - use PooledDaytonaDinDEnvironment via import_path
     import_path: "harbor.environments.pooled.daytona_dind:PooledDaytonaDinDEnvironment"
     # Pool configuration
-    pool_size: 8
+    pool_size: 48
     acquire_timeout: 300.0
     # Resources per parent sandbox in the pool
     env_cpu: 2
