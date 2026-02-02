@@ -83,7 +83,7 @@ terminal_bench:
       - ContextLengthExceededError
 
     # Orchestrator settings
-    n_concurrent_trials: 192
+    n_concurrent_trials: 96
 
     # Logging settings
     log_level: INFO
