@@ -211,7 +211,12 @@ fi
 mkdir -p "$(dirname "$RL_ENV_DIR")"
 
 echo "Creating Python $PYTHON_VERSION virtual environment..."
-uv venv "$RL_ENV_DIR" --python "$PYTHON_VERSION"
+# Use --python-preference managed to ensure uv uses its own managed Python,
+# not any system/conda Python. This prevents broken symlinks if conda is
+# deactivated later when using the venv.
+# Use --link-mode copy to copy files instead of symlinking, which is more
+# reliable on HPC systems with shared filesystems across different nodes.
+uv venv "$RL_ENV_DIR" --python "$PYTHON_VERSION" --python-preference managed --link-mode copy
 
 echo "Activating environment..."
 source "$RL_ENV_DIR/bin/activate"

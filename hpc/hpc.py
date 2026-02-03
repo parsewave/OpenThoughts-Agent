@@ -66,6 +66,10 @@ class HPC(BaseModel):
     proxy_port: int = 0
     proxychains_preload: str = ""
 
+    # Pre-run shell commands (cluster-specific setup)
+    # These run at the start of the batch script before any other setup
+    pre_run_commands: List[str] = []
+
     # CUDA path detection for complex clusters (Perlmutter)
     needs_cuda_detection: bool = False
 
@@ -279,24 +283,67 @@ class HPC(BaseModel):
             lines.append(f'export {key}="{value}"')
         return "\n".join(lines)
 
+    def get_ray_env_exports(self, experiments_dir: str) -> str:
+        """Generate Ray-specific environment defaults for SBATCH scripts."""
+        lines = [
+            "# --- Ray defaults ---",
+            'export RAY_CGRAPH_get_timeout="${RAY_CGRAPH_get_timeout:-900}"',
+            'if [ -z "${RAY_TMPDIR:-}" ]; then',
+            '  RAY_TMPDIR_BASE="/tmp/ray"',
+            '  RAY_TMPDIR="${RAY_TMPDIR_BASE}/ray_${SLURM_JOB_ID:-$$}"',
+            '  mkdir -p "$RAY_TMPDIR"',
+            "fi",
+            'export RAY_TMPDIR="${RAY_TMPDIR}"',
+            'echo "[ray] RAY_TMPDIR=$RAY_TMPDIR"',
+        ]
+        return "\n".join(lines)
+
     def get_ssh_tunnel_setup(self) -> str:
         """Generate SSH tunnel setup script for no-internet clusters (JSC).
 
-        This keeps the battle-tested bash logic for SSH tunneling intact,
-        preserving the exact behavior from jsc_train.sbatch.
+        Creates a SOCKS5 proxy via SSH tunnel from compute node to login node,
+        then exports ALL_PROXY so that httpx-based applications (like Harbor/Daytona)
+        automatically route traffic through the tunnel.
+
+        Requirements:
+        - SSH_KEY environment variable must be set to path of SSH private key
+        - Public key must be in ~/.ssh/authorized_keys on login node
+        - socksio Python package must be installed for httpx SOCKS5 support
         """
         if not self.needs_ssh_tunnel:
             return "# No SSH tunnel needed for this cluster"
 
-        return r'''# SSH tunnel setup for no-internet clusters
+        return r'''# ============================================================================
+# SSH Tunnel Setup for No-Internet Clusters (JSC)
+# Creates SOCKS5 proxy via SSH tunnel to login node for internet access
+#
+# NOTE: We do NOT export proxy vars globally because Ray/gRPC doesn't support SOCKS.
+# Instead, we save the proxy URL to SOCKS_PROXY_URL for explicit use by applications
+# that need external access (like Harbor/Daytona).
+# ============================================================================
 if [ -n "${SSH_KEY:-}" ]; then
     USER_NAME="$(whoami)"
     LOGIN_NODE="${SLURM_SUBMIT_HOST:-$(hostname -f | sed 's/^[^.]*\.//')}"
-    PORT_TO_USE=$((20000 + RANDOM % 10000))
+    SOCKS_PORT=$((20000 + RANDOM % 10000))
     head_node_ip=$(scontrol show hostnames $SLURM_JOB_NODELIST | head -n 1)
     head_node_ip="$(nslookup "$head_node_ip" | grep -oP '(?<=Address: ).*')"
 
-    SSH_TUNNEL_CMD="ssh -g -f -N -D 0.0.0.0:$PORT_TO_USE \\
+    echo "[ssh-tunnel] Setting up SOCKS5 proxy via SSH tunnel"
+    echo "[ssh-tunnel] Login node: $LOGIN_NODE"
+    echo "[ssh-tunnel] SOCKS port: $SOCKS_PORT"
+    echo "[ssh-tunnel] SSH key: $SSH_KEY"
+
+    # Test SSH connectivity before setting up tunnel
+    echo "[ssh-tunnel] Testing SSH connectivity..."
+    if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes "${USER_NAME}@${LOGIN_NODE}" echo "SSH connection successful"; then
+        echo "[ssh-tunnel] ✓ SSH test passed"
+    else
+        echo "[ssh-tunnel] ✗ SSH test FAILED - tunnel will likely fail"
+        echo "[ssh-tunnel] Check that public key is in ~/.ssh/authorized_keys on login node"
+    fi
+
+    # Create SSH tunnel with SOCKS5 proxy
+    SSH_TUNNEL_CMD="ssh -g -f -N -D 0.0.0.0:$SOCKS_PORT \\
         -o StrictHostKeyChecking=no \\
         -o ConnectTimeout=1000 \\
         -o ServerAliveInterval=15 \\
@@ -307,65 +354,63 @@ if [ -n "${SSH_KEY:-}" ]; then
         -i $SSH_KEY \\
         ${USER_NAME}@$LOGIN_NODE"
 
-    mkdir -p ~/.proxychains
-    cat > ~/.proxychains/proxychains.conf <<-EOT
-        strict_chain
-        proxy_dns
-        tcp_read_time_out 30000
-        tcp_connect_time_out 15000
-        localnet 127.0.0.0/255.0.0.0
-        [ProxyList]
-        socks5 ${head_node_ip} ${PORT_TO_USE}
-EOT
+    echo "[ssh-tunnel] Starting SSH tunnel..."
     eval "$SSH_TUNNEL_CMD"
-    sleep 1
-    PROXY_CMD="proxychains4"
+    sleep 2
+
+    # Verify tunnel is running
+    if pgrep -f "ssh.*-D.*$SOCKS_PORT" > /dev/null; then
+        echo "[ssh-tunnel] ✓ SSH tunnel started successfully"
+    else
+        echo "[ssh-tunnel] ✗ SSH tunnel failed to start"
+    fi
+
+    # Save proxy URL for explicit use (do NOT export globally - breaks Ray/gRPC)
+    # Applications that need external access should set ALL_PROXY explicitly
+    export SOCKS_PROXY_URL="socks5h://127.0.0.1:${SOCKS_PORT}"
+    echo "[ssh-tunnel] ✓ Proxy available at: $SOCKS_PROXY_URL"
+    echo "[ssh-tunnel]   To use: export ALL_PROXY=\$SOCKS_PROXY_URL"
+
+    # Test proxy connectivity
+    echo "[ssh-tunnel] Testing proxy connectivity..."
+    if curl -s --connect-timeout 5 --proxy "$SOCKS_PROXY_URL" https://huggingface.co -o /dev/null 2>/dev/null; then
+        echo "[ssh-tunnel] ✓ Proxy test passed - internet access available"
+    else
+        echo "[ssh-tunnel] ✗ Proxy test failed - internet may not be available"
+    fi
 else
-    PROXY_CMD=""
-fi'''
+    echo "[ssh-tunnel] SSH_KEY not set - skipping SSH tunnel setup"
+    echo "[ssh-tunnel] Set SSH_KEY in your dotenv file to enable internet access on compute nodes"
+    export SOCKS_PROXY_URL=""
+fi
+
+# PROXY_CMD is no longer needed
+PROXY_CMD=""'''
 
     def get_proxy_setup(self) -> str:
         """Generate SOCKS5 proxy setup script for no-internet clusters (JSC).
 
-        This configures proxychains to use an existing SOCKS5 proxy on the login node,
-        which is an alternative to setting up SSH tunnels. The proxy is typically
-        pre-configured by cluster admins for compute node internet access.
+        DEPRECATED: This method is no longer used. Proxy setup is now handled by
+        get_ssh_tunnel_setup() which creates an SSH tunnel and sets ALL_PROXY.
 
         Returns:
-            Bash script for proxy configuration, or comment if no proxy is configured.
+            Comment indicating proxy setup is handled elsewhere.
         """
-        if not self.proxy_host or not self.proxy_port:
-            return "# No SOCKS5 proxy configured for this cluster"
+        return "# Proxy setup handled by SSH tunnel (see get_ssh_tunnel_setup)"
 
-        preload_export = ""
-        if self.proxychains_preload:
-            preload_export = f'export PROXYCHAINS_PRELOAD="{self.proxychains_preload}"'
+    def get_pre_run_commands(self) -> str:
+        """Generate pre-run commands for cluster-specific setup.
 
-        return f'''# ============================================================================
-# SOCKS5 Proxy Setup (JSC clusters)
-# Use existing proxy on login node - no SSH tunnel needed
-# ============================================================================
-PROXY_HOST="{self.proxy_host}"
-PROXY_PORT="{self.proxy_port}"
+        Returns:
+            Bash commands to run at the start of the batch script.
+        """
+        if not self.pre_run_commands:
+            return "# No cluster-specific pre-run commands"
 
-# Check proxy is reachable (skip if nc not available)
-if command -v nc &>/dev/null; then
-    if nc -z $PROXY_HOST $PROXY_PORT 2>/dev/null; then
-        echo "[proxy] ✓ Proxy reachable at $PROXY_HOST:$PROXY_PORT"
-    else
-        echo "[proxy] WARNING: Proxy not reachable at $PROXY_HOST:$PROXY_PORT"
-        echo "[proxy] Internet access may fail on compute nodes!"
-    fi
-else
-    echo "[proxy] Skipping proxy check (nc not available)"
-fi
-
-# Configure proxychains environment variables
-export PROXYCHAINS_SOCKS5_HOST=$PROXY_HOST
-export PROXYCHAINS_SOCKS5_PORT=$PROXY_PORT
-{preload_export}
-
-echo "[proxy] Configured SOCKS5 proxy: $PROXY_HOST:$PROXY_PORT"'''
+        lines = ["# Cluster-specific pre-run commands"]
+        for cmd in self.pre_run_commands:
+            lines.append(cmd)
+        return "\n".join(lines)
 
 
 jureca = HPC(
@@ -393,12 +438,9 @@ jureca = HPC(
         "NCCL_IB_TIMEOUT": "60",
     },
     training_launcher="accelerate",
-    needs_ssh_tunnel=True,
-    # SOCKS5 proxy for RL training (alternative to SSH tunnel)
-    # Existing proxy on login node for compute node internet access
-    proxy_host="10.14.0.53",
-    proxy_port=1080,
-    proxychains_preload="/p/scratch/laionize/raj3/proxychains-ng/libproxychains4.so",
+    needs_ssh_tunnel=True,  # SSH tunnel provides internet via ALL_PROXY
+    # JSC-specific setup (disable core dumps to save disk space)
+    pre_run_commands=["ulimit -c 0"],
     # Job scaling (from jureca.env)
     default_time_limit="24:00:00",
     num_nodes_default=1,
@@ -434,12 +476,9 @@ jupiter = HPC(
         "NCCL_IB_TIMEOUT": "60",
     },
     training_launcher="accelerate",
-    needs_ssh_tunnel=True,  # Compute nodes need SSH tunnel for external access
-    # SOCKS5 proxy for RL training (alternative to SSH tunnel)
-    # Existing proxy on login node for compute node internet access
-    proxy_host="10.14.0.53",
-    proxy_port=1080,
-    proxychains_preload="/p/scratch/laionize/raj3/proxychains-ng/libproxychains4.so",
+    needs_ssh_tunnel=True,  # SSH tunnel provides internet via ALL_PROXY
+    # JSC-specific setup (disable core dumps to save disk space)
+    pre_run_commands=["ulimit -c 0"],
     # Job scaling
     default_time_limit="12:00:00",
     max_time_limit="24:00:00",
@@ -471,12 +510,9 @@ juwels = HPC(
         "NCCL_IB_TIMEOUT": "60",
     },
     training_launcher="accelerate",
-    needs_ssh_tunnel=True,
-    # SOCKS5 proxy for RL training (alternative to SSH tunnel)
-    # Existing proxy on login node for compute node internet access
-    proxy_host="10.14.0.53",
-    proxy_port=1080,
-    proxychains_preload="/p/scratch/laionize/raj3/proxychains-ng/libproxychains4.so",
+    needs_ssh_tunnel=True,  # SSH tunnel provides internet via ALL_PROXY
+    # JSC-specific setup (disable core dumps to save disk space)
+    pre_run_commands=["ulimit -c 0"],
     # Job scaling (from juwels.env)
     default_time_limit="24:00:00",
     num_nodes_default=4,
@@ -803,12 +839,14 @@ perlmutter = HPC(
         "A100 40GB": '"gpu"',
     },
     # Modules to load (CUDA toolkit and native GCC for compilation)
-    modules=["cudatoolkit/12.9", "gcc-native/13.2"],
+    modules=["cudatoolkit/13.0", "gcc-native/13.2"],
     # Compiler environment variables for flash_attn and other CUDA builds
     env_vars={
         "CC": "gcc",
         "CXX": "g++",
         "CUDAHOSTCXX": "g++",
+        # Disable addr2line for vLLM model inspection subprocess (prevents SIGSEGV hangs)
+        "TORCH_DISABLE_ADDR2LINE": "1",
     },
     # Library paths for CUDA
     library_paths={

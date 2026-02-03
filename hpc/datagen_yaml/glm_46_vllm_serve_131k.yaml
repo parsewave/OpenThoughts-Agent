@@ -7,8 +7,6 @@ engine:
 backend:
   type: ray
   wait_for_endpoint: true
-  tensor_parallel_size: 4
-  pipeline_parallel_size: 2
   healthcheck_max_attempts: 120
   healthcheck_retry_delay: 15
 vllm_server:
@@ -25,8 +23,6 @@ vllm_server:
   enable_auto_tool_choice: true
   tool_call_parser: glm45
   reasoning_parser: deepseek_v3
-  default_chat_template_kwargs:
-    enable_thinking: true
   trust_remote_code: true
   extra_args:
   - --dtype
@@ -38,4 +34,3 @@ vllm_server:
   - '131072'
   - --all2all-backend
   - pplx
-

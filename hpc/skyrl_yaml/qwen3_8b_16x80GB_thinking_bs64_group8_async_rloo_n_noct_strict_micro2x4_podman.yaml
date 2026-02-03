@@ -1,27 +1,23 @@
-# SkyRL Configuration: Qwen3 8B on 8x80GB GPUs (RLOO-N + Strict JSON + TIS)
-# Based on: qwen3_8b_16x80GB_thinking_bs64_group8_async_rloo_n_noct_strict_tis.yaml
+# SkyRL Configuration: Qwen3 8B on 16x80GB GPUs (RLOO-N + Strict JSON + Podman-HPC)
+# Based on: qwen3_8b_16x80GB_thinking_bs64_group8_async_rloo_n_noct_strict_micro2x4.yaml
 #
-# 8-GPU VARIANT: Adjusted for 2 nodes × 4 GPUs = 8 GPUs total:
-#   - colocate_all: false (truly async: training and inference on separate GPUs)
-#   - Policy/ref: 4 GPUs (1 node × 4)
-#   - Inference: 4 engines (4 GPUs)
-#   - num_parallel_generation_workers: 64 (must be >= mini_batch_size)
+# PODMAN-HPC VARIANT: Uses Harbor's native podman_hpc backend instead of Daytona.
+# Designed for NERSC Perlmutter and other HPC clusters with podman-hpc.
 #
-# TIS VARIANT: This config adds Truncated Importance Sampling for async training:
-#   - use_tis: true with tis_imp_ratio_cap: 2.0
-#   - collect_rollout_details: true (captures per-token logprobs during rollout)
-#   - TIS corrects for off-policy bias when training on stale rollouts
+# Key differences from Daytona variant:
+#   - environment_type: podman_hpc (in harbor section, maps to Harbor's EnvironmentConfig.type)
+#   - mask_exceptions uses PodmanHPCCommandError/PodmanHPCTimeoutError instead of DaytonaError
+#   - No Pinggy tunnel needed (containers have direct network access to vLLM)
 #
-# All other settings preserved:
-#   - strict_json_parser: true
-#   - kl_loss_coef: 0.01 (10x KL penalty)
-#   - RLOO-N advantage estimator with error classification
+# MICRO BATCH SETTINGS (same as base):
+#   - micro_train_batch_size_per_gpu: 2
+#   - micro_forward_batch_size_per_gpu: 4
 #
 # Usage:
 #   python -m hpc.launch \
 #       --job_type rl \
-#       --rl_config qwen3_8b_8x80GB_thinking_bs64_group8_async_rloo_n_noct_strict_tis.yaml \
-#       --job_name qwen3_8b_agentic_async_8gpu_tis \
+#       --rl_config qwen3_8b_16x80GB_thinking_bs64_group8_async_rloo_n_noct_strict_micro2x4_podman.yaml \
+#       --job_name qwen3_8b_agentic_async_rloo_n_strict_podman \
 #       --train_data '["mlfoundations-dev/your-dataset"]' \
 #       --model_path Qwen/Qwen3-8B \
 #       --num_nodes 2
@@ -48,13 +44,6 @@ terminal_bench:
     # Disable episode-* folder creation to reduce disk I/O (SkyRL uses TrialResult directly)
     enable_episode_logging: false
 
-    # ==========================================================================
-    # TIS REQUIREMENT: Collect rollout details for importance sampling
-    # ==========================================================================
-    # When true, collects per-token logprobs during rollout. Required for TIS.
-    # NOTE: Rollout details may be incomplete if context summarization occurs.
-    collect_rollout_details: true
-
     # Strict JSON parser
     strict_json_parser: true
 
@@ -65,9 +54,10 @@ terminal_bench:
         enable_thinking: true
 
     # Timeout settings
-    override_timeout_sec: 240
+    override_timeout_sec: 360
 
     # Environment settings
+    environment_type: podman_hpc
     override_cpus: 1
     override_memory_mb: 2048
     override_storage_mb: 2048
@@ -89,7 +79,7 @@ terminal_bench:
       - VerifierOutputParseError
       - ContextLengthExceededError
 
-    # Orchestrator settings (reduced for 8 GPU setup)
+    # Orchestrator settings
     n_concurrent_trials: 96
 
     # Logging settings
@@ -99,9 +89,11 @@ terminal_bench:
     enable_reward_shaping: false
 
     # RLOO-N error classification
+    # Updated for podman-hpc: mask container infrastructure errors, not Daytona errors
     enable_error_classification: true
     mask_exceptions:
-      - DaytonaError
+      - PodmanHPCCommandError
+      - PodmanHPCTimeoutError
       - EnvironmentStartTimeoutError
       - NetworkError
       - ConnectionError
@@ -133,14 +125,6 @@ trainer:
     eps_clip_high: 0.2
     loss_reduction: token_mean
 
-    # ==========================================================================
-    # TIS (Truncated Importance Sampling) for async training
-    # ==========================================================================
-    # Corrects for off-policy bias when training on stale rollouts
-    # Requires collect_rollout_details=true in Harbor config
-    use_tis: true
-    tis_imp_ratio_cap: 2.0  # Standard cap from flash_rl examples
-
   # Training loop settings
   epochs: 10
   update_epochs_per_batch: 1
@@ -150,9 +134,9 @@ trainer:
   policy_mini_batch_size: 64
   eval_batch_size: 64
 
-  # Micro batch sizes
-  micro_forward_batch_size_per_gpu: 1
-  micro_train_batch_size_per_gpu: 1
+  # Micro batch sizes (increased for better GPU utilization)
+  micro_forward_batch_size_per_gpu: 4
+  micro_train_batch_size_per_gpu: 2
 
   max_prompt_length: 999999
 
@@ -182,25 +166,29 @@ trainer:
       weight_decay: 0.01
       adam_betas: [0.9, 0.999]
       max_grad_norm: 1.0
-
+    fsdp_config:
+      cpu_offload: false
+      reshard_after_forward: false
+      fsdp_size: 4
   # Reference model
   ref:
     fsdp_config:
       cpu_offload: false
-      reshard_after_forward: true
+      reshard_after_forward: false
+      fsdp_size: 4
 
-  # Model placement (8-GPU async: 4 training + 4 inference)
+  # Model placement (async training)
   placement:
-    colocate_all: false  # Truly async: training and inference on separate GPUs
-    policy_num_nodes: 1
-    ref_num_nodes: 1
+    colocate_all: false
+    policy_num_nodes: 2
+    ref_num_nodes: 2
     policy_num_gpus_per_node: 4
     ref_num_gpus_per_node: 4
 
   # Fully async generation
   fully_async:
     max_staleness_steps: 8
-    num_parallel_generation_workers: 64  # Must be >= mini_batch_size (64)
+    num_parallel_generation_workers: 128
 
 # Generator configuration
 generator:
@@ -208,7 +196,7 @@ generator:
   model_dtype: bfloat16
 
   inference_engine_tensor_parallel_size: 1
-  num_inference_engines: 4  # 4 inference GPUs for async generation
+  num_inference_engines: 8
 
   n_samples_per_prompt: 8
   eval_n_samples_per_prompt: 8

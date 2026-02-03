@@ -606,6 +606,7 @@ def construct_sft_sbatch_script(exp_args: dict, hpc) -> str:
         "cuda_setup": cuda_setup,
         "nccl_exports": hpc.get_nccl_exports(),
         "env_exports": hpc.get_env_exports(),
+        "ray_env_exports": hpc.get_ray_env_exports(experiments_subdir),
         "ssh_tunnel_setup": hpc.get_ssh_tunnel_setup(),
         "master_port": str(job_config.master_port),
         "master_addr_suffix": hpc.master_addr_suffix or "",

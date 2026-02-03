@@ -79,8 +79,7 @@ terminal_bench:
       - VerifierOutputParseError
       - ContextLengthExceededError
 
-    # Orchestrator settings (reduced for 8 GPU setup)
-    n_concurrent_trials: 96
+    n_concurrent_trials: 192
 
     # Logging settings
     log_level: INFO

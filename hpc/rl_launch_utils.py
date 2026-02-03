@@ -368,6 +368,23 @@ conda activate {conda_env}
 set -u'''
     else:
         return '''# Using venv for RL (created by ./hpc/setup_rl_env.sh)
+# IMPORTANT: Deactivate conda environment to prevent import conflicts,
+# but KEEP conda paths in PATH because the venv's python symlink may point
+# to the conda Python that was used when the venv was created.
+set +u  # conda deactivate may reference unset variables
+if [[ -n "${CONDA_PREFIX:-}" ]]; then
+  echo "Deactivating conda environment: $CONDA_PREFIX"
+  # Deactivate all stacked conda environments
+  while [[ -n "${CONDA_PREFIX:-}" ]]; do
+    conda deactivate 2>/dev/null || break
+  done
+  # Unset the environment name variable so imports don't get confused
+  unset CONDA_DEFAULT_ENV
+  # NOTE: We keep CONDA_PREFIX and conda paths in PATH because the venv's
+  # python binary is often a symlink to the conda Python.
+fi
+set -u
+
 RL_ENV_DIR="${RL_ENV_DIR:-$WORKDIR/envs/rl}"
 if [[ -d "$RL_ENV_DIR" ]]; then
   echo "Activating RL environment: $RL_ENV_DIR"
@@ -378,7 +395,11 @@ elif [[ -n "${DCFT_RL_ENV:-}" ]] && [[ -d "$DCFT_RL_ENV" ]]; then
 else
   echo "Warning: RL environment not found at $RL_ENV_DIR"
   echo "Run ./hpc/setup_rl_env.sh to create it, or set DCFT_RL_ENV"
-fi'''
+fi
+
+# Verify we're using the correct Python
+echo "Python executable: $(which python)"
+echo "Python path check: $(python -c 'import sys; print(sys.executable)')"'''
 
 
 # =============================================================================
@@ -638,6 +659,7 @@ fi"""
         "cuda_setup": cuda_setup,
         "nccl_exports": hpc.get_nccl_exports(),
         "rl_env_exports": rl_env_exports,
+        "ray_env_exports": hpc.get_ray_env_exports(experiments_subdir),
         "rl_env_activation": rl_env_activation,
         "ssh_tunnel_setup": hpc.get_ssh_tunnel_setup(),
         "proxy_setup": hpc.get_proxy_setup(),

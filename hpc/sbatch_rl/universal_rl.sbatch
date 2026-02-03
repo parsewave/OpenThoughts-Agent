@@ -26,6 +26,18 @@ if [ -z "${BASH_COMPLETION_DEBUG+x}" ]; then
   export BASH_COMPLETION_DEBUG=""
 fi
 
+# --- Clean up /tmp to prevent state pollution from previous jobs ---
+# Some HPC systems retain /tmp contents across job allocations on the same node.
+# This can cause issues with tmux sessions, container state, and other temporary files.
+# Wrapped in set +u/set -u in case some clusters error out on these commands.
+set +u
+rm -rf /tmp/tmux-* 2>/dev/null || true
+rm -rf /tmp/ray 2>/dev/null || true
+rm -rf /tmp/hf_home 2>/dev/null || true
+rm -rf /tmp/containers 2>/dev/null || true
+rm -rf /tmp/podman-* 2>/dev/null || true
+set -u
+
 # --- Module and Conda Setup ---
 # Disable unbound variable check for module loading and conda activation.
 # Module reloads can trigger conda deactivation scripts that reference unset variables.
@@ -96,6 +108,9 @@ export PYTHONPATH="$WORKDIR:${PYTHONPATH:-}"
 # --- RL-specific environment variables ---
 {rl_env_exports}
 
+# --- Ray defaults ---
+{ray_env_exports}
+
 # --- vLLM/Ray settings ---
 export VLLM_USE_V1=1
 export RAY_RUNTIME_ENV_HOOK=ray._private.runtime_env.uv_runtime_env_hook.hook
@@ -143,40 +158,9 @@ trap cleanup_ray_logs EXIT
 # --- SOCKS5 Proxy Setup (JSC clusters - alternative to SSH tunnel) ---
 {proxy_setup}
 
-# --- Docker/Podman Runtime Setup (for Harbor Docker backend) ---
-# Only run if harbor_env is "docker" - other backends (daytona, modal) don't need this.
-if [ "{harbor_env}" = "docker" ]; then
-  if [ -f "$WORKDIR/docker/setup_docker_runtime.sh" ]; then
-    echo "[sbatch] Setting up Docker/Podman runtime..."
-    # Source the setup script to detect and configure runtime
-    # shellcheck source=docker/setup_docker_runtime.sh
-    source "$WORKDIR/docker/setup_docker_runtime.sh"
-
-    # Verify connectivity if DOCKER_HOST is set
-    if [ -n "${DOCKER_HOST:-}" ]; then
-      echo "[sbatch] DOCKER_HOST=$DOCKER_HOST"
-      echo "[sbatch] CONTAINER_RUNTIME=${CONTAINER_RUNTIME:-unknown}"
-
-      # Quick connectivity check (timeout after 10s)
-      # Try docker first, then podman-hpc (Perlmutter may not have docker CLI)
-      if command -v docker &>/dev/null && timeout 10 docker info &>/dev/null; then
-        echo "[sbatch] Docker runtime verified successfully (docker info)"
-      elif command -v podman-hpc &>/dev/null && timeout 10 podman-hpc info &>/dev/null; then
-        echo "[sbatch] Docker runtime verified successfully (podman-hpc info)"
-      elif command -v podman &>/dev/null && timeout 10 podman info &>/dev/null; then
-        echo "[sbatch] Docker runtime verified successfully (podman info)"
-      else
-        echo "[sbatch] ERROR: Docker daemon not responding at DOCKER_HOST=$DOCKER_HOST"
-        echo "[sbatch] HINT: Check 'podman-hpc info' or 'docker info' manually"
-        exit 4  # EXIT_CONNECTIVITY_FAILED
-      fi
-    else
-      echo "[sbatch] WARNING: DOCKER_HOST not set, Harbor Docker backend may fail"
-    fi
-  fi
-else
-  echo "[sbatch] Harbor env: {harbor_env} (skipping Docker runtime setup)"
-fi
+# --- Container Runtime Setup ---
+source "$WORKDIR/hpc/shell_utils/container_runtime.sh"
+setup_container_runtime "{harbor_env}" "$WORKDIR" || exit $?
 
 # --- Run the RL training job via Python runner ---
 # Ray cluster management is handled by hpc/ray_utils.py using proper srun calls
