@@ -1,7 +1,73 @@
 """Configuration dataclasses for Beam cluster setup."""
 
 from dataclasses import dataclass, field
+import os
 from typing import Optional
+
+
+@dataclass
+class S3StorageConfig:
+    """Configuration for S3/MinIO storage backend for artifact caching.
+
+    This replaces GKE Filestore with S3-compatible object storage.
+
+    Environment variables:
+        LAION_BUCKET_NAME: S3 bucket name
+        LAION_ACCESS_KEY: S3 access key
+        LAION_SECRET_KEY: S3 secret key
+        LAION_ENDPOINT: S3 endpoint URL
+        BEAM_S3_NAMESPACE: Namespace/prefix for beam artifacts (default: beam-artifacts)
+    """
+
+    bucket_name: str
+    access_key: str
+    secret_key: str
+    endpoint_url: str
+    namespace: str = "beam-artifacts"  # Dedicated prefix/namespace for beam storage
+    region: str = "us-east-1"  # Default region (may not matter for MinIO)
+
+    @classmethod
+    def from_env(cls) -> "S3StorageConfig":
+        """Create config from environment variables."""
+        bucket_name = os.environ.get("LAION_BUCKET_NAME")
+        access_key = os.environ.get("LAION_ACCESS_KEY")
+        secret_key = os.environ.get("LAION_SECRET_KEY")
+        endpoint_url = os.environ.get("LAION_ENDPOINT")
+
+        missing = []
+        if not bucket_name:
+            missing.append("LAION_BUCKET_NAME")
+        if not access_key:
+            missing.append("LAION_ACCESS_KEY")
+        if not secret_key:
+            missing.append("LAION_SECRET_KEY")
+        if not endpoint_url:
+            missing.append("LAION_ENDPOINT")
+
+        if missing:
+            raise ValueError(f"Missing required environment variables: {', '.join(missing)}")
+
+        # Auto-add https:// prefix if missing from endpoint
+        if endpoint_url and not endpoint_url.startswith(("http://", "https://")):
+            endpoint_url = f"https://{endpoint_url}"
+
+        namespace = os.environ.get("BEAM_S3_NAMESPACE", "beam-artifacts")
+
+        return cls(
+            bucket_name=bucket_name,
+            access_key=access_key,
+            secret_key=secret_key,
+            endpoint_url=endpoint_url,
+            namespace=namespace,
+        )
+
+    @classmethod
+    def from_env_optional(cls) -> Optional["S3StorageConfig"]:
+        """Create config from environment variables, returning None if not configured."""
+        try:
+            return cls.from_env()
+        except ValueError:
+            return None
 
 
 @dataclass
@@ -116,7 +182,8 @@ class ClusterSetupConfig:
     expose_method: str = "pinggy"  # "pinggy" or "loadbalancer"
     pinggy: Optional[PinggyConfig] = None
     loadbalancer: Optional[LoadBalancerConfig] = None
-    filestore: Optional[FilestoreConfig] = None  # Shared NFS storage for ReadWriteMany
+    filestore: Optional[FilestoreConfig] = None  # Legacy: Shared NFS storage (deprecated)
+    s3_storage: Optional[S3StorageConfig] = None  # S3/MinIO storage for artifact caching
 
     # Workflow flags
     skip_gke: bool = False
@@ -135,6 +202,6 @@ class ClusterSetupConfig:
                 service_name=self.beta9.gateway_service_name,
                 port=self.beta9.gateway_http_port,
             )
-        # Default Filestore config if not provided
-        if self.filestore is None:
-            self.filestore = FilestoreConfig()
+        # Try to load S3 storage config from environment if not provided
+        if self.s3_storage is None:
+            self.s3_storage = S3StorageConfig.from_env_optional()

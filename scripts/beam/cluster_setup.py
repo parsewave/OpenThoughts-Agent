@@ -24,6 +24,7 @@ from scripts.beam.config import (
     GKEConfig,
     LoadBalancerConfig,
     PinggyConfig,
+    S3StorageConfig,
 )
 from scripts.beam.gke_provision import (
     check_gcloud_installed,
@@ -31,17 +32,16 @@ from scripts.beam.gke_provision import (
     check_kubectl_installed,
     cluster_exists,
     create_cluster,
-    create_filestore,
-    create_filestore_pv_pvc,
     delete_cluster,
-    delete_filestore,
-    filestore_exists,
     get_cluster_status,
     get_credentials,
-    get_filestore_ip,
     get_node_count,
     grant_cluster_admin,
-    wait_for_filestore_ready,
+)
+from scripts.beam.s3_storage import (
+    S3Storage,
+    check_s3_configured,
+    init_s3_storage,
 )
 from scripts.beam.beta9_deploy import (
     add_helm_repo,
@@ -50,6 +50,7 @@ from scripts.beam.beta9_deploy import (
     delete_namespace_pvcs,
     deploy_beta9,
     get_deployment_status,
+    stop_log_collection,
     uninstall_beta9,
     wait_for_gateway_ready,
 )
@@ -106,6 +107,13 @@ def cmd_create(args) -> int:
 
     beta9_config = Beta9Config()
 
+    # Load S3 config for shared storage (optional for create command)
+    s3_config = S3StorageConfig.from_env_optional()
+    if s3_config:
+        logger.info(f"Using external S3 storage: {s3_config.endpoint_url}")
+    else:
+        logger.warning("S3 storage not configured - using LocalStack (not recommended for production)")
+
     pinggy_config = None
     lb_config = None
 
@@ -148,7 +156,7 @@ def cmd_create(args) -> int:
         if not add_helm_repo(dry_run=args.dry_run, config=beta9_config):
             return 1
 
-        if not deploy_beta9(beta9_config, dry_run=args.dry_run):
+        if not deploy_beta9(beta9_config, dry_run=args.dry_run, s3_config=s3_config):
             return 1
 
         if not args.dry_run:
@@ -337,7 +345,10 @@ def cmd_test(args) -> int:
     )
 
     beta9_config = Beta9Config()
-    filestore_config = FilestoreConfig()
+
+    # Initialize S3 storage for artifact caching (optional but recommended)
+    s3_storage = None
+    s3_config = S3StorageConfig.from_env_optional()
 
     pinggy_config = None
     lb_config = None
@@ -356,7 +367,6 @@ def cmd_test(args) -> int:
     validation_passed = False
     public_url = ""
     resources_created = False  # Track if we actually created anything
-    filestore_created = False  # Track if Filestore was created
 
     # Check prerequisites BEFORE the try block
     logger.info("=" * 60)
@@ -388,31 +398,32 @@ def cmd_test(args) -> int:
         if not grant_cluster_admin(dry_run=args.dry_run):
             return 1
 
-        # Step 2: Create Filestore for shared storage (ReadWriteMany)
+        # Step 2: Initialize S3 storage for artifact caching (REQUIRED)
         logger.info("")
-        logger.info("[2/5] Creating Filestore (shared NFS storage)...")
-        if filestore_exists(filestore_config, gke_config):
-            logger.info(f"Filestore '{filestore_config.instance_name}' already exists")
-            filestore_created = True
-        else:
-            if not create_filestore(filestore_config, gke_config, dry_run=args.dry_run):
-                return 1
-            filestore_created = True
+        logger.info("[2/5] Initializing S3 storage for artifact caching...")
+        if not s3_config:
+            logger.error("S3 storage not configured!")
+            logger.error("Required environment variables: LAION_BUCKET_NAME, LAION_ACCESS_KEY, LAION_SECRET_KEY, LAION_ENDPOINT")
+            logger.error("Please source your secrets.env file before running this command.")
+            raise RuntimeError("S3 storage configuration required but not found")
 
-        # Wait for Filestore and get IP
+        s3_storage = S3Storage(s3_config)
         if not args.dry_run:
-            if not wait_for_filestore_ready(filestore_config, gke_config):
-                return 1
-            filestore_ip = get_filestore_ip(filestore_config, gke_config)
-            if not filestore_ip:
-                logger.error("Failed to get Filestore IP address")
-                return 1
+            if not s3_storage.ensure_namespace_exists():
+                logger.error(f"Failed to initialize S3 storage at s3://{s3_config.bucket_name}/{s3_config.namespace}/")
+                raise RuntimeError("S3 storage initialization failed")
 
-            # Create PV and PVC for Filestore
-            if not create_filestore_pv_pvc(
-                filestore_config, gke_config, beta9_config.namespace
-            ):
-                return 1
+            logger.info(f"S3 storage ready: s3://{s3_config.bucket_name}/{s3_config.namespace}/")
+            # List existing cached artifacts
+            artifacts = s3_storage.list_artifacts()
+            if artifacts:
+                logger.info(f"Found {len(artifacts)} cached artifacts available for reuse")
+                for artifact in artifacts[:5]:  # Show first 5
+                    logger.info(f"  - {artifact.get('image_name', 'unknown')}")
+                if len(artifacts) > 5:
+                    logger.info(f"  ... and {len(artifacts) - 5} more")
+        else:
+            logger.info(f"[DRY-RUN] Would initialize S3 storage: s3://{s3_config.bucket_name}/{s3_config.namespace}/")
 
         # Step 3: Deploy Beta9
         logger.info("")
@@ -420,7 +431,7 @@ def cmd_test(args) -> int:
         if not add_helm_repo(dry_run=args.dry_run, config=beta9_config):
             return 1
 
-        if not deploy_beta9(beta9_config, dry_run=args.dry_run):
+        if not deploy_beta9(beta9_config, dry_run=args.dry_run, s3_config=s3_config):
             return 1
 
         if not args.dry_run:
@@ -465,8 +476,11 @@ def cmd_test(args) -> int:
             validation_passed = True
 
     finally:
+        # Stop log collection first (saves logs before cleanup)
+        stop_log_collection()
+
         # Only tear down if we actually created resources
-        if not resources_created and not filestore_created:
+        if not resources_created:
             logger.info("No resources were created, skipping teardown")
         else:
             logger.info("")
@@ -484,10 +498,9 @@ def cmd_test(args) -> int:
             # Delete PVCs to clean up GCP persistent disks
             delete_namespace_pvcs(beta9_config.namespace, dry_run=args.dry_run)
 
-            # Delete Filestore (must be done before cluster deletion)
-            if filestore_created and not args.keep_cluster:
-                logger.info("Deleting Filestore...")
-                delete_filestore(filestore_config, gke_config, dry_run=args.dry_run)
+            # Note: S3 storage artifacts are NOT deleted - they are cached for reuse
+            if s3_storage:
+                logger.info("S3 cached artifacts preserved for future reuse")
 
             # Delete GKE cluster
             if not args.keep_cluster:

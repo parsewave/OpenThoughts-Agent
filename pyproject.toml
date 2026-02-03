@@ -69,6 +69,8 @@ datagen-swesmith = [
 cloud = [
     "skypilot>=0.6.1",
     "google-api-python-client",  # GCP support for SkyPilot
+    "boto3",  # S3-compatible object storage (MinIO, AWS S3)
+    "s3fs",   # Filesystem interface for S3/MinIO
 ]
 cloud-aws = [
     "skypilot>=0.6.1",

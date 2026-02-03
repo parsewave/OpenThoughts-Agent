@@ -53,7 +53,7 @@ def cluster_exists(config: GKEConfig) -> bool:
             "gcloud", "container", "clusters", "describe",
             config.cluster_name,
             "--project", config.project_id,
-            "--region", config.region,
+            "--zone", config.zone,  # Zonal cluster
             "--format=value(name)",
         ],
         capture_output=True,
@@ -72,10 +72,12 @@ def create_cluster(config: GKEConfig, dry_run: bool = False) -> bool:
     Returns:
         True if cluster created successfully (or dry_run).
     """
+    # Use --zone for a zonal cluster (exact num_nodes) instead of --region
+    # Regional clusters create num_nodes PER ZONE (3 zones = 3x nodes)
     cmd = [
         "gcloud", "container", "clusters", "create", config.cluster_name,
         "--project", config.project_id,
-        "--region", config.region,
+        "--zone", config.zone,  # Zonal cluster: exactly num_nodes total
         "--num-nodes", str(config.num_nodes),
         "--machine-type", config.machine_type,
         "--disk-size", f"{config.disk_size_gb}GB",
@@ -93,7 +95,7 @@ def create_cluster(config: GKEConfig, dry_run: bool = False) -> bool:
 
     logger.info(f"Creating GKE cluster '{config.cluster_name}' with {config.num_nodes} nodes...")
     logger.info(f"  Machine type: {config.machine_type}")
-    logger.info(f"  Region: {config.region}")
+    logger.info(f"  Zone: {config.zone} (zonal cluster)")
     logger.info("  This may take 5-10 minutes...")
 
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -119,7 +121,7 @@ def delete_cluster(config: GKEConfig, dry_run: bool = False) -> bool:
     cmd = [
         "gcloud", "container", "clusters", "delete", config.cluster_name,
         "--project", config.project_id,
-        "--region", config.region,
+        "--zone", config.zone,  # Zonal cluster
         "--quiet",  # Skip confirmation prompt
     ]
 
@@ -153,7 +155,7 @@ def get_credentials(config: GKEConfig, dry_run: bool = False) -> bool:
     cmd = [
         "gcloud", "container", "clusters", "get-credentials", config.cluster_name,
         "--project", config.project_id,
-        "--region", config.region,
+        "--zone", config.zone,  # Zonal cluster
     ]
 
     if dry_run:
@@ -234,7 +236,7 @@ def get_cluster_status(config: GKEConfig) -> Optional[str]:
             "gcloud", "container", "clusters", "describe",
             config.cluster_name,
             "--project", config.project_id,
-            "--region", config.region,
+            "--zone", config.zone,  # Zonal cluster
             "--format=value(status)",
         ],
         capture_output=True,

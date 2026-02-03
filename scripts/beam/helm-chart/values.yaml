@@ -7,7 +7,42 @@ global:
 
 # -- Beta9's configuration.
 # https://github.com/beam-cloud/beta9/blob/main/pkg/common/config.default.yaml
+# NOTE: Storage credentials are injected at deploy time via CONFIG_JSON env var.
+# The values below are defaults/placeholders - actual S3 config comes from LAION_* env vars.
 config:
+  # Database connections (postgres + redis are both under 'database')
+  database:
+    postgres:
+      host: postgresql  # Matches fullnameOverride in postgresql section
+      port: 5432
+      name: main
+      username: root
+      password: password
+    redis:
+      mode: single
+      addrs:
+        - redis-master:6379  # Matches fullnameOverride in redis section
+  # Storage configuration - S3 credentials are injected at deploy time via CONFIG_JSON env var
+  # The mounted config only has non-sensitive defaults; S3 creds come from CONFIG_JSON (highest priority)
+  # JuiceFS: metadata in juicefs-redis, data in external S3
+  # WorkspaceStorage: container images in external S3
+  storage:
+    mode: juicefs
+    fsName: beta9-fs
+    fsPath: /data
+    objectPath: /data/objects
+    juicefs:
+      redisURI: redis://juicefs-redis-master:6379/0  # Metadata in cluster Redis
+      # S3 credentials provided via CONFIG_JSON env var (not in mounted config file)
+      blockSize: 4096
+      cacheSize: 1024
+      prefetch: 1
+      bufferSize: 300
+    workspaceStorage:
+      defaultStorageMode: s3
+      defaultBucketPrefix: beta9-workspace
+      defaultRegion: us-east-1
+      # S3 credentials provided via CONFIG_JSON env var (not in mounted config file)
   worker:
     imageRegistry: public.ecr.aws/n4e0e1y0
     imagePVCName: "images"  # Must match the PVC name in manifests.resources
@@ -30,6 +65,11 @@ controllers:
     rollingUpdate:
       unavailable:
       surge:
+    containers:
+      main:
+        # CONFIG_JSON is injected at deploy time by deploy_beta9() with actual S3 credentials
+        # Placeholder here - will be overridden by --set-json in helm command
+        env: {}
     initContainers:
       wait-on-backends:
         image:
@@ -42,18 +82,18 @@ controllers:
           until nc -z postgresql 5432; do echo "Waiting on PostgreSQL..."; sleep 2; done;
           until nc -z redis-master 6379; do echo "Waiting on Redis..."; sleep 2; done;
           until nc -z juicefs-redis-master 6379; do echo "Waiting on Redis (JuiceFS)..."; sleep 2; done;
-          echo "All systems ready!"
+          echo "All internal systems ready! (External S3 will be tested by gateway)"
 
 persistence:
   images:
     enabled: true
     type: persistentVolumeClaim
-    existingClaim: images  # Created externally via Filestore (ReadWriteMany for multi-pod access)
+    existingClaim: images  # Created by manifests.resources above
     globalMounts:
     - path: /images
 
-# Note: The 'images' PVC is created externally by cluster_setup.py using GKE Filestore
-# for ReadWriteMany support (gateway + workers need concurrent access)
+# Note: The 'images' PVC is created via manifests.resources in this chart
+# using GKE standard storage (ReadWriteOnce, sufficient for single gateway replica)
 
 service:
   gateway:
@@ -161,26 +201,9 @@ juicefs-redis:
     persistence:
       size: 1Gi
 
-# -- LocalStack for S3-compatible storage (required by JuiceFS)
+# -- LocalStack disabled - using external MinIO (LAION S3) for shared storage instead
 localstack:
-  enabled: true
-  nameOverride: localstack
-  fullnameOverride: localstack
-  extraEnvVars:
-  - name: SERVICES
-    value: s3
-  enableStartupScripts: true
-  startupScriptContent: |
-    #!/bin/bash
-    awslocal s3 mb s3://juicefs
-    awslocal s3 mb s3://logs
-    awslocal s3 mb s3://beta9-images
-  persistence:
-    enabled: true
-    storageClass: standard  # GKE default
-    accessModes:
-    - ReadWriteOnce
-    size: 50Gi
+  enabled: false
 
 # -- Enables deployment of victoria-metrics, grafana, and fluent-bit
 metrics:
@@ -312,4 +335,20 @@ fluent-bit:
     mountPath: /var/lib/docker/containers
     readOnly: true
 
-# Note: manifests section moved to top of file (after persistence.images)
+# -- Custom manifests to deploy alongside Beta9
+# These are raw Kubernetes resources that get merged with common labels
+manifests:
+  resources:
+    # PVC for container images storage (replaces external Filestore)
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: images
+      spec:
+        accessModes:
+          - ReadWriteOnce  # Single-node access (sufficient for single gateway replica)
+        resources:
+          requests:
+            storage: 50Gi
+        storageClassName: standard  # GKE default
+  templates: []  # List of templated resources (processed through tpl)
