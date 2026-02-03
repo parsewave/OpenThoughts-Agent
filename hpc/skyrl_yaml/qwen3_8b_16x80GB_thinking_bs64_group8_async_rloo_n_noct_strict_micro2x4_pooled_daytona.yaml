@@ -59,8 +59,10 @@ terminal_bench:
         enable_thinking: true
 
     # Timeout settings
-    override_timeout_sec: 240
-
+    override_timeout_sec: 360
+    override_cpus: 1
+    override_memory_mb: 2048
+    override_storage_mb: 2048
     # Environment settings - use PooledDaytonaDinDEnvironment via import_path
     import_path: "harbor.environments.pooled.daytona_dind:PooledDaytonaDinDEnvironment"
     # Pool configuration
