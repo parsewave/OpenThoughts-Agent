@@ -144,15 +144,37 @@ print("Hello from Beta9 sandbox!")
             print(f"Stderr: {response.stderr}")
             return False
 
-        # Test file system operations
+        # Test file system operations using shell commands
+        # (fs.upload_file/download_file are for local<->sandbox transfers,
+        # not for creating files inside the sandbox)
         print("\n=== Testing File System ===")
         test_content = "Hello from Beta9 test!"
-        instance.fs.write("/tmp/test.txt", test_content.encode())
-        read_content = instance.fs.read("/tmp/test.txt").decode()
+
+        # Write file using shell
+        write_response = instance.process.run_code(f"""
+with open('/tmp/test.txt', 'w') as f:
+    f.write('{test_content}')
+print('File written successfully')
+""")
+        if write_response.exit_code != 0:
+            print(f"Failed to write file: {write_response.stderr}")
+            return False
+
+        # Read file using shell
+        read_response = instance.process.run_code("""
+with open('/tmp/test.txt', 'r') as f:
+    content = f.read()
+print(content, end='')
+""")
+        if read_response.exit_code != 0:
+            print(f"Failed to read file: {read_response.stderr}")
+            return False
+
+        read_content = read_response.result.strip()
         print(f"Wrote and read file: '{read_content}'")
 
         if read_content != test_content:
-            print("File content mismatch!")
+            print(f"File content mismatch! Expected '{test_content}', got '{read_content}'")
             return False
 
         print("\n=== Test Passed! ===")

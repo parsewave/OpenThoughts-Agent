@@ -586,12 +586,14 @@ def deploy_beta9(
 
         logger.info(f"[CONFIG] Using EXTERNAL S3 storage (not LocalStack)")
         logger.info(f"[CONFIG]   JuiceFS bucket URL: {juicefs_bucket_url}")
+        logger.info(f"[CONFIG]   JuiceFS fsName: {config.juicefs_fs_name}")
         logger.info(f"[CONFIG]   Workspace endpoint: {s3_config.endpoint_url}")
 
         # Add S3 config to Helm values - this updates the mounted config file
         values["config"] = {
             "debugMode": True,  # Enable debug logging to see what config is loaded
             "storage": {
+                "fsName": config.juicefs_fs_name,  # Configurable JuiceFS prefix
                 "juicefs": {
                     "awsS3Bucket": juicefs_bucket_url,
                     "awsAccessKey": s3_config.access_key,
@@ -608,11 +610,13 @@ def deploy_beta9(
     else:
         logger.warning("[CONFIG] FALLBACK: No S3 config provided, using LocalStack defaults!")
         logger.warning("[CONFIG]   JuiceFS bucket URL: http://localstack:4566/juicefs")
+        logger.warning("[CONFIG]   JuiceFS fsName: {config.juicefs_fs_name}")
         logger.warning("[CONFIG]   This will FAIL if LocalStack is not deployed!")
 
         values["config"] = {
             "debugMode": True,  # Enable debug logging to see what config is loaded
             "storage": {
+                "fsName": config.juicefs_fs_name,  # Configurable JuiceFS prefix
                 "juicefs": {
                     "awsS3Bucket": "http://localstack:4566/juicefs",
                     "awsAccessKey": "test",
