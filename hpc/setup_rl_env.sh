@@ -32,6 +32,29 @@ if [[ "$ARCH" == "aarch64" ]] || [[ "$ARCH" == "arm64" ]]; then
     IS_AARCH64=true
 fi
 
+# Auto-detect CUDA_HOME on JSC systems (Jupiter/Jureca/Juwels)
+# Required for building CUDA extensions like flash-attn
+if [[ -z "${CUDA_HOME:-}" ]]; then
+    # Check for NVHPC_CUDA_HOME (set by nvidia-compilers module)
+    if [[ -n "${NVHPC_CUDA_HOME:-}" ]]; then
+        export CUDA_HOME="$NVHPC_CUDA_HOME"
+        echo "Auto-detected CUDA_HOME from NVHPC_CUDA_HOME: $CUDA_HOME"
+    # Check common JSC CUDA locations
+    elif [[ -d "/e/software/default/stages/2026/software/CUDA/13" ]]; then
+        export CUDA_HOME="/e/software/default/stages/2026/software/CUDA/13"
+        echo "Auto-detected CUDA_HOME for Jupiter: $CUDA_HOME"
+    elif [[ -d "/p/software/jureca/stages/2024/software/CUDA/12.3" ]]; then
+        export CUDA_HOME="/p/software/jureca/stages/2024/software/CUDA/12.3"
+        echo "Auto-detected CUDA_HOME for Jureca: $CUDA_HOME"
+    fi
+fi
+
+# Ensure nvcc is in PATH if CUDA_HOME is set
+if [[ -n "${CUDA_HOME:-}" ]] && [[ -d "$CUDA_HOME/bin" ]]; then
+    export PATH="$CUDA_HOME/bin:$PATH"
+    echo "Added $CUDA_HOME/bin to PATH"
+fi
+
 # ROCm configuration (for OLCF Frontier with AMD MI250X GPUs)
 # See: https://docs.olcf.ornl.gov/software/analytics/pytorch_frontier.html
 # Note: vLLM wheels are available for ROCm 7.0.0 - try that first, fallback to 6.4.1
@@ -238,11 +261,16 @@ if [[ "$USE_ROCM" == "true" ]]; then
         --index-url https://download.pytorch.org/whl/rocm6.4
 elif [[ "$IS_AARCH64" == "true" ]]; then
     # aarch64/ARM (e.g., GH200 Grace-Hopper)
-    # The cu128-specific wheels don't have aarch64 builds.
-    # Use standard PyPI wheels which include aarch64 CUDA builds.
-    # Note: PyTorch 2.8.0 aarch64 wheels have CUDA 12.8 support built-in.
-    echo "Installing PyTorch for aarch64 (using standard PyPI wheels)..."
-    uv pip install "torch==2.8.0" "torchvision" "torchaudio"
+    # Standard PyPI wheels are CPU-only for aarch64.
+    # Use PyTorch nightly with CUDA 12.8 support which has aarch64 builds.
+    echo "Installing PyTorch for aarch64 (using nightly cu128 wheels)..."
+    uv pip install --pre "torch" "torchvision" "torchaudio" \
+        --index-url https://download.pytorch.org/whl/nightly/cu128 || {
+        # Fallback: try NVIDIA's index
+        echo "Nightly wheels failed, trying NVIDIA index..."
+        uv pip install "torch" "torchvision" "torchaudio" \
+            --extra-index-url https://pypi.nvidia.com
+    }
 else
     # CUDA/NVIDIA x86_64 version (default)
     uv pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cu128
