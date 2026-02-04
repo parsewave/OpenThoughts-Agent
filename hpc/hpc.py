@@ -534,13 +534,8 @@ jupiter = HPC(
         "WANDB_MODE": "offline",  # Compute nodes have no internet
         # Force IPv4 for vLLM/PyTorch distributed (IPv6 not supported on compute nodes)
         "VLLM_HOST_IP": "0.0.0.0",
-        "GLOO_SOCKET_IFNAME": "ib0",
-        # Force NCCL and c10d to use IPv4 socket family
-        "NCCL_SOCKET_FAMILY": "AF_INET",
-        # Disable IPv6 at Python level (prevents getaddrinfo from returning IPv6)
-        "PYTHON_DISABLE_IPV6": "1",
-        # Additional NCCL IPv4 enforcement
-        "NCCL_NET_SOCKET_FAMILY": "AF_INET",
+        # NOTE: Do NOT set GLOO_SOCKET_IFNAME=ib0 - it causes Gloo to use the IB hostname
+        # which resolves to IPv6. Let Gloo auto-detect the interface.
     },
     # NOTE: Do NOT use master_addr_suffix="i" - the "i" suffixed hostname is not DNS-resolvable
     # InfiniBand routing is handled by NCCL_SOCKET_IFNAME=ib0 instead

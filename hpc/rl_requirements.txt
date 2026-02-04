@@ -19,7 +19,8 @@ skyrl-train[vllm] @ git+https://github.com/penfever/SkyRL.git@penfever/working#s
 
 # Harbor - MUST match the branch used in main pyproject.toml for compatibility
 # This is the laude-institute fork with custom patches
-harbor @ git+https://github.com/laude-institute/harbor.git@penfever/temp-override
+# NOTE: [daytona] extra required for socksio (httpx SOCKS proxy support on HPC clusters)
+harbor[daytona] @ git+https://github.com/laude-institute/harbor.git@penfever/temp-override
 
 # Chat templates
 Jinja2
