@@ -148,13 +148,12 @@ class PinggyConfig:
         """Build SSH command for Pinggy tunnel with auto-reconnect."""
         return (
             f'while true; do '
-            f'ssh -p 443 '
+            f'ssh -p 443 -4 '
             f'-R0:{self.local_host}:{self.local_port} '
             f'-o StrictHostKeyChecking=no '
             f'-o ServerAliveInterval=30 '
-            f'-o ExitOnForwardFailure=yes '
-            f'-o PubkeyAuthentication=no '
-            f'-o PreferredAuthentications=keyboard-interactive '
+            f'-o IdentitiesOnly=yes '
+            f'-o IdentityFile=/dev/null '
             f'{self.token}@{self.pinggy_host}; '
             f'sleep 10; '
             f'done'

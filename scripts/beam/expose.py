@@ -3,13 +3,76 @@
 import atexit
 import json
 import logging
+import os
 import subprocess
 import time
+from pathlib import Path
 from typing import Optional
 
 import requests
 
 from scripts.beam.config import Beta9Config, LoadBalancerConfig, PinggyConfig
+
+
+def load_secrets_env(secrets_path: Optional[str] = None) -> dict[str, str]:
+    """Load environment variables from secrets file.
+
+    Args:
+        secrets_path: Path to secrets.env file. If None, checks:
+            1. SECRETS_ENV environment variable
+            2. ~/Documents/secrets.env
+            3. ~/.secrets.env
+
+    Returns:
+        Dictionary of loaded environment variables.
+    """
+    loaded = {}
+
+    # Determine secrets file path
+    if secrets_path is None:
+        secrets_path = os.environ.get("SECRETS_ENV")
+
+    if secrets_path is None:
+        # Check common locations
+        candidates = [
+            Path.home() / "Documents" / "secrets.env",
+            Path.home() / ".secrets.env",
+        ]
+        for candidate in candidates:
+            if candidate.exists():
+                secrets_path = str(candidate)
+                break
+
+    if secrets_path is None or not Path(secrets_path).exists():
+        return loaded
+
+    logger.info(f"Loading secrets from: {secrets_path}")
+
+    try:
+        with open(secrets_path) as f:
+            for line in f:
+                line = line.strip()
+                # Skip comments and empty lines
+                if not line or line.startswith("#"):
+                    continue
+                # Handle export VAR=value format
+                if line.startswith("export "):
+                    line = line[7:]
+                # Parse VAR=value
+                if "=" in line:
+                    key, _, value = line.partition("=")
+                    key = key.strip()
+                    value = value.strip()
+                    # Remove surrounding quotes if present
+                    if (value.startswith('"') and value.endswith('"')) or \
+                       (value.startswith("'") and value.endswith("'")):
+                        value = value[1:-1]
+                    os.environ[key] = value
+                    loaded[key] = value
+    except Exception as e:
+        logger.warning(f"Failed to load secrets from {secrets_path}: {e}")
+
+    return loaded
 
 logger = logging.getLogger(__name__)
 
@@ -89,27 +152,40 @@ def start_port_forward(
     return proc
 
 
-def start_pinggy_tunnel(config: PinggyConfig, dry_run: bool = False) -> Optional[subprocess.Popen]:
+def start_pinggy_tunnel(config: PinggyConfig, dry_run: bool = False, secrets_path: Optional[str] = None) -> Optional[subprocess.Popen]:
     """Start Pinggy SSH tunnel.
 
     Args:
         config: Pinggy configuration.
         dry_run: If True, print command without executing.
+        secrets_path: Optional path to secrets.env file to load.
 
     Returns:
         Popen process or None if dry_run.
     """
+    # Load secrets if path provided or from default locations
+    load_secrets_env(secrets_path)
+
+    # Check if PINGGY_API_KEY is set and use it if token not provided
+    token = config.token
+    if not token or token == "":
+        token = os.environ.get("PINGGY_API_KEY", "")
+        if token:
+            logger.info("Using PINGGY_API_KEY from environment")
+
+    if not token:
+        logger.error("No Pinggy token provided and PINGGY_API_KEY not set in environment")
+        return None
+
     ssh_cmd = [
         "ssh", "-p", "443",
+        "-4",  # Force IPv4 to avoid IPv6 routing issues
         "-R", f"0:{config.local_host}:{config.local_port}",
         "-o", "StrictHostKeyChecking=no",
         "-o", "ServerAliveInterval=30",
-        "-o", "ExitOnForwardFailure=yes",
-        "-o", "LogLevel=ERROR",
-        # Disable public key auth to prevent passphrase prompts - Pinggy uses token auth
-        "-o", "PubkeyAuthentication=no",
-        "-o", "PreferredAuthentications=keyboard-interactive",
-        f"{config.token}@{config.pinggy_host}",
+        "-o", "IdentitiesOnly=yes",  # Don't use local SSH keys (avoids passphrase prompts)
+        "-o", "IdentityFile=/dev/null",  # No identity file - Pinggy uses token as username
+        f"{token}@{config.pinggy_host}",
     ]
 
     if dry_run:
@@ -118,10 +194,14 @@ def start_pinggy_tunnel(config: PinggyConfig, dry_run: bool = False) -> Optional
 
     logger.info(f"Starting Pinggy tunnel: {config.local_host}:{config.local_port} -> {config.persistent_url}")
 
+    # Pass through environment variables including any loaded secrets
+    env = os.environ.copy()
+
     proc = subprocess.Popen(
         ssh_cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
+        env=env,
     )
 
     _active_processes.append(proc)
@@ -142,6 +222,7 @@ def setup_pinggy_exposure(
     beta9_config: Beta9Config,
     pinggy_config: PinggyConfig,
     dry_run: bool = False,
+    secrets_path: Optional[str] = None,
 ) -> tuple[Optional[subprocess.Popen], Optional[subprocess.Popen], str]:
     """Set up full Pinggy exposure (port-forward + tunnel).
 
@@ -152,6 +233,7 @@ def setup_pinggy_exposure(
         beta9_config: Beta9 configuration.
         pinggy_config: Pinggy configuration.
         dry_run: If True, print commands without executing.
+        secrets_path: Optional path to secrets.env file to load.
 
     Returns:
         Tuple of (port_forward_proc, tunnel_proc, public_url).
@@ -170,7 +252,7 @@ def setup_pinggy_exposure(
         return None, None, ""
 
     # Start Pinggy tunnel
-    tunnel_proc = start_pinggy_tunnel(pinggy_config, dry_run)
+    tunnel_proc = start_pinggy_tunnel(pinggy_config, dry_run, secrets_path)
 
     if not dry_run and tunnel_proc is None:
         if pf_proc:

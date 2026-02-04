@@ -173,7 +173,8 @@ def cmd_create(args) -> int:
     if not args.skip_expose:
         if args.expose_method == "pinggy":
             pf_proc, tunnel_proc, public_url = setup_pinggy_exposure(
-                beta9_config, pinggy_config, dry_run=args.dry_run
+                beta9_config, pinggy_config, dry_run=args.dry_run,
+                secrets_path=getattr(args, 'secrets_env', None)
             )
             if not args.dry_run and (pf_proc is None or tunnel_proc is None):
                 logger.error("Failed to set up Pinggy exposure")
@@ -465,7 +466,8 @@ def cmd_test(args) -> int:
         logger.info("[4/5] Exposing cluster...")
         if args.expose_method == "pinggy":
             pf_proc, tunnel_proc, public_url = setup_pinggy_exposure(
-                beta9_config, pinggy_config, dry_run=args.dry_run
+                beta9_config, pinggy_config, dry_run=args.dry_run,
+                secrets_path=getattr(args, 'secrets_env', None)
             )
             if not args.dry_run and (pf_proc is None or tunnel_proc is None):
                 logger.error("Failed to set up Pinggy exposure")
@@ -601,6 +603,7 @@ Examples:
                                help="How to expose cluster")
     create_parser.add_argument("--pinggy-url", help="Pinggy persistent URL")
     create_parser.add_argument("--pinggy-token", help="Pinggy auth token")
+    create_parser.add_argument("--secrets-env", help="Path to secrets.env file (default: ~/Documents/secrets.env)")
     create_parser.add_argument("--skip-gke", action="store_true", help="Skip GKE provisioning")
     create_parser.add_argument("--skip-beta9", action="store_true", help="Skip Beta9 deployment")
     create_parser.add_argument("--skip-expose", action="store_true", help="Skip internet exposure")
@@ -645,6 +648,7 @@ Examples:
                              help="How to expose cluster (default: loadbalancer for testing)")
     test_parser.add_argument("--pinggy-url", help="Pinggy persistent URL")
     test_parser.add_argument("--pinggy-token", help="Pinggy auth token")
+    test_parser.add_argument("--secrets-env", help="Path to secrets.env file (default: ~/Documents/secrets.env)")
     test_parser.add_argument("--num-tests", type=int, default=3, help="Number of validation tests")
     test_parser.add_argument("--skip-isolation", action="store_true", help="Skip isolation test")
     test_parser.add_argument("--keep-cluster", action="store_true", help="Don't delete cluster after test")
