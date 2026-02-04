@@ -534,6 +534,9 @@ jupiter = HPC(
     modules=["nvidia-compilers/25.9-CUDA-13"],
     env_vars={
         "WANDB_MODE": "offline",  # Compute nodes have no internet
+        # Force IPv4 for vLLM/PyTorch distributed (IPv6 not supported on compute nodes)
+        "VLLM_HOST_IP": "0.0.0.0",
+        "GLOO_SOCKET_IFNAME": "ib0",
     },
     # NOTE: Do NOT use master_addr_suffix="i" - the "i" suffixed hostname is not DNS-resolvable
     # InfiniBand routing is handled by NCCL_SOCKET_IFNAME=ib0 instead
@@ -545,11 +548,8 @@ jupiter = HPC(
         "NCCL_IB_TIMEOUT": "60",
     },
     training_launcher="accelerate",
-    # JSC shared SOCKS5 proxy (more reliable than SSH tunnels)
-    needs_ssh_tunnel=False,
-    proxy_host="10.14.0.53",
-    proxy_port=1080,
-    proxychains_preload="/p/scratch/laionize/raj3/proxychains-ng/libproxychains4.so",
+    # SSH tunnel for internet access (shared proxy 10.14.0.53 not reachable from Jupiter network)
+    needs_ssh_tunnel=True,
     # JSC-specific setup (disable core dumps to save disk space)
     pre_run_commands=["ulimit -c 0"],
     # Job scaling
