@@ -369,7 +369,6 @@ if [ -n "${SSH_KEY:-}" ]; then
     # IMPORTANT: Use head_node_ip (not 127.0.0.1) so workers on other nodes can reach the proxy
     export SOCKS_PROXY_URL="socks5h://${head_node_ip}:${SOCKS_PORT}"
     echo "[ssh-tunnel] ✓ Proxy available at: $SOCKS_PROXY_URL"
-    echo "[ssh-tunnel]   Harbor will set ALL_PROXY from SOCKS_PROXY_URL when needed"
 
     # Test proxy connectivity from head node
     echo "[ssh-tunnel] Testing proxy connectivity from head node..."
@@ -398,6 +397,52 @@ if [ -n "${SSH_KEY:-}" ]; then
         echo "[ssh-tunnel] ✓ All nodes can reach the proxy - internet access available"
     else
         echo "[ssh-tunnel] ⚠ Some nodes cannot reach the proxy - Daytona may fail on those nodes"
+    fi
+
+    # ========================================================================
+    # HTTP Proxy Setup (converts SOCKS to HTTP for aiohttp compatibility)
+    # aiohttp doesn't support SOCKS natively but supports HTTP_PROXY
+    # ========================================================================
+    HTTP_PROXY_PORT=$((SOCKS_PORT + 1000))
+    HTTP_PROXY_SCRIPT="${DCFT:-$HOME}/hpc/http_proxy.py"
+
+    if [ -f "$HTTP_PROXY_SCRIPT" ]; then
+        echo "[http-proxy] Starting HTTP-to-SOCKS proxy on port $HTTP_PROXY_PORT..."
+
+        # Start HTTP proxy in background
+        python "$HTTP_PROXY_SCRIPT" \
+            --socks-host "${head_node_ip}" \
+            --socks-port "${SOCKS_PORT}" \
+            --listen-port "${HTTP_PROXY_PORT}" \
+            > /tmp/http_proxy_$$.log 2>&1 &
+        HTTP_PROXY_PID=$!
+        sleep 2
+
+        if kill -0 $HTTP_PROXY_PID 2>/dev/null; then
+            echo "[http-proxy] ✓ HTTP proxy started (PID $HTTP_PROXY_PID)"
+
+            # Export HTTP_PROXY for aiohttp (use head_node_ip so workers can reach it)
+            export HTTP_PROXY="http://${head_node_ip}:${HTTP_PROXY_PORT}"
+            export HTTPS_PROXY="http://${head_node_ip}:${HTTP_PROXY_PORT}"
+            export http_proxy="$HTTP_PROXY"
+            export https_proxy="$HTTPS_PROXY"
+
+            echo "[http-proxy] ✓ HTTP_PROXY=$HTTP_PROXY"
+            echo "[http-proxy] ✓ HTTPS_PROXY=$HTTPS_PROXY"
+
+            # Test HTTP proxy
+            if curl -s --connect-timeout 5 --proxy "$HTTP_PROXY" https://huggingface.co -o /dev/null 2>/dev/null; then
+                echo "[http-proxy] ✓ HTTP proxy test passed"
+            else
+                echo "[http-proxy] ⚠ HTTP proxy test failed (check /tmp/http_proxy_$$.log)"
+            fi
+        else
+            echo "[http-proxy] ✗ HTTP proxy failed to start (check /tmp/http_proxy_$$.log)"
+            cat /tmp/http_proxy_$$.log 2>/dev/null || true
+        fi
+    else
+        echo "[http-proxy] ⚠ HTTP proxy script not found at $HTTP_PROXY_SCRIPT"
+        echo "[http-proxy]   Daytona/aiohttp may not work without HTTP_PROXY"
     fi
 else
     echo "[ssh-tunnel] SSH_KEY not set - skipping SSH tunnel setup"
