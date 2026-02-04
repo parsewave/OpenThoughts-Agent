@@ -367,16 +367,39 @@ if [ -n "${SSH_KEY:-}" ]; then
 
     # Save proxy URL for explicit use (do NOT export globally - breaks Ray/gRPC)
     # Applications that need external access should set ALL_PROXY explicitly
-    export SOCKS_PROXY_URL="socks5h://127.0.0.1:${SOCKS_PORT}"
+    # IMPORTANT: Use head_node_ip (not 127.0.0.1) so workers on other nodes can reach the proxy
+    export SOCKS_PROXY_URL="socks5h://${head_node_ip}:${SOCKS_PORT}"
     echo "[ssh-tunnel] ✓ Proxy available at: $SOCKS_PROXY_URL"
+    echo "[ssh-tunnel]   Workers on all nodes can reach the proxy via head node IP"
     echo "[ssh-tunnel]   To use: export ALL_PROXY=\$SOCKS_PROXY_URL"
 
-    # Test proxy connectivity
-    echo "[ssh-tunnel] Testing proxy connectivity..."
+    # Test proxy connectivity from head node
+    echo "[ssh-tunnel] Testing proxy connectivity from head node..."
     if curl -s --connect-timeout 5 --proxy "$SOCKS_PROXY_URL" https://huggingface.co -o /dev/null 2>/dev/null; then
-        echo "[ssh-tunnel] ✓ Proxy test passed - internet access available"
+        echo "[ssh-tunnel] ✓ Head node proxy test passed"
     else
-        echo "[ssh-tunnel] ✗ Proxy test failed - internet may not be available"
+        echo "[ssh-tunnel] ✗ Head node proxy test failed"
+    fi
+
+    # Test proxy connectivity from all worker nodes
+    echo "[ssh-tunnel] Testing proxy connectivity from all nodes..."
+    all_nodes=$(scontrol show hostnames $SLURM_JOB_NODELIST)
+    proxy_test_failed=0
+    for node in $all_nodes; do
+        # Use srun to test curl from each node (with timeout to avoid hanging)
+        if timeout 15 srun --nodes=1 --ntasks=1 -w "$node" --overlap \
+            curl -s --connect-timeout 5 --proxy "$SOCKS_PROXY_URL" https://huggingface.co -o /dev/null 2>/dev/null; then
+            echo "[ssh-tunnel] ✓ $node can reach proxy"
+        else
+            echo "[ssh-tunnel] ✗ $node CANNOT reach proxy at $SOCKS_PROXY_URL"
+            proxy_test_failed=1
+        fi
+    done
+
+    if [ $proxy_test_failed -eq 0 ]; then
+        echo "[ssh-tunnel] ✓ All nodes can reach the proxy - internet access available"
+    else
+        echo "[ssh-tunnel] ⚠ Some nodes cannot reach the proxy - Daytona may fail on those nodes"
     fi
 else
     echo "[ssh-tunnel] SSH_KEY not set - skipping SSH tunnel setup"
