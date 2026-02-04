@@ -365,13 +365,11 @@ if [ -n "${SSH_KEY:-}" ]; then
         echo "[ssh-tunnel] ✗ SSH tunnel failed to start"
     fi
 
-    # Save proxy URL for explicit use (do NOT export globally - breaks Ray/gRPC)
-    # Applications that need external access should set ALL_PROXY explicitly
+    # Save proxy URL for Harbor/Daytona to use (do NOT export ALL_PROXY globally - breaks Ray)
     # IMPORTANT: Use head_node_ip (not 127.0.0.1) so workers on other nodes can reach the proxy
     export SOCKS_PROXY_URL="socks5h://${head_node_ip}:${SOCKS_PORT}"
     echo "[ssh-tunnel] ✓ Proxy available at: $SOCKS_PROXY_URL"
-    echo "[ssh-tunnel]   Workers on all nodes can reach the proxy via head node IP"
-    echo "[ssh-tunnel]   To use: export ALL_PROXY=\$SOCKS_PROXY_URL"
+    echo "[ssh-tunnel]   Harbor will set ALL_PROXY from SOCKS_PROXY_URL when needed"
 
     # Test proxy connectivity from head node
     echo "[ssh-tunnel] Testing proxy connectivity from head node..."
@@ -537,6 +535,12 @@ jupiter = HPC(
         # Force IPv4 for vLLM/PyTorch distributed (IPv6 not supported on compute nodes)
         "VLLM_HOST_IP": "0.0.0.0",
         "GLOO_SOCKET_IFNAME": "ib0",
+        # Force NCCL and c10d to use IPv4 socket family
+        "NCCL_SOCKET_FAMILY": "AF_INET",
+        # Disable IPv6 at Python level (prevents getaddrinfo from returning IPv6)
+        "PYTHON_DISABLE_IPV6": "1",
+        # Additional NCCL IPv4 enforcement
+        "NCCL_NET_SOCKET_FAMILY": "AF_INET",
     },
     # NOTE: Do NOT use master_addr_suffix="i" - the "i" suffixed hostname is not DNS-resolvable
     # InfiniBand routing is handled by NCCL_SOCKET_IFNAME=ib0 instead

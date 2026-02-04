@@ -387,6 +387,9 @@ class RayCluster:
 
     def _start_node(self, node: str, is_head: bool) -> None:
         """Start Ray on a single node."""
+        # Get IPv4 address for this node (ensures Ray uses IPv4, not hostnames that may resolve to IPv6)
+        node_ip = self._get_node_ip(node, self.config.srun_export_env) if node != self.node_list[0] else self.head_ip
+
         if is_head:
             cmd = [
                 "ray",
@@ -403,6 +406,7 @@ class RayCluster:
                 "ray",
                 "start",
                 f"--address={self.address}",
+                f"--node-ip-address={node_ip}",  # Force IPv4 for worker nodes too
                 f"--num-gpus={self.config.gpus_per_node}",
                 f"--num-cpus={self.config.cpus_per_node}",
                 "--block",
@@ -415,10 +419,13 @@ class RayCluster:
             cmd.append(f"--object-store-memory={self.config.object_store_memory}")
 
         # Build the bash command with environment variables
+        # Set RAY_IP so that ray._private.services.get_node_ip_address() returns IPv4
+        # This is critical for SkyRL's weight_update_communicator which uses this function
+        ray_ip_env = f"RAY_IP={node_ip}"
         if self.config.ray_env_vars:
-            bash_cmd = f"env {self.config.ray_env_vars} {' '.join(cmd)}"
+            bash_cmd = f"env {ray_ip_env} {self.config.ray_env_vars} {' '.join(cmd)}"
         else:
-            bash_cmd = " ".join(cmd)
+            bash_cmd = f"env {ray_ip_env} {' '.join(cmd)}"
 
         srun_cmd = [
             "srun",
