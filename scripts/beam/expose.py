@@ -106,6 +106,9 @@ def start_pinggy_tunnel(config: PinggyConfig, dry_run: bool = False) -> Optional
         "-o", "ServerAliveInterval=30",
         "-o", "ExitOnForwardFailure=yes",
         "-o", "LogLevel=ERROR",
+        # Disable public key auth to prevent passphrase prompts - Pinggy uses token auth
+        "-o", "PubkeyAuthentication=no",
+        "-o", "PreferredAuthentications=keyboard-interactive",
         f"{config.token}@{config.pinggy_host}",
     ]
 

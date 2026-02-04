@@ -153,6 +153,8 @@ class PinggyConfig:
             f'-o StrictHostKeyChecking=no '
             f'-o ServerAliveInterval=30 '
             f'-o ExitOnForwardFailure=yes '
+            f'-o PubkeyAuthentication=no '
+            f'-o PreferredAuthentications=keyboard-interactive '
             f'{self.token}@{self.pinggy_host}; '
             f'sleep 10; '
             f'done'
