@@ -419,13 +419,10 @@ class RayCluster:
             cmd.append(f"--object-store-memory={self.config.object_store_memory}")
 
         # Build the bash command with environment variables
-        # Set RAY_IP so that ray._private.services.get_node_ip_address() returns IPv4
-        # This is critical for SkyRL's weight_update_communicator which uses this function
-        ray_ip_env = f"RAY_IP={node_ip}"
         if self.config.ray_env_vars:
-            bash_cmd = f"env {ray_ip_env} {self.config.ray_env_vars} {' '.join(cmd)}"
+            bash_cmd = f"env {self.config.ray_env_vars} {' '.join(cmd)}"
         else:
-            bash_cmd = f"env {ray_ip_env} {' '.join(cmd)}"
+            bash_cmd = " ".join(cmd)
 
         srun_cmd = [
             "srun",
