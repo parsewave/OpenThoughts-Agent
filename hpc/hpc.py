@@ -427,18 +427,29 @@ if [ -n "${SSH_KEY:-}" ]; then
             export http_proxy="$HTTP_PROXY"
             export https_proxy="$HTTPS_PROXY"
 
+            # CRITICAL: Set NO_PROXY to exclude localhost and cluster-internal IPs
+            # Otherwise requests to local services (vLLM, Ray) will fail
+            export NO_PROXY="localhost,127.0.0.1,10.*,192.168.*,.internal,.local"
+            export no_proxy="$NO_PROXY"
+
             echo "[http-proxy] ✓ HTTP_PROXY=$HTTP_PROXY"
             echo "[http-proxy] ✓ HTTPS_PROXY=$HTTPS_PROXY"
+            echo "[http-proxy] ✓ NO_PROXY=$NO_PROXY"
 
             # Test HTTP proxy
             if curl -s --connect-timeout 5 --proxy "$HTTP_PROXY" https://huggingface.co -o /dev/null 2>/dev/null; then
                 echo "[http-proxy] ✓ HTTP proxy test passed"
             else
-                echo "[http-proxy] ⚠ HTTP proxy test failed (check /tmp/http_proxy_$$.log)"
+                echo "[http-proxy] ⚠ HTTP proxy test failed"
+                echo "[http-proxy] === Log output ==="
+                cat /tmp/http_proxy_$$.log 2>/dev/null || echo "(no log file)"
+                echo "[http-proxy] === End log ==="
             fi
         else
-            echo "[http-proxy] ✗ HTTP proxy failed to start (check /tmp/http_proxy_$$.log)"
-            cat /tmp/http_proxy_$$.log 2>/dev/null || true
+            echo "[http-proxy] ✗ HTTP proxy failed to start"
+            echo "[http-proxy] === Log output ==="
+            cat /tmp/http_proxy_$$.log 2>/dev/null || echo "(no log file)"
+            echo "[http-proxy] === End log ==="
         fi
     else
         echo "[http-proxy] ⚠ HTTP proxy script not found at $HTTP_PROXY_SCRIPT"

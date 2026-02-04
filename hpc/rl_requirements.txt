@@ -21,8 +21,9 @@ skyrl-train[vllm] @ git+https://github.com/penfever/SkyRL.git@penfever/working#s
 # This is the laude-institute fork with custom patches
 harbor[daytona] @ git+https://github.com/laude-institute/harbor.git@penfever/temp-override
 
-# aiohttp-socks required for SOCKS proxy support (Daytona SDK uses aiohttp, not httpx)
+# SOCKS proxy support for HTTP proxy and aiohttp
 aiohttp-socks
+python-socks[asyncio]  # For HTTP-to-SOCKS proxy (hpc/http_proxy.py)
 
 # Chat templates
 Jinja2
