@@ -413,13 +413,55 @@ PROXY_CMD=""'''
     def get_proxy_setup(self) -> str:
         """Generate SOCKS5 proxy setup script for no-internet clusters (JSC).
 
-        DEPRECATED: This method is no longer used. Proxy setup is now handled by
-        get_ssh_tunnel_setup() which creates an SSH tunnel and sets ALL_PROXY.
+        Uses an existing SOCKS5 proxy (e.g., JSC's shared proxy at 10.14.0.53:1080)
+        instead of setting up an SSH tunnel. This is more reliable and doesn't
+        require SSH keys.
+
+        Sets:
+        - SOCKS_PROXY_URL: For Harbor/httpx to use via ALL_PROXY
+        - PROXYCHAINS_SOCKS5_HOST/PORT: For proxychains-ng
+        - PROXYCHAINS_PRELOAD: LD_PRELOAD path for proxychains
 
         Returns:
-            Comment indicating proxy setup is handled elsewhere.
+            Bash script for proxy setup, or comment if no proxy configured.
         """
-        return "# Proxy setup handled by SSH tunnel (see get_ssh_tunnel_setup)"
+        if not self.proxy_host or not self.proxy_port:
+            return "# No proxy configured for this cluster"
+
+        script = f'''# ============================================================================
+# SOCKS5 Proxy Setup for No-Internet Clusters (JSC)
+# Uses existing proxy instead of SSH tunnel - more reliable
+# ============================================================================
+PROXY_HOST="{self.proxy_host}"
+PROXY_PORT="{self.proxy_port}"
+
+echo "[proxy] Setting up SOCKS5 proxy at $PROXY_HOST:$PROXY_PORT"
+
+# Test proxy connectivity
+if nc -z $PROXY_HOST $PROXY_PORT 2>/dev/null; then
+    echo "[proxy] ✓ Proxy reachable at $PROXY_HOST:$PROXY_PORT"
+else
+    echo "[proxy] ✗ WARNING: Proxy not reachable at $PROXY_HOST:$PROXY_PORT"
+fi
+
+# Set proxy URL for Harbor/httpx (via ALL_PROXY)
+export SOCKS_PROXY_URL="socks5h://$PROXY_HOST:$PROXY_PORT"
+echo "[proxy] SOCKS_PROXY_URL=$SOCKS_PROXY_URL"
+
+# Proxychains-ng configuration
+export PROXYCHAINS_SOCKS5_HOST=$PROXY_HOST
+export PROXYCHAINS_SOCKS5_PORT=$PROXY_PORT'''
+
+        if self.proxychains_preload:
+            script += f'''
+export PROXYCHAINS_PRELOAD="{self.proxychains_preload}"
+echo "[proxy] PROXYCHAINS_PRELOAD=$PROXYCHAINS_PRELOAD"'''
+
+        script += '''
+
+echo "[proxy] ✓ Proxy environment configured"'''
+
+        return script
 
     def get_pre_run_commands(self) -> str:
         """Generate pre-run commands for cluster-specific setup.
@@ -461,7 +503,11 @@ jureca = HPC(
         "NCCL_IB_TIMEOUT": "60",
     },
     training_launcher="accelerate",
-    needs_ssh_tunnel=True,  # SSH tunnel provides internet via ALL_PROXY
+    # JSC shared SOCKS5 proxy (more reliable than SSH tunnels)
+    needs_ssh_tunnel=False,
+    proxy_host="10.14.0.53",
+    proxy_port=1080,
+    proxychains_preload="/p/scratch/laionize/raj3/proxychains-ng/libproxychains4.so",
     # JSC-specific setup (disable core dumps to save disk space)
     pre_run_commands=["ulimit -c 0"],
     # Job scaling (from jureca.env)
@@ -499,7 +545,11 @@ jupiter = HPC(
         "NCCL_IB_TIMEOUT": "60",
     },
     training_launcher="accelerate",
-    needs_ssh_tunnel=True,  # SSH tunnel provides internet via ALL_PROXY
+    # JSC shared SOCKS5 proxy (more reliable than SSH tunnels)
+    needs_ssh_tunnel=False,
+    proxy_host="10.14.0.53",
+    proxy_port=1080,
+    proxychains_preload="/p/scratch/laionize/raj3/proxychains-ng/libproxychains4.so",
     # JSC-specific setup (disable core dumps to save disk space)
     pre_run_commands=["ulimit -c 0"],
     # Job scaling
@@ -533,7 +583,11 @@ juwels = HPC(
         "NCCL_IB_TIMEOUT": "60",
     },
     training_launcher="accelerate",
-    needs_ssh_tunnel=True,  # SSH tunnel provides internet via ALL_PROXY
+    # JSC shared SOCKS5 proxy (more reliable than SSH tunnels)
+    needs_ssh_tunnel=False,
+    proxy_host="10.14.0.53",
+    proxy_port=1080,
+    proxychains_preload="/p/scratch/laionize/raj3/proxychains-ng/libproxychains4.so",
     # JSC-specific setup (disable core dumps to save disk space)
     pre_run_commands=["ulimit -c 0"],
     # Job scaling (from juwels.env)
