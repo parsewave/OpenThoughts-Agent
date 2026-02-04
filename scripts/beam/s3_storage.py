@@ -140,6 +140,13 @@ class S3Storage:
         if self._client is None:
             import boto3
 
+            # Unset AWS_SESSION_TOKEN to prevent conflicts with explicit credentials.
+            # boto3 will use session token from env even when explicit creds are provided,
+            # causing "InvalidTokenId" errors with S3-compatible storage (MinIO, JSC S3).
+            if "AWS_SESSION_TOKEN" in os.environ:
+                logger.debug("Unsetting AWS_SESSION_TOKEN to use explicit S3 credentials")
+                del os.environ["AWS_SESSION_TOKEN"]
+
             self._client = boto3.client(
                 "s3",
                 endpoint_url=self.config.endpoint_url,
@@ -154,6 +161,11 @@ class S3Storage:
         """Lazy-load s3fs filesystem interface."""
         if self._s3fs is None:
             import s3fs
+
+            # Unset AWS_SESSION_TOKEN to prevent conflicts (same reason as boto3 client)
+            if "AWS_SESSION_TOKEN" in os.environ:
+                logger.debug("Unsetting AWS_SESSION_TOKEN to use explicit S3 credentials")
+                del os.environ["AWS_SESSION_TOKEN"]
 
             self._s3fs = s3fs.S3FileSystem(
                 endpoint_url=self.config.endpoint_url,
