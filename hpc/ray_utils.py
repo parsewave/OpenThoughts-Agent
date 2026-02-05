@@ -201,11 +201,12 @@ class RayCluster:
         ]
 
         # Try long form first (original behavior), fall back to short form (Frontier)
+        # Unset proxychains env vars to avoid any interference with hostname lookup
         last_error = None
         for hostname_flag in ["--ip-address", "-i"]:
             try:
                 result = subprocess.run(
-                    srun_base + ["hostname", hostname_flag],
+                    srun_base + ["bash", "-c", f"unset LD_PRELOAD PROXYCHAINS_CONF_FILE 2>/dev/null; hostname {hostname_flag}"],
                     capture_output=True,
                     text=True,
                     check=True,
@@ -255,6 +256,7 @@ class RayCluster:
         print("Cleaning up existing Ray instances...", flush=True)
         for node in self.node_list:
             try:
+                # Unset proxychains env vars so ray stop doesn't go through proxy
                 subprocess.run(
                     [
                         "srun",
@@ -265,9 +267,8 @@ class RayCluster:
                         "--cpu-bind=none",  # No binding needed for cleanup
                         "-w",
                         node,
-                        "ray",
-                        "stop",
-                        "--force",
+                        "bash", "-c",
+                        "unset LD_PRELOAD PROXYCHAINS_CONF_FILE 2>/dev/null; ray stop --force",
                     ],
                     capture_output=True,
                     timeout=30,
@@ -344,6 +345,7 @@ class RayCluster:
         # Stop Ray on all nodes
         for node in self.node_list:
             try:
+                # Unset proxychains env vars so ray stop doesn't go through proxy
                 subprocess.run(
                     [
                         "srun",
@@ -354,9 +356,8 @@ class RayCluster:
                         "--cpu-bind=none",  # No binding needed for cleanup
                         "-w",
                         node,
-                        "ray",
-                        "stop",
-                        "--force",
+                        "bash", "-c",
+                        "unset LD_PRELOAD PROXYCHAINS_CONF_FILE 2>/dev/null; ray stop --force",
                     ],
                     capture_output=True,
                     timeout=30,
@@ -419,10 +420,14 @@ class RayCluster:
             cmd.append(f"--object-store-memory={self.config.object_store_memory}")
 
         # Build the bash command with environment variables
+        # CRITICAL: Unset LD_PRELOAD and PROXYCHAINS_CONF_FILE to prevent proxychains from
+        # intercepting Ray's internal networking. Proxychains is only needed for external
+        # traffic (Daytona API), not for Ray cluster communication which uses internal IPs.
+        unset_proxychains = "unset LD_PRELOAD PROXYCHAINS_CONF_FILE 2>/dev/null; "
         if self.config.ray_env_vars:
-            bash_cmd = f"env {self.config.ray_env_vars} {' '.join(cmd)}"
+            bash_cmd = f"{unset_proxychains}env {self.config.ray_env_vars} {' '.join(cmd)}"
         else:
-            bash_cmd = " ".join(cmd)
+            bash_cmd = f"{unset_proxychains}{' '.join(cmd)}"
 
         srun_cmd = [
             "srun",
@@ -476,7 +481,9 @@ class RayCluster:
             return
 
         # Build the wait command
-        wait_cmd = " ".join([
+        # Unset proxychains env vars to avoid interfering with Ray communication
+        unset_proxychains = "unset LD_PRELOAD PROXYCHAINS_CONF_FILE 2>/dev/null; "
+        wait_cmd = unset_proxychains + " ".join([
             sys.executable,
             str(script_path),
             "--address", self.address,
@@ -581,6 +588,8 @@ sys.exit(1)
 '''
 
         # Run on head node via srun
+        # Wrap in bash to unset proxychains env vars before running Python with ray.init()
+        bash_cmd = f"unset LD_PRELOAD PROXYCHAINS_CONF_FILE 2>/dev/null; {sys.executable} -c {repr(poll_script)}"
         srun_cmd = [
             "srun",
             f"--export={self.config.srun_export_env}",
@@ -589,7 +598,7 @@ sys.exit(1)
             "--overlap",
             "--cpu-bind=none",  # No binding needed for polling script
             "-w", self.node_list[0],
-            sys.executable, "-c", poll_script,
+            "bash", "-c", bash_cmd,
         ]
 
         print(f"  Waiting for cluster ({self.total_gpus} GPUs, fallback mode)...", flush=True)
