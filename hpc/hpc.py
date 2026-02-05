@@ -664,8 +664,9 @@ jupiter = HPC(
     modules=["nvidia-compilers/25.9-CUDA-13"],
     env_vars={
         "WANDB_MODE": "offline",  # Compute nodes have no internet
-        # Force IPv4 for vLLM/PyTorch distributed (IPv6 not supported on compute nodes)
-        "VLLM_HOST_IP": "0.0.0.0",
+        # Force GLOO and NCCL to use IPv4 (IPv6 doesn't work on Jupiter compute nodes)
+        "GLOO_USE_IPV6": "0",
+        "NCCL_SOCKET_FAMILY": "AF_INET",
         # NOTE: Do NOT set GLOO_SOCKET_IFNAME=ib0 - it causes Gloo to use the IB hostname
         # which resolves to IPv6. Let Gloo auto-detect the interface.
     },

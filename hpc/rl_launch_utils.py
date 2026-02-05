@@ -293,11 +293,11 @@ def build_rl_env_vars(
     if experiments_dir and run_name:
         env_vars["SKYRL_EXPORT_PATH"] = derive_skyrl_export_path(experiments_dir, run_name)
 
-    # WANDB mode (inherit from HPC if available)
+    # Inherit all HPC-specific environment variables (WANDB_MODE, GLOO_USE_IPV6, etc.)
     if hpc is not None and hasattr(hpc, "env_vars"):
         hpc_env = hpc.env_vars or {}
-        if "WANDB_MODE" in hpc_env:
-            env_vars["WANDB_MODE"] = hpc_env["WANDB_MODE"]
+        for key, value in hpc_env.items():
+            env_vars[key] = value
 
     return env_vars
 
