@@ -169,6 +169,19 @@ echo "Config: {config_path}"
 echo "Working directory: $WORKDIR"
 echo "Python: $(which python)"
 echo "Python version: $(python --version)"
+
+# --- Proxychains wrapper for no-internet clusters ---
+# If PROXYCHAINS_PRELOAD and PROXYCHAINS_CONF_FILE are set, wrap Python with LD_PRELOAD
+# This routes external traffic (Daytona API) through proxy while internal traffic (Ray, NCCL) goes direct
+if [ -n "${PROXYCHAINS_PRELOAD:-}" ] && [ -n "${PROXYCHAINS_CONF_FILE:-}" ] && [ -f "${PROXYCHAINS_PRELOAD}" ]; then
+    echo "Proxychains: ENABLED (external traffic → proxy, internal traffic → direct)"
+    echo "  Config: $PROXYCHAINS_CONF_FILE"
+    echo "  Library: $PROXYCHAINS_PRELOAD"
+    PYTHON_CMD="env PROXYCHAINS_CONF_FILE=$PROXYCHAINS_CONF_FILE LD_PRELOAD=$PROXYCHAINS_PRELOAD python"
+else
+    echo "Proxychains: DISABLED (direct internet or not configured)"
+    PYTHON_CMD="python"
+fi
 echo "========================================"
 
-python -m hpc.rl_launch_utils --config "{config_path}"
+$PYTHON_CMD -m hpc.rl_launch_utils --config "{config_path}"

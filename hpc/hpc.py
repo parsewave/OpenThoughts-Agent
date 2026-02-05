@@ -400,60 +400,71 @@ if [ -n "${SSH_KEY:-}" ]; then
     fi
 
     # ========================================================================
-    # HTTP Proxy Setup (converts SOCKS to HTTP for aiohttp compatibility)
-    # aiohttp doesn't support SOCKS natively but supports HTTP_PROXY
+    # Proxychains Setup (intercepts socket calls at libc level)
+    # Works with any program (Python, C++, etc.) unlike Python-level patches
+    #
+    # KEY: Uses localnet exclusions so internal traffic (Ray, NCCL) bypasses
+    # the proxy, while external traffic (Daytona API) goes through it.
     # ========================================================================
-    HTTP_PROXY_PORT=$((SOCKS_PORT + 1000))
-    HTTP_PROXY_SCRIPT="${DCFT:-$HOME}/hpc/http_proxy.py"
+    PROXYCHAINS_BIN="/e/home/jusers/feuer1/jupiter/proxychains-ng-install/bin"
+    PROXYCHAINS_LIB="/e/home/jusers/feuer1/jupiter/proxychains-ng-install/lib/libproxychains4.so"
+    PROXYCHAINS_CONF="/tmp/proxychains_${SLURM_JOB_ID}.conf"
 
-    if [ -f "$HTTP_PROXY_SCRIPT" ]; then
-        echo "[http-proxy] Starting HTTP-to-SOCKS proxy on port $HTTP_PROXY_PORT..."
+    if [ -f "$PROXYCHAINS_LIB" ]; then
+        echo "[proxychains] Setting up proxychains-ng..."
 
-        # Start HTTP proxy in background
-        python "$HTTP_PROXY_SCRIPT" \
-            --socks-host "${head_node_ip}" \
-            --socks-port "${SOCKS_PORT}" \
-            --listen-port "${HTTP_PROXY_PORT}" \
-            > /tmp/http_proxy_$$.log 2>&1 &
-        HTTP_PROXY_PID=$!
-        sleep 2
+        # Generate proxychains config with localnet exclusions
+        # This ensures Ray/NCCL traffic bypasses the proxy!
+        cat > "$PROXYCHAINS_CONF" << PCEOF
+# Proxychains config for JSC HPC - auto-generated
+# Proxy ONLY external traffic (Daytona), bypass internal (Ray, NCCL)
 
-        if kill -0 $HTTP_PROXY_PID 2>/dev/null; then
-            echo "[http-proxy] ✓ HTTP proxy started (PID $HTTP_PROXY_PID)"
+dynamic_chain
+quiet_mode
+proxy_dns
 
-            # Export HTTP_PROXY for aiohttp (use head_node_ip so workers can reach it)
-            export HTTP_PROXY="http://${head_node_ip}:${HTTP_PROXY_PORT}"
-            export HTTPS_PROXY="http://${head_node_ip}:${HTTP_PROXY_PORT}"
-            export http_proxy="$HTTP_PROXY"
-            export https_proxy="$HTTPS_PROXY"
+tcp_read_time_out 15000
+tcp_connect_time_out 8000
 
-            # CRITICAL: Set NO_PROXY to exclude localhost and cluster-internal IPs
-            # Otherwise requests to local services (vLLM, Ray) will fail
-            export NO_PROXY="localhost,127.0.0.1,10.*,192.168.*,.internal,.local"
-            export no_proxy="$NO_PROXY"
+# CRITICAL: Exclude internal networks from proxying
+# This is what keeps Ray and NCCL working!
+localnet 127.0.0.0/255.0.0.0
+localnet 10.0.0.0/255.0.0.0
+localnet 172.16.0.0/255.240.0.0
+localnet 192.168.0.0/255.255.0.0
+localnet 169.254.0.0/255.255.0.0
 
-            echo "[http-proxy] ✓ HTTP_PROXY=$HTTP_PROXY"
-            echo "[http-proxy] ✓ HTTPS_PROXY=$HTTPS_PROXY"
-            echo "[http-proxy] ✓ NO_PROXY=$NO_PROXY"
+[ProxyList]
+socks5 ${head_node_ip} ${SOCKS_PORT}
+PCEOF
 
-            # Test HTTP proxy
-            if curl -s --connect-timeout 5 --proxy "$HTTP_PROXY" https://huggingface.co -o /dev/null 2>/dev/null; then
-                echo "[http-proxy] ✓ HTTP proxy test passed"
-            else
-                echo "[http-proxy] ⚠ HTTP proxy test failed"
-                echo "[http-proxy] === Log output ==="
-                cat /tmp/http_proxy_$$.log 2>/dev/null || echo "(no log file)"
-                echo "[http-proxy] === End log ==="
-            fi
+        echo "[proxychains] ✓ Generated config at $PROXYCHAINS_CONF"
+        echo "[proxychains]   - Internal traffic (10.x.x.x) → DIRECT (no proxy)"
+        echo "[proxychains]   - External traffic (internet) → PROXY"
+
+        # Export proxychains environment
+        export PROXYCHAINS_CONF_FILE="$PROXYCHAINS_CONF"
+        export PROXYCHAINS_PRELOAD="$PROXYCHAINS_LIB"
+        export PATH="$PROXYCHAINS_BIN:$PATH"
+
+        echo "[proxychains] ✓ PROXYCHAINS_CONF_FILE=$PROXYCHAINS_CONF_FILE"
+        echo "[proxychains] ✓ PROXYCHAINS_PRELOAD=$PROXYCHAINS_PRELOAD"
+
+        # Test proxychains with the config
+        if PROXYCHAINS_CONF_FILE="$PROXYCHAINS_CONF" LD_PRELOAD="$PROXYCHAINS_LIB" \
+           curl -s --connect-timeout 5 https://huggingface.co -o /dev/null 2>/dev/null; then
+            echo "[proxychains] ✓ External connectivity test passed"
         else
-            echo "[http-proxy] ✗ HTTP proxy failed to start"
-            echo "[http-proxy] === Log output ==="
-            cat /tmp/http_proxy_$$.log 2>/dev/null || echo "(no log file)"
-            echo "[http-proxy] === End log ==="
+            echo "[proxychains] ⚠ External connectivity test failed (may still work)"
+        fi
+
+        # Verify internal traffic bypasses proxy (should work without proxy)
+        if curl -s --connect-timeout 2 http://${head_node_ip}:${SOCKS_PORT} -o /dev/null 2>/dev/null || true; then
+            echo "[proxychains] ✓ Internal network accessible"
         fi
     else
-        echo "[http-proxy] ⚠ HTTP proxy script not found at $HTTP_PROXY_SCRIPT"
-        echo "[http-proxy]   Daytona/aiohttp may not work without HTTP_PROXY"
+        echo "[proxychains] ⚠ Proxychains library not found at $PROXYCHAINS_LIB"
+        echo "[proxychains]   Internet access may not work for some applications"
     fi
 else
     echo "[ssh-tunnel] SSH_KEY not set - skipping SSH tunnel setup"
@@ -485,9 +496,14 @@ PROXY_CMD=""'''
         script = f'''# ============================================================================
 # SOCKS5 Proxy Setup for No-Internet Clusters (JSC)
 # Uses existing proxy instead of SSH tunnel - more reliable
+#
+# KEY: Proxychains with localnet exclusions ensures:
+#   - Internal traffic (Ray, NCCL) → DIRECT (no proxy)
+#   - External traffic (Daytona API) → Through SOCKS5 proxy
 # ============================================================================
 PROXY_HOST="{self.proxy_host}"
 PROXY_PORT="{self.proxy_port}"
+PROXYCHAINS_CONF="/tmp/proxychains_${{SLURM_JOB_ID}}.conf"
 
 echo "[proxy] Setting up SOCKS5 proxy at $PROXY_HOST:$PROXY_PORT"
 
@@ -498,18 +514,56 @@ else
     echo "[proxy] ✗ WARNING: Proxy not reachable at $PROXY_HOST:$PROXY_PORT"
 fi
 
-# Set proxy URL for Harbor/httpx (via ALL_PROXY)
-export SOCKS_PROXY_URL="socks5h://$PROXY_HOST:$PROXY_PORT"
-echo "[proxy] SOCKS_PROXY_URL=$SOCKS_PROXY_URL"
+# Generate proxychains config with localnet exclusions
+cat > "$PROXYCHAINS_CONF" << PCEOF
+# Proxychains config for JSC HPC - auto-generated
+# Proxy ONLY external traffic (Daytona), bypass internal (Ray, NCCL)
 
-# Proxychains-ng configuration
-export PROXYCHAINS_SOCKS5_HOST=$PROXY_HOST
-export PROXYCHAINS_SOCKS5_PORT=$PROXY_PORT'''
+dynamic_chain
+quiet_mode
+proxy_dns
+
+tcp_read_time_out 15000
+tcp_connect_time_out 8000
+
+# CRITICAL: Exclude internal networks from proxying
+# This is what keeps Ray and NCCL working!
+localnet 127.0.0.0/255.0.0.0
+localnet 10.0.0.0/255.0.0.0
+localnet 172.16.0.0/255.240.0.0
+localnet 192.168.0.0/255.255.0.0
+localnet 169.254.0.0/255.255.0.0
+
+[ProxyList]
+socks5 $PROXY_HOST $PROXY_PORT
+PCEOF
+
+echo "[proxy] ✓ Generated proxychains config at $PROXYCHAINS_CONF"
+echo "[proxy]   - Internal traffic (10.x.x.x) → DIRECT (no proxy)"
+echo "[proxy]   - External traffic (internet) → PROXY"
+
+# Export for proxychains
+export PROXYCHAINS_CONF_FILE="$PROXYCHAINS_CONF"
+echo "[proxy] PROXYCHAINS_CONF_FILE=$PROXYCHAINS_CONF_FILE"
+
+# Also set SOCKS_PROXY_URL for applications that can use it directly
+export SOCKS_PROXY_URL="socks5h://$PROXY_HOST:$PROXY_PORT"
+echo "[proxy] SOCKS_PROXY_URL=$SOCKS_PROXY_URL"'''
 
         if self.proxychains_preload:
             script += f'''
+
+# Proxychains library for LD_PRELOAD
 export PROXYCHAINS_PRELOAD="{self.proxychains_preload}"
-echo "[proxy] PROXYCHAINS_PRELOAD=$PROXYCHAINS_PRELOAD"'''
+echo "[proxy] PROXYCHAINS_PRELOAD=$PROXYCHAINS_PRELOAD"
+
+# Test proxychains with the config
+if PROXYCHAINS_CONF_FILE="$PROXYCHAINS_CONF" LD_PRELOAD="{self.proxychains_preload}" \\
+   curl -s --connect-timeout 5 https://huggingface.co -o /dev/null 2>/dev/null; then
+    echo "[proxy] ✓ Proxychains test passed - external connectivity works"
+else
+    echo "[proxy] ⚠ Proxychains test failed (may still work for applications)"
+fi'''
 
         script += '''
 

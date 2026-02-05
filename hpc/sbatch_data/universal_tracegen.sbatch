@@ -140,6 +140,19 @@ setup_container_runtime "{harbor_env}" "$WORKDIR" || exit $?
 echo "=== Universal Trace Generation Runner ==="
 echo "Config: {config_path}"
 echo "Working directory: $WORKDIR"
+
+# --- Proxychains wrapper for no-internet clusters ---
+# If PROXYCHAINS_PRELOAD and PROXYCHAINS_CONF_FILE are set, wrap Python with LD_PRELOAD
+# This routes external traffic (Daytona API) through proxy while internal traffic goes direct
+if [ -n "${PROXYCHAINS_PRELOAD:-}" ] && [ -n "${PROXYCHAINS_CONF_FILE:-}" ] && [ -f "${PROXYCHAINS_PRELOAD}" ]; then
+    echo "Proxychains: ENABLED (external traffic → proxy, internal traffic → direct)"
+    echo "  Config: $PROXYCHAINS_CONF_FILE"
+    echo "  Library: $PROXYCHAINS_PRELOAD"
+    PYTHON_CMD="env PROXYCHAINS_CONF_FILE=$PROXYCHAINS_CONF_FILE LD_PRELOAD=$PROXYCHAINS_PRELOAD python"
+else
+    echo "Proxychains: DISABLED (direct internet or not configured)"
+    PYTHON_CMD="python"
+fi
 echo "========================================="
 
-python -m hpc.datagen_launch_utils --mode tracegen --config "{config_path}"
+$PYTHON_CMD -m hpc.datagen_launch_utils --mode tracegen --config "{config_path}"
