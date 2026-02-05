@@ -171,15 +171,16 @@ echo "Python: $(which python)"
 echo "Python version: $(python --version)"
 
 # --- Proxy setup for no-internet clusters ---
-# Uses ALL_PROXY env var set by ssh_tunnel_setup (SSH SOCKS5 tunnel approach)
+# Uses CMD_PREFIX set by ssh_tunnel_setup (proxychains4 wrapper approach)
 # This routes external traffic (Daytona API) through proxy while internal traffic (Ray, NCCL) goes direct
-if [ -n "${ALL_PROXY:-}" ]; then
-    echo "Proxy: ENABLED via ALL_PROXY"
-    echo "  ALL_PROXY: $ALL_PROXY"
-    echo "  NO_PROXY: ${NO_PROXY:-not set}"
+if [ -n "${CMD_PREFIX:-}" ]; then
+    echo "Proxy: ENABLED via proxychains4"
+    echo "  CMD_PREFIX: $CMD_PREFIX"
+    echo "  Config: ${PROXYCHAINS_CONF_FILE:-not set}"
 else
     echo "Proxy: DISABLED (direct internet or not configured)"
+    CMD_PREFIX=""
 fi
 echo "========================================"
 
-python -m hpc.rl_launch_utils --config "{config_path}"
+$CMD_PREFIX python -m hpc.rl_launch_utils --config "{config_path}"

@@ -301,35 +301,40 @@ class HPC(BaseModel):
     def get_ssh_tunnel_setup(self) -> str:
         """Generate SSH tunnel setup script for no-internet clusters (JSC).
 
-        Based on Marianna's working approach from jsc_train._proxy.sbatch:
-        - Creates SSH tunnel from compute node to login node (SOCKS5 proxy)
-        - Sets ALL_PROXY env var for applications that respect it (aiohttp-socks, requests, etc.)
-        - Sets Daytona-specific timeout and retry env vars
-        - Does NOT use proxychains4 wrapper (binary not available on all clusters)
+        Creates SSH tunnel from compute node to login node, then uses proxychains4
+        to route external traffic through the tunnel. This is required because
+        JSC's proxy infrastructure only works via LD_PRELOAD interception.
 
         Requirements:
         - SSH_KEY environment variable must be set to path of SSH private key
         - Public key must be in ~/.ssh/authorized_keys on login node
+        - proxychains4 binary must exist at cluster-specific path
         """
         if not self.needs_ssh_tunnel:
             return "# No SSH tunnel needed for this cluster"
 
         return r'''# ============================================================================
-# SSH Tunnel Setup for No-Internet Clusters (JSC)
-# Based on Marianna's working approach from jsc_train._proxy.sbatch
+# SSH Tunnel + Proxychains Setup for No-Internet Clusters (JSC)
 #
-# Creates SOCKS5 proxy via SSH tunnel, sets ALL_PROXY for applications that
-# respect it, and configures Daytona timeouts for reliable connectivity.
+# Creates SOCKS5 proxy via SSH tunnel to login node, then uses proxychains4
+# to intercept and route external traffic through the tunnel.
+#
+# NOTE: Direct SOCKS5 client libraries (aiohttp-socks, requests) don't work
+# with JSC's proxy infrastructure - only LD_PRELOAD proxychains works.
 # ============================================================================
 
-# Determine login node based on cluster
+# Determine login node and proxychains path based on cluster
 NODE_HOST=$(hostname -s)
 if [[ $NODE_HOST == jrc* ]]; then
     LOGIN_NODE="jrlogin05i"
+    PROXYCHAINS_BIN="/p/scratch/synthlaion/dc-agent-shared/tools/proxychains-ng-install/bin/proxychains4"
 elif [[ $NODE_HOST == jwb* ]]; then
     LOGIN_NODE="jwlogin22i"
-elif [[ $NODE_HOST == jpb* ]]; then
+    PROXYCHAINS_BIN="/p/scratch/synthlaion/dc-agent-shared/tools/proxychains-ng-install/bin/proxychains4"
+elif [[ $NODE_HOST == jpb* ]] || [[ $NODE_HOST == jpc* ]]; then
     LOGIN_NODE="jpbl-s01-01"
+    # Jupiter uses aarch64 build in project scratch
+    PROXYCHAINS_BIN="/e/scratch/jureap59/feuer1/proxychains-ng-aarch64/bin/proxychains4"
 else
     echo "[proxy] Unknown cluster for node $NODE_HOST - skipping proxy setup"
     export CMD_PREFIX=""
@@ -337,6 +342,15 @@ else
 fi
 
 TUNNEL_PORT=7003
+
+# Check if proxychains4 binary exists
+if [ ! -x "$PROXYCHAINS_BIN" ]; then
+    echo "[proxy] ✗ proxychains4 not found at $PROXYCHAINS_BIN"
+    echo "[proxy] Skipping proxy setup - external connectivity will fail"
+    export CMD_PREFIX=""
+    return 0
+fi
+echo "[proxy] ✓ Found proxychains4 at $PROXYCHAINS_BIN"
 
 if [ -z "${SSH_KEY:-}" ]; then
     echo "[proxy] SSH_KEY not set - skipping proxy setup"
@@ -347,7 +361,7 @@ else
     echo "[proxy] SSH key: $SSH_KEY"
     echo "[proxy] Tunnel port: $TUNNEL_PORT"
 
-    # Create SSH tunnel with SOCKS5 proxy (matches Marianna's working config)
+    # Create SSH tunnel with SOCKS5 proxy
     ssh -f -N -D ${TUNNEL_PORT} \
         -o StrictHostKeyChecking=no \
         -o ConnectTimeout=1000 \
@@ -367,11 +381,38 @@ else
         echo "[proxy] ✓ SSH tunnel started successfully"
     else
         echo "[proxy] ✗ SSH tunnel failed to start"
+        export CMD_PREFIX=""
+        return 0
     fi
 
     # ============================================================================
-    # Daytona/aiohttp timeout and retry settings (from Marianna's working config)
-    # These help with reliability over the SSH tunnel
+    # Generate proxychains config
+    # Key: localnet entries ensure internal traffic (Ray, NCCL) bypasses proxy
+    # ============================================================================
+    SLURM_JOB_ID=${SLURM_JOB_ID:-"local"}
+    CFG_PATH=~/.proxychains/proxychains_${SLURM_JOB_ID}.conf
+    export PROXYCHAINS_CONF_FILE=$CFG_PATH
+    mkdir -p ~/.proxychains
+
+    cat > "$CFG_PATH" <<PCEOF
+strict_chain
+tcp_read_time_out 30000
+tcp_connect_time_out 15000
+localnet 127.0.0.0/255.0.0.0
+localnet 127.0.0.1/255.255.255.255
+localnet 10.0.0.0/255.0.0.0
+localnet 172.16.0.0/255.240.0.0
+localnet 192.168.0.0/255.255.0.0
+[ProxyList]
+socks5 127.0.0.1 ${TUNNEL_PORT}
+PCEOF
+
+    echo "[proxy] ✓ Generated proxychains config at $CFG_PATH"
+    echo "[proxy]   - Internal traffic (10.x.x.x, 172.x.x.x) → DIRECT"
+    echo "[proxy]   - External traffic (internet) → PROXY via tunnel"
+
+    # ============================================================================
+    # Daytona/aiohttp timeout and retry settings
     # ============================================================================
     export DAYTONA_MAX_RETRIES=5
     export DAYTONA_RETRY_DELAY=30
@@ -391,37 +432,17 @@ else
 
     echo "[proxy] ✓ Daytona timeout settings configured"
 
-    # ============================================================================
-    # Set ALL_PROXY for applications that respect it (aiohttp-socks, requests, httpx)
-    # Using socks5h:// ensures DNS resolution happens at the proxy (login node)
-    # ============================================================================
-    export ALL_PROXY="socks5h://127.0.0.1:${TUNNEL_PORT}"
-    export SOCKS_PROXY="socks5h://127.0.0.1:${TUNNEL_PORT}"
-
-    # Also set lowercase versions (some libraries check these)
-    export all_proxy="$ALL_PROXY"
-    export socks_proxy="$SOCKS_PROXY"
-
-    echo "[proxy] ALL_PROXY=$ALL_PROXY"
-
-    # ============================================================================
-    # Exclude internal traffic from proxy (Ray, NCCL need direct connections)
-    # Setting NO_PROXY ensures internal cluster traffic bypasses the proxy
-    # ============================================================================
-    export NO_PROXY="localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.internal,.local"
-    export no_proxy="$NO_PROXY"
-    echo "[proxy] NO_PROXY=$NO_PROXY"
-
-    # Test proxy connectivity
-    if curl -s --connect-timeout 10 --proxy "socks5h://127.0.0.1:${TUNNEL_PORT}" https://huggingface.co -o /dev/null 2>/dev/null; then
-        echo "[proxy] ✓ Proxy connectivity test passed (huggingface.co reachable)"
+    # Test proxy connectivity via proxychains
+    if $PROXYCHAINS_BIN -q -f "$CFG_PATH" curl -s --connect-timeout 10 https://huggingface.co -o /dev/null 2>/dev/null; then
+        echo "[proxy] ✓ Proxy connectivity test passed (huggingface.co reachable via proxychains)"
     else
         echo "[proxy] ⚠ Proxy connectivity test failed (may still work for Daytona)"
     fi
 
-    # No CMD_PREFIX needed - applications use ALL_PROXY directly
-    export CMD_PREFIX=""
-    echo "[proxy] ✓ Proxy setup complete (no wrapper needed, using ALL_PROXY)"
+    # Set CMD_PREFIX for wrapping the main python command
+    export CMD_PREFIX="$PROXYCHAINS_BIN -q -f $CFG_PATH"
+    echo "[proxy] CMD_PREFIX: $CMD_PREFIX"
+    echo "[proxy] ✓ Proxy setup complete"
 fi
 '''
 
