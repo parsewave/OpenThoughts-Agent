@@ -421,7 +421,10 @@ if [ -n "${SSH_KEY:-}" ]; then
 
 dynamic_chain
 quiet_mode
-proxy_dns
+
+# NOTE: proxy_dns is DISABLED to allow local DNS resolution for internal hostnames
+# (e.g., jpbo-021-27.jupiter.internal). External hostnames like api.daytona.io
+# will still work because socks5h:// does DNS at the proxy.
 
 tcp_read_time_out 15000
 tcp_connect_time_out 8000
@@ -441,6 +444,14 @@ PCEOF
         echo "[proxychains] ✓ Generated config at $PROXYCHAINS_CONF"
         echo "[proxychains]   - Internal traffic (10.x.x.x) → DIRECT (no proxy)"
         echo "[proxychains]   - External traffic (internet) → PROXY"
+
+        # Save a copy to the experiments directory for debugging
+        EXPERIMENTS_DIR="${DCFT:-$PWD}/experiments"
+        if [ -d "$EXPERIMENTS_DIR" ]; then
+            PERSISTENT_CONF="$EXPERIMENTS_DIR/proxychains_${SLURM_JOB_ID}.conf"
+            cp "$PROXYCHAINS_CONF" "$PERSISTENT_CONF" 2>/dev/null && \
+                echo "[proxychains] ✓ Saved config copy to $PERSISTENT_CONF"
+        fi
 
         # Export proxychains environment
         export PROXYCHAINS_CONF_FILE="$PROXYCHAINS_CONF"
@@ -521,7 +532,10 @@ cat > "$PROXYCHAINS_CONF" << PCEOF
 
 dynamic_chain
 quiet_mode
-proxy_dns
+
+# NOTE: proxy_dns is DISABLED to allow local DNS resolution for internal hostnames
+# (e.g., jpbo-021-27.jupiter.internal). External hostnames like api.daytona.io
+# will still work because socks5h:// does DNS at the proxy.
 
 tcp_read_time_out 15000
 tcp_connect_time_out 8000
@@ -541,6 +555,14 @@ PCEOF
 echo "[proxy] ✓ Generated proxychains config at $PROXYCHAINS_CONF"
 echo "[proxy]   - Internal traffic (10.x.x.x) → DIRECT (no proxy)"
 echo "[proxy]   - External traffic (internet) → PROXY"
+
+# Save a copy to the experiments directory for debugging
+EXPERIMENTS_DIR="${DCFT:-$PWD}/experiments"
+if [ -d "$EXPERIMENTS_DIR" ]; then
+    PERSISTENT_CONF="$EXPERIMENTS_DIR/proxychains_${SLURM_JOB_ID}.conf"
+    cp "$PROXYCHAINS_CONF" "$PERSISTENT_CONF" 2>/dev/null && \
+        echo "[proxy] ✓ Saved config copy to $PERSISTENT_CONF"
+fi
 
 # Export for proxychains
 export PROXYCHAINS_CONF_FILE="$PROXYCHAINS_CONF"
