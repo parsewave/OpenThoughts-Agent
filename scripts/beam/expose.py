@@ -174,12 +174,39 @@ def start_pinggy_tunnel(config: PinggyConfig, dry_run: bool = False, secrets_pat
 
     logger.info(f"Using Pinggy token: {token}")
 
-    # Match Pinggy's documented example exactly - minimal options
+    identity_file = config.identity_file or os.environ.get("PINGGY_IDENTITY_FILE") or os.environ.get("PINGGY_SSH_KEY")
+    if identity_file:
+        identity_file = os.path.expanduser(identity_file)
+        if not os.path.exists(identity_file):
+            logger.warning(f"PINGGY identity file not found: {identity_file}")
+            identity_file = None
+        else:
+            logger.info(f"Using Pinggy identity file: {identity_file}")
+
+    if "SSH_AUTH_SOCK" not in os.environ and not identity_file:
+        logger.warning(
+            "No SSH agent or identity file configured. Pinggy requires a non-interactive SSH key; "
+            "start ssh-agent and add your key (e.g., `ssh-add ~/.ssh/id_rsa`) or set PINGGY_IDENTITY_FILE."
+        )
+
+    # Match Pinggy's documented example and avoid interactive password prompts.
     ssh_cmd = [
-        "ssh", "-p", "443",
+        "ssh", "-v", "-p", "443",
         "-R", f"0:{config.local_host}:{config.local_port}",
         "-o", "StrictHostKeyChecking=no",
         "-o", "ServerAliveInterval=30",
+        "-o", "ServerAliveCountMax=3",
+        "-o", "ExitOnForwardFailure=yes",
+        "-o", "BatchMode=yes",
+        "-o", "PasswordAuthentication=no",
+        "-o", "KbdInteractiveAuthentication=no",
+        "-o", "IdentitiesOnly=yes",
+    ]
+
+    if identity_file:
+        ssh_cmd += ["-i", identity_file]
+
+    ssh_cmd += [
         f"{token}@{config.pinggy_host}",
     ]
 

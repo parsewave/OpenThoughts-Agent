@@ -127,6 +127,7 @@ def cmd_create(args) -> int:
         pinggy_config = PinggyConfig(
             persistent_url=args.pinggy_url,
             token=args.pinggy_token,
+            identity_file=os.environ.get("PINGGY_IDENTITY_FILE") or os.environ.get("PINGGY_SSH_KEY"),
         )
     elif args.expose_method == "loadbalancer":
         lb_config = LoadBalancerConfig()
@@ -374,6 +375,7 @@ def cmd_test(args) -> int:
         pinggy_config = PinggyConfig(
             persistent_url=args.pinggy_url,
             token=args.pinggy_token,
+            identity_file=os.environ.get("PINGGY_IDENTITY_FILE") or os.environ.get("PINGGY_SSH_KEY"),
         )
     elif args.expose_method == "loadbalancer":
         lb_config = LoadBalancerConfig()

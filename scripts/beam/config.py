@@ -143,16 +143,25 @@ class PinggyConfig:
     local_host: str = "localhost"
     pinggy_host: str = "pro.pinggy.io"
     health_check_timeout: int = 60
+    identity_file: Optional[str] = None
 
     def get_ssh_command(self) -> str:
         """Build SSH command for Pinggy tunnel with auto-reconnect."""
-        # Match Pinggy's documented example exactly
+        identity_flag = f"-i {self.identity_file} " if self.identity_file else ""
+        # Match Pinggy's documented example and avoid interactive password prompts.
         return (
             f'while true; do '
             f'ssh -p 443 '
             f'-R0:{self.local_host}:{self.local_port} '
             f'-o StrictHostKeyChecking=no '
             f'-o ServerAliveInterval=30 '
+            f'-o ServerAliveCountMax=3 '
+            f'-o ExitOnForwardFailure=yes '
+            f'-o BatchMode=yes '
+            f'-o PasswordAuthentication=no '
+            f'-o KbdInteractiveAuthentication=no '
+            f'-o IdentitiesOnly=yes '
+            f'{identity_flag}'
             f'{self.token}@{self.pinggy_host}; '
             f'sleep 10; '
             f'done'
