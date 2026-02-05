@@ -246,7 +246,7 @@ generator:
 
   # Multi-turn agentic conversation handling
   append_eos_token_after_stop_str_in_multi_turn: true
-  max_turns: 64  # Match max_episodes
+  max_turns: 999999  # Match max_episodes
 
   # Sampling parameters for generation
   sampling_params:

@@ -97,7 +97,7 @@ terminal_bench:
       - ContextLengthExceededError
 
     # Orchestrator settings
-    n_concurrent_trials: 192
+    n_concurrent_trials: 256
 
     # Logging settings
     log_level: INFO
@@ -121,7 +121,7 @@ terminal_bench:
 
   # Model info for Harbor's hosted_vllm validation
   model_info:
-    max_input_tokens: 24576
+    max_input_tokens: 32768
     max_output_tokens: 8192
 
   archiving:
@@ -240,7 +240,7 @@ generator:
   enable_http_endpoint: true
 
   append_eos_token_after_stop_str_in_multi_turn: true
-  max_turns: 64
+  max_turns: 999999
 
   sampling_params:
     max_generate_length: 8192

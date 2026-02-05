@@ -134,7 +134,7 @@ terminal_bench:
   model_info:
     # Context budget: 32k total = 24k prompt + 8k generation
     # Prompts grow with conversation history, so reserve headroom for generation
-    max_input_tokens: 24576   # 24k - leaves 8k for generation
+    max_input_tokens: 32768   # 24k - leaves 8k for generation
     max_output_tokens: 8192   # 8k - sufficient for most agent responses
 
 # Trainer configuration

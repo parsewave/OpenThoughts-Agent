@@ -105,7 +105,7 @@ terminal_bench:
   # Model info for Harbor's hosted_vllm validation (token limits and costs)
   model_info:
     # Context budget: 32k total = 24k prompt + 8k generation
-    max_input_tokens: 24576   # 24k - leaves 8k for generation
+    max_input_tokens: 32768   # 24k - leaves 8k for generation
     max_output_tokens: 8192   # 8k - sufficient for most agent responses
 
 # Trainer configuration
@@ -217,7 +217,7 @@ generator:
 
   # Multi-turn agentic conversation handling
   append_eos_token_after_stop_str_in_multi_turn: true
-  max_turns: 64  # Match max_episodes
+  max_turns: 999999  # Match max_episodes
 
   # Sampling parameters for generation
   sampling_params:
