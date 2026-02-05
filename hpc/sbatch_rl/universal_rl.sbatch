@@ -171,17 +171,16 @@ echo "Python: $(which python)"
 echo "Python version: $(python --version)"
 
 # --- Proxychains wrapper for no-internet clusters ---
-# If PROXYCHAINS_PRELOAD and PROXYCHAINS_CONF_FILE are set, wrap Python with LD_PRELOAD
+# Uses CMD_PREFIX set by ssh_tunnel_setup (proxychains4 binary wrapper approach)
 # This routes external traffic (Daytona API) through proxy while internal traffic (Ray, NCCL) goes direct
-if [ -n "${PROXYCHAINS_PRELOAD:-}" ] && [ -n "${PROXYCHAINS_CONF_FILE:-}" ] && [ -f "${PROXYCHAINS_PRELOAD}" ]; then
-    echo "Proxychains: ENABLED (external traffic → proxy, internal traffic → direct)"
-    echo "  Config: $PROXYCHAINS_CONF_FILE"
-    echo "  Library: $PROXYCHAINS_PRELOAD"
-    PYTHON_CMD="env PROXYCHAINS_CONF_FILE=$PROXYCHAINS_CONF_FILE LD_PRELOAD=$PROXYCHAINS_PRELOAD python"
+if [ -n "${CMD_PREFIX:-}" ]; then
+    echo "Proxychains: ENABLED via CMD_PREFIX"
+    echo "  CMD_PREFIX: $CMD_PREFIX"
+    echo "  Config: ${PROXYCHAINS_CONF_FILE:-not set}"
 else
     echo "Proxychains: DISABLED (direct internet or not configured)"
-    PYTHON_CMD="python"
+    CMD_PREFIX=""
 fi
 echo "========================================"
 
-$PYTHON_CMD -m hpc.rl_launch_utils --config "{config_path}"
+$CMD_PREFIX python -m hpc.rl_launch_utils --config "{config_path}"

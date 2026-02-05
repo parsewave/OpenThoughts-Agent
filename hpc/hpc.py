@@ -301,190 +301,117 @@ class HPC(BaseModel):
     def get_ssh_tunnel_setup(self) -> str:
         """Generate SSH tunnel setup script for no-internet clusters (JSC).
 
-        Creates a SOCKS5 proxy via SSH tunnel from compute node to login node,
-        then exports ALL_PROXY so that httpx-based applications (like Harbor/Daytona)
-        automatically route traffic through the tunnel.
+        Based on Marianna's working approach from dc-agent/train/hpc/sbatch/start_proxy_tunnel.sh:
+        - Creates SSH tunnel from compute node to login node
+        - Generates proxychains config in ~/.proxychains/
+        - Uses proxychains4 binary wrapper (not LD_PRELOAD)
+        - Returns CMD_PREFIX for wrapping commands
 
         Requirements:
         - SSH_KEY environment variable must be set to path of SSH private key
         - Public key must be in ~/.ssh/authorized_keys on login node
-        - socksio Python package must be installed for httpx SOCKS5 support
+        - proxychains4 must be available in PATH
         """
         if not self.needs_ssh_tunnel:
             return "# No SSH tunnel needed for this cluster"
 
         return r'''# ============================================================================
-# SSH Tunnel Setup for No-Internet Clusters (JSC)
-# Creates SOCKS5 proxy via SSH tunnel to login node for internet access
+# SSH Tunnel + Proxychains Setup for No-Internet Clusters (JSC)
+# Based on Marianna's working approach from dc-agent
 #
-# NOTE: We do NOT export proxy vars globally because Ray/gRPC doesn't support SOCKS.
-# Instead, we save the proxy URL to SOCKS_PROXY_URL for explicit use by applications
-# that need external access (like Harbor/Daytona).
+# Creates SOCKS5 proxy via SSH tunnel, then uses proxychains4 binary wrapper
+# to route external traffic through the proxy while leaving internal traffic alone.
 # ============================================================================
-if [ -n "${SSH_KEY:-}" ]; then
-    USER_NAME="$(whoami)"
-    LOGIN_NODE="${SLURM_SUBMIT_HOST:-$(hostname -f | sed 's/^[^.]*\.//')}"
-    SOCKS_PORT=$((20000 + RANDOM % 10000))
-    head_node_ip=$(scontrol show hostnames $SLURM_JOB_NODELIST | head -n 1)
-    head_node_ip="$(nslookup "$head_node_ip" | grep -oP '(?<=Address: ).*')"
 
-    echo "[ssh-tunnel] Setting up SOCKS5 proxy via SSH tunnel"
-    echo "[ssh-tunnel] Login node: $LOGIN_NODE"
-    echo "[ssh-tunnel] SOCKS port: $SOCKS_PORT"
-    echo "[ssh-tunnel] SSH key: $SSH_KEY"
+# Determine login node based on cluster
+NODE_HOST=$(hostname -s)
+if [[ $NODE_HOST == jrc* ]]; then
+    LOGIN_NODE="jrlogin05i"
+elif [[ $NODE_HOST == jwb* ]]; then
+    LOGIN_NODE="jwlogin22i"
+elif [[ $NODE_HOST == jpb* ]]; then
+    LOGIN_NODE="jpbl-s01-01"
+else
+    echo "[proxy] Unknown cluster for node $NODE_HOST - skipping proxy setup"
+    export CMD_PREFIX=""
+    return
+fi
 
-    # Test SSH connectivity before setting up tunnel
-    echo "[ssh-tunnel] Testing SSH connectivity..."
-    if ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=10 -o BatchMode=yes "${USER_NAME}@${LOGIN_NODE}" echo "SSH connection successful"; then
-        echo "[ssh-tunnel] ✓ SSH test passed"
-    else
-        echo "[ssh-tunnel] ✗ SSH test FAILED - tunnel will likely fail"
-        echo "[ssh-tunnel] Check that public key is in ~/.ssh/authorized_keys on login node"
-    fi
+TUNNEL_PORT=7003
+
+if [ -z "${SSH_KEY:-}" ]; then
+    echo "[proxy] SSH_KEY not set - skipping proxy setup"
+    echo "[proxy] Set SSH_KEY in your environment to enable internet access"
+    export CMD_PREFIX=""
+else
+    echo "[proxy] Setting up SSH tunnel to $LOGIN_NODE"
+    echo "[proxy] SSH key: $SSH_KEY"
+    echo "[proxy] Tunnel port: $TUNNEL_PORT"
+
+    # Get compute node IP for proxychains config
+    NODE_IP=$(nslookup $NODE_HOST | grep 'Address' | tail -n1 | awk '{print $2}')
+    echo "[proxy] Node IP: $NODE_IP"
 
     # Create SSH tunnel with SOCKS5 proxy
-    SSH_TUNNEL_CMD="ssh -g -f -N -D 0.0.0.0:$SOCKS_PORT \\
-        -o StrictHostKeyChecking=no \\
-        -o ConnectTimeout=1000 \\
-        -o ServerAliveInterval=15 \\
-        -o ServerAliveCountMax=15 \\
-        -o TCPKeepAlive=no \\
-        -o ExitOnForwardFailure=yes \\
-        -o BatchMode=yes \\
-        -i $SSH_KEY \\
-        ${USER_NAME}@$LOGIN_NODE"
+    ssh -g -f -N -D ${TUNNEL_PORT} \
+        -o StrictHostKeyChecking=no \
+        -o ConnectTimeout=1000 \
+        -o ServerAliveInterval=15 \
+        -o ServerAliveCountMax=15 \
+        -o TCPKeepAlive=no \
+        -o ExitOnForwardFailure=yes \
+        -o BatchMode=yes \
+        -i ${SSH_KEY} \
+        ${USER}@${LOGIN_NODE}
 
-    echo "[ssh-tunnel] Starting SSH tunnel..."
-    eval "$SSH_TUNNEL_CMD"
     sleep 2
 
     # Verify tunnel is running
-    if pgrep -f "ssh.*-D.*$SOCKS_PORT" > /dev/null; then
-        echo "[ssh-tunnel] ✓ SSH tunnel started successfully"
+    if pgrep -f "ssh.*-D.*${TUNNEL_PORT}" > /dev/null; then
+        echo "[proxy] ✓ SSH tunnel started successfully"
     else
-        echo "[ssh-tunnel] ✗ SSH tunnel failed to start"
+        echo "[proxy] ✗ SSH tunnel failed to start"
     fi
 
-    # Save proxy URL for Harbor/Daytona to use (do NOT export ALL_PROXY globally - breaks Ray)
-    # IMPORTANT: Use head_node_ip (not 127.0.0.1) so workers on other nodes can reach the proxy
-    export SOCKS_PROXY_URL="socks5h://${head_node_ip}:${SOCKS_PORT}"
-    echo "[ssh-tunnel] ✓ Proxy available at: $SOCKS_PROXY_URL"
+    # Set proxychains environment variables
+    export PROXYCHAINS_SOCKS5_HOST=${NODE_IP}
+    export PROXYCHAINS_SOCKS5_PORT=${TUNNEL_PORT}
 
-    # Test proxy connectivity from head node
-    echo "[ssh-tunnel] Testing proxy connectivity from head node..."
-    if curl -s --connect-timeout 5 --proxy "$SOCKS_PROXY_URL" https://huggingface.co -o /dev/null 2>/dev/null; then
-        echo "[ssh-tunnel] ✓ Head node proxy test passed"
-    else
-        echo "[ssh-tunnel] ✗ Head node proxy test failed"
-    fi
+    # Generate proxychains config in home directory (persists across jobs)
+    SLURM_JOB_ID=${SLURM_JOB_ID:-"local"}
+    CFG_PATH=~/.proxychains/proxychains_${SLURM_JOB_ID}.conf
+    export PROXYCHAINS_CONF_FILE=$CFG_PATH
+    mkdir -p ~/.proxychains
 
-    # Test proxy connectivity from all worker nodes
-    echo "[ssh-tunnel] Testing proxy connectivity from all nodes..."
-    all_nodes=$(scontrol show hostnames $SLURM_JOB_NODELIST)
-    proxy_test_failed=0
-    for node in $all_nodes; do
-        # Use srun to test curl from each node (with timeout to avoid hanging)
-        if timeout 15 srun --nodes=1 --ntasks=1 -w "$node" --overlap \
-            curl -s --connect-timeout 5 --proxy "$SOCKS_PROXY_URL" https://huggingface.co -o /dev/null 2>/dev/null; then
-            echo "[ssh-tunnel] ✓ $node can reach proxy"
-        else
-            echo "[ssh-tunnel] ✗ $node CANNOT reach proxy at $SOCKS_PROXY_URL"
-            proxy_test_failed=1
-        fi
-    done
-
-    if [ $proxy_test_failed -eq 0 ]; then
-        echo "[ssh-tunnel] ✓ All nodes can reach the proxy - internet access available"
-    else
-        echo "[ssh-tunnel] ⚠ Some nodes cannot reach the proxy - Daytona may fail on those nodes"
-    fi
-
-    # ========================================================================
-    # Proxychains Setup (intercepts socket calls at libc level)
-    # Works with any program (Python, C++, etc.) unlike Python-level patches
-    #
-    # KEY: Uses localnet exclusions so internal traffic (Ray, NCCL) bypasses
-    # the proxy, while external traffic (Daytona API) goes through it.
-    # ========================================================================
-    PROXYCHAINS_BIN="/e/scratch/jureap59/feuer1/proxychains-ng-aarch64/bin"
-    PROXYCHAINS_LIB="/e/scratch/jureap59/feuer1/proxychains-ng-aarch64/lib/libproxychains4.so"
-    PROXYCHAINS_CONF="/tmp/proxychains_${SLURM_JOB_ID}.conf"
-
-    if [ -f "$PROXYCHAINS_LIB" ]; then
-        echo "[proxychains] Setting up proxychains-ng..."
-
-        # Generate proxychains config with localnet exclusions
-        # This ensures Ray/NCCL traffic bypasses the proxy!
-        cat > "$PROXYCHAINS_CONF" << PCEOF
-# Proxychains config for JSC HPC - auto-generated
-# Proxy ONLY external traffic (Daytona), bypass internal (Ray, NCCL)
-
-dynamic_chain
-quiet_mode
-
-# NOTE: proxy_dns is DISABLED to allow local DNS resolution for internal hostnames
-# (e.g., jpbo-021-27.jupiter.internal). External hostnames like api.daytona.io
-# will still work because socks5h:// does DNS at the proxy.
-
-tcp_read_time_out 15000
-tcp_connect_time_out 8000
-
-# CRITICAL: Exclude internal networks from proxying
-# This is what keeps Ray and NCCL working!
+    cat > "$CFG_PATH" <<PCEOF
+strict_chain
+tcp_read_time_out 30000
+tcp_connect_time_out 15000
 localnet 127.0.0.0/255.0.0.0
+localnet 127.0.0.1/255.255.255.255
 localnet 10.0.0.0/255.0.0.0
 localnet 172.16.0.0/255.240.0.0
 localnet 192.168.0.0/255.255.0.0
-localnet 169.254.0.0/255.255.0.0
-
 [ProxyList]
-socks5 ${head_node_ip} ${SOCKS_PORT}
+socks5 ${PROXYCHAINS_SOCKS5_HOST} ${PROXYCHAINS_SOCKS5_PORT}
 PCEOF
 
-        echo "[proxychains] ✓ Generated config at $PROXYCHAINS_CONF"
-        echo "[proxychains]   - Internal traffic (10.x.x.x) → DIRECT (no proxy)"
-        echo "[proxychains]   - External traffic (internet) → PROXY"
+    echo "[proxy] ✓ Generated proxychains config at $CFG_PATH"
+    echo "[proxy]   - Internal traffic (10.x.x.x) → DIRECT"
+    echo "[proxy]   - External traffic (internet) → PROXY"
 
-        # Save a copy to the experiments directory for debugging
-        EXPERIMENTS_DIR="${DCFT:-$PWD}/experiments"
-        if [ -d "$EXPERIMENTS_DIR" ]; then
-            PERSISTENT_CONF="$EXPERIMENTS_DIR/proxychains_${SLURM_JOB_ID}.conf"
-            cp "$PROXYCHAINS_CONF" "$PERSISTENT_CONF" 2>/dev/null && \
-                echo "[proxychains] ✓ Saved config copy to $PERSISTENT_CONF"
-        fi
-
-        # Export proxychains environment
-        export PROXYCHAINS_CONF_FILE="$PROXYCHAINS_CONF"
-        export PROXYCHAINS_PRELOAD="$PROXYCHAINS_LIB"
-        export PATH="$PROXYCHAINS_BIN:$PATH"
-
-        echo "[proxychains] ✓ PROXYCHAINS_CONF_FILE=$PROXYCHAINS_CONF_FILE"
-        echo "[proxychains] ✓ PROXYCHAINS_PRELOAD=$PROXYCHAINS_PRELOAD"
-
-        # Test proxychains with the config
-        if PROXYCHAINS_CONF_FILE="$PROXYCHAINS_CONF" LD_PRELOAD="$PROXYCHAINS_LIB" \
-           curl -s --connect-timeout 5 https://huggingface.co -o /dev/null 2>/dev/null; then
-            echo "[proxychains] ✓ External connectivity test passed"
-        else
-            echo "[proxychains] ⚠ External connectivity test failed (may still work)"
-        fi
-
-        # Verify internal traffic bypasses proxy (should work without proxy)
-        if curl -s --connect-timeout 2 http://${head_node_ip}:${SOCKS_PORT} -o /dev/null 2>/dev/null || true; then
-            echo "[proxychains] ✓ Internal network accessible"
-        fi
+    # Test proxy connectivity
+    if curl -s --connect-timeout 5 --proxy "socks5h://${NODE_IP}:${TUNNEL_PORT}" https://huggingface.co -o /dev/null 2>/dev/null; then
+        echo "[proxy] ✓ Proxy connectivity test passed"
     else
-        echo "[proxychains] ⚠ Proxychains library not found at $PROXYCHAINS_LIB"
-        echo "[proxychains]   Internet access may not work for some applications"
+        echo "[proxy] ⚠ Proxy connectivity test failed (may still work)"
     fi
-else
-    echo "[ssh-tunnel] SSH_KEY not set - skipping SSH tunnel setup"
-    echo "[ssh-tunnel] Set SSH_KEY in your dotenv file to enable internet access on compute nodes"
-    export SOCKS_PROXY_URL=""
-fi
 
-# PROXY_CMD is no longer needed
-PROXY_CMD=""'''
+    # Set CMD_PREFIX for wrapping commands with proxychains4
+    export CMD_PREFIX="proxychains4 -q -f $CFG_PATH"
+    echo "[proxy] CMD_PREFIX: $CMD_PREFIX"
+fi
+'''
 
     def get_proxy_setup(self) -> str:
         """Generate SOCKS5 proxy setup script for no-internet clusters (JSC).
