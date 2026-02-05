@@ -166,25 +166,20 @@ def start_pinggy_tunnel(config: PinggyConfig, dry_run: bool = False, secrets_pat
     # Load secrets if path provided or from default locations
     load_secrets_env(secrets_path)
 
-    # Check if PINGGY_API_KEY is set and use it if token not provided
+    # Token identifies the persistent URL endpoint (SSH username)
     token = config.token
-    if not token or token == "":
-        token = os.environ.get("PINGGY_API_KEY", "")
-        if token:
-            logger.info("Using PINGGY_API_KEY from environment")
-
     if not token:
-        logger.error("No Pinggy token provided and PINGGY_API_KEY not set in environment")
+        logger.error("No Pinggy token provided (identifies which persistent URL to use)")
         return None
 
+    logger.info(f"Using Pinggy token: {token}")
+
+    # Match Pinggy's documented example exactly - minimal options
     ssh_cmd = [
         "ssh", "-p", "443",
-        "-4",  # Force IPv4 to avoid IPv6 routing issues
         "-R", f"0:{config.local_host}:{config.local_port}",
         "-o", "StrictHostKeyChecking=no",
         "-o", "ServerAliveInterval=30",
-        "-o", "IdentitiesOnly=yes",  # Don't use local SSH keys (avoids passphrase prompts)
-        "-o", "IdentityFile=/dev/null",  # No identity file - Pinggy uses token as username
         f"{token}@{config.pinggy_host}",
     ]
 

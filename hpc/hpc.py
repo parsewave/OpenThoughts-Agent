@@ -356,12 +356,16 @@ if [ -z "${SSH_KEY:-}" ]; then
     echo "[proxy] SSH_KEY not set - skipping proxy setup"
     echo "[proxy] Set SSH_KEY in your environment to enable internet access"
 else
+    # Get this node's IP address for multi-node proxy access
+    NODE_IP=$(nslookup $NODE_HOST | grep 'Address' | tail -n1 | awk '{print $2}')
     echo "[proxy] Setting up SSH tunnel to $LOGIN_NODE"
     echo "[proxy] SSH key: $SSH_KEY"
     echo "[proxy] Tunnel port: $TUNNEL_PORT"
+    echo "[proxy] Node IP: $NODE_IP (workers will connect here)"
 
     # Create SSH tunnel with SOCKS5 proxy
-    ssh -f -N -D ${TUNNEL_PORT} \
+    # -g flag allows remote hosts (worker nodes) to connect to the tunnel
+    ssh -g -f -N -D ${TUNNEL_PORT} \
         -o StrictHostKeyChecking=no \
         -o ConnectTimeout=1000 \
         -o ServerAliveInterval=10 \
@@ -385,7 +389,8 @@ else
 
     # ============================================================================
     # Generate proxychains config
-    # Key: localnet entries ensure internal traffic (Ray, NCCL) bypasses proxy
+    # Key: Uses NODE_IP (not localhost) so worker nodes can access the tunnel
+    # localnet entries ensure internal traffic (Ray, NCCL) bypasses proxy
     # ============================================================================
     SLURM_JOB_ID=${SLURM_JOB_ID:-"local"}
     CFG_PATH=~/.proxychains/proxychains_${SLURM_JOB_ID}.conf
@@ -401,7 +406,7 @@ localnet 10.0.0.0/255.0.0.0
 localnet 172.16.0.0/255.240.0.0
 localnet 192.168.0.0/255.255.0.0
 [ProxyList]
-socks5 127.0.0.1 ${TUNNEL_PORT}
+socks5 ${NODE_IP} ${TUNNEL_PORT}
 PCEOF
 
     echo "[proxy] ✓ Generated proxychains config at $CFG_PATH"
@@ -411,15 +416,16 @@ PCEOF
     # ============================================================================
     # Set LD_PRELOAD for proxychains (inherited by all child processes!)
     # This is critical - CMD_PREFIX doesn't work because Ray workers don't inherit it
+    # Uses NODE_IP so worker nodes can reach the tunnel on the head node
     # ============================================================================
     export LD_PRELOAD="$PROXYCHAINS_LIB"
     export PROXYCHAINS_CONF_FILE="$CFG_PATH"
-    export PROXYCHAINS_SOCKS5_HOST="127.0.0.1"
+    export PROXYCHAINS_SOCKS5_HOST="${NODE_IP}"
     export PROXYCHAINS_SOCKS5_PORT="${TUNNEL_PORT}"
 
     echo "[proxy] ✓ LD_PRELOAD set to $PROXYCHAINS_LIB"
     echo "[proxy] ✓ PROXYCHAINS_CONF_FILE=$CFG_PATH"
-    echo "[proxy] ✓ PROXYCHAINS_SOCKS5_HOST=127.0.0.1"
+    echo "[proxy] ✓ PROXYCHAINS_SOCKS5_HOST=${NODE_IP} (accessible from worker nodes)"
     echo "[proxy] ✓ PROXYCHAINS_SOCKS5_PORT=${TUNNEL_PORT}"
 
     # ============================================================================
@@ -448,6 +454,13 @@ PCEOF
         echo "[proxy] ✓ Proxy connectivity test passed (huggingface.co reachable via LD_PRELOAD)"
     else
         echo "[proxy] ⚠ Proxy connectivity test failed (may still work for Daytona)"
+    fi
+
+    # Test that tunnel is accessible from this node's IP (for worker node access)
+    if nc -z ${NODE_IP} ${TUNNEL_PORT} 2>/dev/null; then
+        echo "[proxy] ✓ Tunnel accessible at ${NODE_IP}:${TUNNEL_PORT} (workers can connect)"
+    else
+        echo "[proxy] ⚠ Tunnel not accessible at ${NODE_IP}:${TUNNEL_PORT} (workers may fail)"
     fi
 
     echo "[proxy] ✓ Proxy setup complete (using LD_PRELOAD for Ray worker inheritance)"
