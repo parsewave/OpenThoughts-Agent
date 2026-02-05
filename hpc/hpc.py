@@ -301,61 +301,60 @@ class HPC(BaseModel):
     def get_ssh_tunnel_setup(self) -> str:
         """Generate SSH tunnel setup script for no-internet clusters (JSC).
 
-        Creates SSH tunnel from compute node to login node, then uses proxychains4
-        to route external traffic through the tunnel. This is required because
-        JSC's proxy infrastructure only works via LD_PRELOAD interception.
+        Creates SSH tunnel from compute node to login node, then uses LD_PRELOAD
+        with proxychains to route external traffic through the tunnel.
+
+        IMPORTANT: Uses LD_PRELOAD (not CMD_PREFIX wrapper) so that Ray workers
+        inherit the proxy configuration. The CMD_PREFIX approach doesn't work
+        because Ray spawns child processes that don't inherit the wrapper.
 
         Requirements:
         - SSH_KEY environment variable must be set to path of SSH private key
         - Public key must be in ~/.ssh/authorized_keys on login node
-        - proxychains4 binary must exist at cluster-specific path
+        - proxychains-ng library must exist at cluster-specific path
         """
         if not self.needs_ssh_tunnel:
             return "# No SSH tunnel needed for this cluster"
 
         return r'''# ============================================================================
-# SSH Tunnel + Proxychains Setup for No-Internet Clusters (JSC)
+# SSH Tunnel + Proxychains LD_PRELOAD Setup for No-Internet Clusters (JSC)
 #
-# Creates SOCKS5 proxy via SSH tunnel to login node, then uses proxychains4
+# Creates SOCKS5 proxy via SSH tunnel to login node, then uses LD_PRELOAD
 # to intercept and route external traffic through the tunnel.
 #
-# NOTE: Direct SOCKS5 client libraries (aiohttp-socks, requests) don't work
-# with JSC's proxy infrastructure - only LD_PRELOAD proxychains works.
+# KEY: Uses LD_PRELOAD (not CMD_PREFIX) so Ray workers inherit proxy settings!
 # ============================================================================
 
-# Determine login node and proxychains path based on cluster
+# Determine login node and proxychains paths based on cluster
 NODE_HOST=$(hostname -s)
 if [[ $NODE_HOST == jrc* ]]; then
     LOGIN_NODE="jrlogin05i"
-    PROXYCHAINS_BIN="/p/scratch/synthlaion/dc-agent-shared/tools/proxychains-ng-install/bin/proxychains4"
+    PROXYCHAINS_LIB="/p/scratch/synthlaion/dc-agent-shared/tools/proxychains-ng-install/lib/libproxychains4.so"
 elif [[ $NODE_HOST == jwb* ]]; then
     LOGIN_NODE="jwlogin22i"
-    PROXYCHAINS_BIN="/p/scratch/synthlaion/dc-agent-shared/tools/proxychains-ng-install/bin/proxychains4"
+    PROXYCHAINS_LIB="/p/scratch/synthlaion/dc-agent-shared/tools/proxychains-ng-install/lib/libproxychains4.so"
 elif [[ $NODE_HOST == jpb* ]] || [[ $NODE_HOST == jpc* ]]; then
     LOGIN_NODE="jpbl-s01-01"
     # Jupiter uses aarch64 build in project scratch
-    PROXYCHAINS_BIN="/e/scratch/jureap59/feuer1/proxychains-ng-aarch64/bin/proxychains4"
+    PROXYCHAINS_LIB="/e/scratch/jureap59/feuer1/proxychains-ng-aarch64/lib/libproxychains4.so"
 else
     echo "[proxy] Unknown cluster for node $NODE_HOST - skipping proxy setup"
-    export CMD_PREFIX=""
     return 0
 fi
 
 TUNNEL_PORT=7003
 
-# Check if proxychains4 binary exists
-if [ ! -x "$PROXYCHAINS_BIN" ]; then
-    echo "[proxy] ✗ proxychains4 not found at $PROXYCHAINS_BIN"
+# Check if proxychains library exists
+if [ ! -f "$PROXYCHAINS_LIB" ]; then
+    echo "[proxy] ✗ proxychains library not found at $PROXYCHAINS_LIB"
     echo "[proxy] Skipping proxy setup - external connectivity will fail"
-    export CMD_PREFIX=""
     return 0
 fi
-echo "[proxy] ✓ Found proxychains4 at $PROXYCHAINS_BIN"
+echo "[proxy] ✓ Found proxychains library at $PROXYCHAINS_LIB"
 
 if [ -z "${SSH_KEY:-}" ]; then
     echo "[proxy] SSH_KEY not set - skipping proxy setup"
     echo "[proxy] Set SSH_KEY in your environment to enable internet access"
-    export CMD_PREFIX=""
 else
     echo "[proxy] Setting up SSH tunnel to $LOGIN_NODE"
     echo "[proxy] SSH key: $SSH_KEY"
@@ -381,7 +380,6 @@ else
         echo "[proxy] ✓ SSH tunnel started successfully"
     else
         echo "[proxy] ✗ SSH tunnel failed to start"
-        export CMD_PREFIX=""
         return 0
     fi
 
@@ -391,7 +389,6 @@ else
     # ============================================================================
     SLURM_JOB_ID=${SLURM_JOB_ID:-"local"}
     CFG_PATH=~/.proxychains/proxychains_${SLURM_JOB_ID}.conf
-    export PROXYCHAINS_CONF_FILE=$CFG_PATH
     mkdir -p ~/.proxychains
 
     cat > "$CFG_PATH" <<PCEOF
@@ -410,6 +407,20 @@ PCEOF
     echo "[proxy] ✓ Generated proxychains config at $CFG_PATH"
     echo "[proxy]   - Internal traffic (10.x.x.x, 172.x.x.x) → DIRECT"
     echo "[proxy]   - External traffic (internet) → PROXY via tunnel"
+
+    # ============================================================================
+    # Set LD_PRELOAD for proxychains (inherited by all child processes!)
+    # This is critical - CMD_PREFIX doesn't work because Ray workers don't inherit it
+    # ============================================================================
+    export LD_PRELOAD="$PROXYCHAINS_LIB"
+    export PROXYCHAINS_CONF_FILE="$CFG_PATH"
+    export PROXYCHAINS_SOCKS5_HOST="127.0.0.1"
+    export PROXYCHAINS_SOCKS5_PORT="${TUNNEL_PORT}"
+
+    echo "[proxy] ✓ LD_PRELOAD set to $PROXYCHAINS_LIB"
+    echo "[proxy] ✓ PROXYCHAINS_CONF_FILE=$CFG_PATH"
+    echo "[proxy] ✓ PROXYCHAINS_SOCKS5_HOST=127.0.0.1"
+    echo "[proxy] ✓ PROXYCHAINS_SOCKS5_PORT=${TUNNEL_PORT}"
 
     # ============================================================================
     # Daytona/aiohttp timeout and retry settings
@@ -432,17 +443,14 @@ PCEOF
 
     echo "[proxy] ✓ Daytona timeout settings configured"
 
-    # Test proxy connectivity via proxychains
-    if $PROXYCHAINS_BIN -q -f "$CFG_PATH" curl -s --connect-timeout 10 https://huggingface.co -o /dev/null 2>/dev/null; then
-        echo "[proxy] ✓ Proxy connectivity test passed (huggingface.co reachable via proxychains)"
+    # Test proxy connectivity via LD_PRELOAD
+    if curl -s --connect-timeout 10 https://huggingface.co -o /dev/null 2>/dev/null; then
+        echo "[proxy] ✓ Proxy connectivity test passed (huggingface.co reachable via LD_PRELOAD)"
     else
         echo "[proxy] ⚠ Proxy connectivity test failed (may still work for Daytona)"
     fi
 
-    # Set CMD_PREFIX for wrapping the main python command
-    export CMD_PREFIX="$PROXYCHAINS_BIN -q -f $CFG_PATH"
-    echo "[proxy] CMD_PREFIX: $CMD_PREFIX"
-    echo "[proxy] ✓ Proxy setup complete"
+    echo "[proxy] ✓ Proxy setup complete (using LD_PRELOAD for Ray worker inheritance)"
 fi
 '''
 

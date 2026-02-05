@@ -171,16 +171,18 @@ echo "Python: $(which python)"
 echo "Python version: $(python --version)"
 
 # --- Proxy setup for no-internet clusters ---
-# Uses CMD_PREFIX set by ssh_tunnel_setup (proxychains4 wrapper approach)
+# Uses LD_PRELOAD set by ssh_tunnel_setup (proxychains library approach)
 # This routes external traffic (Daytona API) through proxy while internal traffic (Ray, NCCL) goes direct
-if [ -n "${CMD_PREFIX:-}" ]; then
-    echo "Proxy: ENABLED via proxychains4"
-    echo "  CMD_PREFIX: $CMD_PREFIX"
-    echo "  Config: ${PROXYCHAINS_CONF_FILE:-not set}"
+# LD_PRELOAD is inherited by all child processes including Ray workers
+if [ -n "${LD_PRELOAD:-}" ]; then
+    echo "Proxy: ENABLED via LD_PRELOAD"
+    echo "  LD_PRELOAD: $LD_PRELOAD"
+    echo "  PROXYCHAINS_CONF_FILE: ${PROXYCHAINS_CONF_FILE:-not set}"
+    echo "  PROXYCHAINS_SOCKS5_HOST: ${PROXYCHAINS_SOCKS5_HOST:-not set}"
+    echo "  PROXYCHAINS_SOCKS5_PORT: ${PROXYCHAINS_SOCKS5_PORT:-not set}"
 else
     echo "Proxy: DISABLED (direct internet or not configured)"
-    CMD_PREFIX=""
 fi
 echo "========================================"
 
-$CMD_PREFIX python -m hpc.rl_launch_utils --config "{config_path}"
+python -m hpc.rl_launch_utils --config "{config_path}"
