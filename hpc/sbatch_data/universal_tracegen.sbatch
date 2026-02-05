@@ -141,17 +141,16 @@ echo "=== Universal Trace Generation Runner ==="
 echo "Config: {config_path}"
 echo "Working directory: $WORKDIR"
 
-# --- Proxychains wrapper for no-internet clusters ---
-# Uses CMD_PREFIX set by ssh_tunnel_setup (proxychains4 binary wrapper approach)
+# --- Proxy setup for no-internet clusters ---
+# Uses ALL_PROXY env var set by ssh_tunnel_setup (SSH SOCKS5 tunnel approach)
 # This routes external traffic (Daytona API) through proxy while internal traffic goes direct
-if [ -n "${CMD_PREFIX:-}" ]; then
-    echo "Proxychains: ENABLED via CMD_PREFIX"
-    echo "  CMD_PREFIX: $CMD_PREFIX"
-    echo "  Config: ${PROXYCHAINS_CONF_FILE:-not set}"
+if [ -n "${ALL_PROXY:-}" ]; then
+    echo "Proxy: ENABLED via ALL_PROXY"
+    echo "  ALL_PROXY: $ALL_PROXY"
+    echo "  NO_PROXY: ${NO_PROXY:-not set}"
 else
-    echo "Proxychains: DISABLED (direct internet or not configured)"
-    CMD_PREFIX=""
+    echo "Proxy: DISABLED (direct internet or not configured)"
 fi
 echo "========================================="
 
-$CMD_PREFIX python -m hpc.datagen_launch_utils --mode tracegen --config "{config_path}"
+python -m hpc.datagen_launch_utils --mode tracegen --config "{config_path}"

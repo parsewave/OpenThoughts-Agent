@@ -301,26 +301,25 @@ class HPC(BaseModel):
     def get_ssh_tunnel_setup(self) -> str:
         """Generate SSH tunnel setup script for no-internet clusters (JSC).
 
-        Based on Marianna's working approach from dc-agent/train/hpc/sbatch/start_proxy_tunnel.sh:
-        - Creates SSH tunnel from compute node to login node
-        - Generates proxychains config in ~/.proxychains/
-        - Uses proxychains4 binary wrapper (not LD_PRELOAD)
-        - Returns CMD_PREFIX for wrapping commands
+        Based on Marianna's working approach from jsc_train._proxy.sbatch:
+        - Creates SSH tunnel from compute node to login node (SOCKS5 proxy)
+        - Sets ALL_PROXY env var for applications that respect it (aiohttp-socks, requests, etc.)
+        - Sets Daytona-specific timeout and retry env vars
+        - Does NOT use proxychains4 wrapper (binary not available on all clusters)
 
         Requirements:
         - SSH_KEY environment variable must be set to path of SSH private key
         - Public key must be in ~/.ssh/authorized_keys on login node
-        - proxychains4 must be available in PATH
         """
         if not self.needs_ssh_tunnel:
             return "# No SSH tunnel needed for this cluster"
 
         return r'''# ============================================================================
-# SSH Tunnel + Proxychains Setup for No-Internet Clusters (JSC)
-# Based on Marianna's working approach from dc-agent
+# SSH Tunnel Setup for No-Internet Clusters (JSC)
+# Based on Marianna's working approach from jsc_train._proxy.sbatch
 #
-# Creates SOCKS5 proxy via SSH tunnel, then uses proxychains4 binary wrapper
-# to route external traffic through the proxy while leaving internal traffic alone.
+# Creates SOCKS5 proxy via SSH tunnel, sets ALL_PROXY for applications that
+# respect it, and configures Daytona timeouts for reliable connectivity.
 # ============================================================================
 
 # Determine login node based on cluster
@@ -334,7 +333,7 @@ elif [[ $NODE_HOST == jpb* ]]; then
 else
     echo "[proxy] Unknown cluster for node $NODE_HOST - skipping proxy setup"
     export CMD_PREFIX=""
-    return
+    return 0
 fi
 
 TUNNEL_PORT=7003
@@ -348,23 +347,20 @@ else
     echo "[proxy] SSH key: $SSH_KEY"
     echo "[proxy] Tunnel port: $TUNNEL_PORT"
 
-    # Get compute node IP for proxychains config
-    NODE_IP=$(nslookup $NODE_HOST | grep 'Address' | tail -n1 | awk '{print $2}')
-    echo "[proxy] Node IP: $NODE_IP"
-
-    # Create SSH tunnel with SOCKS5 proxy
-    ssh -g -f -N -D ${TUNNEL_PORT} \
+    # Create SSH tunnel with SOCKS5 proxy (matches Marianna's working config)
+    ssh -f -N -D ${TUNNEL_PORT} \
         -o StrictHostKeyChecking=no \
         -o ConnectTimeout=1000 \
-        -o ServerAliveInterval=15 \
-        -o ServerAliveCountMax=15 \
-        -o TCPKeepAlive=no \
+        -o ServerAliveInterval=10 \
+        -o ServerAliveCountMax=30 \
+        -o TCPKeepAlive=yes \
         -o ExitOnForwardFailure=yes \
         -o BatchMode=yes \
         -i ${SSH_KEY} \
         ${USER}@${LOGIN_NODE}
 
-    sleep 2
+    # Give tunnel time to establish
+    sleep 5
 
     # Verify tunnel is running
     if pgrep -f "ssh.*-D.*${TUNNEL_PORT}" > /dev/null; then
@@ -373,43 +369,59 @@ else
         echo "[proxy] ✗ SSH tunnel failed to start"
     fi
 
-    # Set proxychains environment variables
-    export PROXYCHAINS_SOCKS5_HOST=${NODE_IP}
-    export PROXYCHAINS_SOCKS5_PORT=${TUNNEL_PORT}
+    # ============================================================================
+    # Daytona/aiohttp timeout and retry settings (from Marianna's working config)
+    # These help with reliability over the SSH tunnel
+    # ============================================================================
+    export DAYTONA_MAX_RETRIES=5
+    export DAYTONA_RETRY_DELAY=30
+    export DAYTONA_BACKOFF_FACTOR=2
+    export DAYTONA_TIMEOUT=1800  # 30 minutes
+    export AIOHTTP_CLIENT_TIMEOUT=900  # 15 minutes
+    export AIOHTTP_CONNECTOR_TIMEOUT=900
+    export AIOHTTP_SOCK_CONNECT_TIMEOUT=300
+    export AIOHTTP_TOTAL_TIMEOUT=1800
 
-    # Generate proxychains config in home directory (persists across jobs)
-    SLURM_JOB_ID=${SLURM_JOB_ID:-"local"}
-    CFG_PATH=~/.proxychains/proxychains_${SLURM_JOB_ID}.conf
-    export PROXYCHAINS_CONF_FILE=$CFG_PATH
-    mkdir -p ~/.proxychains
+    # Disable SSL verification (JSC certificate issues)
+    export PYTHONHTTPSVERIFY=0
+    unset SSL_CERT_FILE
+    unset CURL_CA_BUNDLE
+    unset REQUESTS_CA_BUNDLE
+    unset SSL_CERT_DIR
 
-    cat > "$CFG_PATH" <<PCEOF
-strict_chain
-tcp_read_time_out 30000
-tcp_connect_time_out 15000
-localnet 127.0.0.0/255.0.0.0
-localnet 127.0.0.1/255.255.255.255
-localnet 10.0.0.0/255.0.0.0
-localnet 172.16.0.0/255.240.0.0
-localnet 192.168.0.0/255.255.0.0
-[ProxyList]
-socks5 ${PROXYCHAINS_SOCKS5_HOST} ${PROXYCHAINS_SOCKS5_PORT}
-PCEOF
+    echo "[proxy] ✓ Daytona timeout settings configured"
 
-    echo "[proxy] ✓ Generated proxychains config at $CFG_PATH"
-    echo "[proxy]   - Internal traffic (10.x.x.x) → DIRECT"
-    echo "[proxy]   - External traffic (internet) → PROXY"
+    # ============================================================================
+    # Set ALL_PROXY for applications that respect it (aiohttp-socks, requests, httpx)
+    # Using socks5h:// ensures DNS resolution happens at the proxy (login node)
+    # ============================================================================
+    export ALL_PROXY="socks5h://127.0.0.1:${TUNNEL_PORT}"
+    export SOCKS_PROXY="socks5h://127.0.0.1:${TUNNEL_PORT}"
+
+    # Also set lowercase versions (some libraries check these)
+    export all_proxy="$ALL_PROXY"
+    export socks_proxy="$SOCKS_PROXY"
+
+    echo "[proxy] ALL_PROXY=$ALL_PROXY"
+
+    # ============================================================================
+    # Exclude internal traffic from proxy (Ray, NCCL need direct connections)
+    # Setting NO_PROXY ensures internal cluster traffic bypasses the proxy
+    # ============================================================================
+    export NO_PROXY="localhost,127.0.0.1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,.internal,.local"
+    export no_proxy="$NO_PROXY"
+    echo "[proxy] NO_PROXY=$NO_PROXY"
 
     # Test proxy connectivity
-    if curl -s --connect-timeout 5 --proxy "socks5h://${NODE_IP}:${TUNNEL_PORT}" https://huggingface.co -o /dev/null 2>/dev/null; then
-        echo "[proxy] ✓ Proxy connectivity test passed"
+    if curl -s --connect-timeout 10 --proxy "socks5h://127.0.0.1:${TUNNEL_PORT}" https://huggingface.co -o /dev/null 2>/dev/null; then
+        echo "[proxy] ✓ Proxy connectivity test passed (huggingface.co reachable)"
     else
-        echo "[proxy] ⚠ Proxy connectivity test failed (may still work)"
+        echo "[proxy] ⚠ Proxy connectivity test failed (may still work for Daytona)"
     fi
 
-    # Set CMD_PREFIX for wrapping commands with proxychains4
-    export CMD_PREFIX="proxychains4 -q -f $CFG_PATH"
-    echo "[proxy] CMD_PREFIX: $CMD_PREFIX"
+    # No CMD_PREFIX needed - applications use ALL_PROXY directly
+    export CMD_PREFIX=""
+    echo "[proxy] ✓ Proxy setup complete (no wrapper needed, using ALL_PROXY)"
 fi
 '''
 
