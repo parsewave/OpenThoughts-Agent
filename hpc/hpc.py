@@ -406,8 +406,8 @@ if [ -n "${SSH_KEY:-}" ]; then
     # KEY: Uses localnet exclusions so internal traffic (Ray, NCCL) bypasses
     # the proxy, while external traffic (Daytona API) goes through it.
     # ========================================================================
-    PROXYCHAINS_BIN="/e/scratch/jureap59/feuer1/proxychains-ng-install/bin"
-    PROXYCHAINS_LIB="/e/scratch/jureap59/feuer1/proxychains-ng-install/lib/libproxychains4.so"
+    PROXYCHAINS_BIN="/e/scratch/jureap59/feuer1/proxychains-ng-aarch64/bin"
+    PROXYCHAINS_LIB="/e/scratch/jureap59/feuer1/proxychains-ng-aarch64/lib/libproxychains4.so"
     PROXYCHAINS_CONF="/tmp/proxychains_${SLURM_JOB_ID}.conf"
 
     if [ -f "$PROXYCHAINS_LIB" ]; then
