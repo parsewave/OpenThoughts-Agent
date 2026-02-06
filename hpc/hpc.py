@@ -320,26 +320,32 @@ class HPC(BaseModel):
             return "# No SSH tunnel needed for this cluster"
 
         return r'''# ============================================================================
-# SSH Tunnel + Proxychains LD_PRELOAD Setup for No-Internet Clusters (JSC)
+# SSH Tunnel + Proxychains Setup for No-Internet Clusters (JSC)
 #
-# Creates SOCKS5 proxy via SSH tunnel to login node, then uses LD_PRELOAD
-# to intercept and route external traffic through the tunnel.
+# Creates SOCKS5 proxy via SSH tunnel to login node, then uses proxychains
+# to route external traffic through the tunnel.
 #
-# KEY: Uses LD_PRELOAD (not CMD_PREFIX) so Ray workers inherit proxy settings!
+# Jupiter (ARM GH200): Uses wrapped binary approach (proxychains4 -f <config> cmd)
+# Other JSC clusters: Uses LD_PRELOAD approach for Ray worker inheritance
 # ============================================================================
 
 # Determine login node and proxychains paths based on cluster
 NODE_HOST=$(hostname -s)
+PROXYCHAINS_MODE=""  # "binary" or "ldpreload"
+
 if [[ $NODE_HOST == jrc* ]]; then
     LOGIN_NODE="jrlogin05i"
     PROXYCHAINS_LIB="/p/scratch/synthlaion/dc-agent-shared/tools/proxychains-ng-install/lib/libproxychains4.so"
+    PROXYCHAINS_MODE="ldpreload"
 elif [[ $NODE_HOST == jwb* ]]; then
     LOGIN_NODE="jwlogin22i"
     PROXYCHAINS_LIB="/p/scratch/synthlaion/dc-agent-shared/tools/proxychains-ng-install/lib/libproxychains4.so"
+    PROXYCHAINS_MODE="ldpreload"
 elif [[ $NODE_HOST == jpb* ]] || [[ $NODE_HOST == jpc* ]]; then
     LOGIN_NODE="jpbl-s01-01"
-    # Jupiter uses aarch64 build in project scratch
-    PROXYCHAINS_LIB="/e/scratch/jureap59/feuer1/proxychains-ng-aarch64/lib/libproxychains4.so"
+    # Jupiter uses aarch64 build - binary wrapper approach (LD_PRELOAD doesn't work reliably)
+    PROXYCHAINS_BIN="/e/scratch/jureap59/feuer1/proxychains-ng-aarch64/bin/proxychains4"
+    PROXYCHAINS_MODE="binary"
 else
     echo "[proxy] Unknown cluster for node $NODE_HOST - skipping proxy setup"
     return 0
@@ -347,13 +353,22 @@ fi
 
 TUNNEL_PORT=7003
 
-# Check if proxychains library exists
-if [ ! -f "$PROXYCHAINS_LIB" ]; then
-    echo "[proxy] ✗ proxychains library not found at $PROXYCHAINS_LIB"
-    echo "[proxy] Skipping proxy setup - external connectivity will fail"
-    return 0
+# Check if proxychains is available
+if [[ "$PROXYCHAINS_MODE" == "binary" ]]; then
+    if [ ! -x "$PROXYCHAINS_BIN" ]; then
+        echo "[proxy] ✗ proxychains binary not found at $PROXYCHAINS_BIN"
+        echo "[proxy] Skipping proxy setup - external connectivity will fail"
+        return 0
+    fi
+    echo "[proxy] ✓ Found proxychains binary at $PROXYCHAINS_BIN"
+else
+    if [ ! -f "$PROXYCHAINS_LIB" ]; then
+        echo "[proxy] ✗ proxychains library not found at $PROXYCHAINS_LIB"
+        echo "[proxy] Skipping proxy setup - external connectivity will fail"
+        return 0
+    fi
+    echo "[proxy] ✓ Found proxychains library at $PROXYCHAINS_LIB"
 fi
-echo "[proxy] ✓ Found proxychains library at $PROXYCHAINS_LIB"
 
 if [ -z "${SSH_KEY:-}" ]; then
     echo "[proxy] SSH_KEY not set - skipping proxy setup"
@@ -417,19 +432,29 @@ PCEOF
     echo "[proxy]   - External traffic (internet) → PROXY via tunnel"
 
     # ============================================================================
-    # Set LD_PRELOAD for proxychains (inherited by all child processes!)
-    # This is critical - CMD_PREFIX doesn't work because Ray workers don't inherit it
-    # Uses NODE_IP so worker nodes can reach the tunnel on the head node
+    # Export proxychains configuration based on mode
     # ============================================================================
-    export LD_PRELOAD="$PROXYCHAINS_LIB"
     export PROXYCHAINS_CONF_FILE="$CFG_PATH"
     export PROXYCHAINS_SOCKS5_HOST="${NODE_IP}"
     export PROXYCHAINS_SOCKS5_PORT="${TUNNEL_PORT}"
 
-    echo "[proxy] ✓ LD_PRELOAD set to $PROXYCHAINS_LIB"
-    echo "[proxy] ✓ PROXYCHAINS_CONF_FILE=$CFG_PATH"
-    echo "[proxy] ✓ PROXYCHAINS_SOCKS5_HOST=${NODE_IP} (accessible from worker nodes)"
-    echo "[proxy] ✓ PROXYCHAINS_SOCKS5_PORT=${TUNNEL_PORT}"
+    if [[ "$PROXYCHAINS_MODE" == "binary" ]]; then
+        # Binary wrapper approach (Jupiter ARM GH200)
+        # Ray workers will use: proxychains4 -f $PROXYCHAINS_CONF_FILE ray start ...
+        export PROXYCHAINS_BINARY="$PROXYCHAINS_BIN"
+        echo "[proxy] ✓ PROXYCHAINS_BINARY=$PROXYCHAINS_BIN"
+        echo "[proxy] ✓ PROXYCHAINS_CONF_FILE=$CFG_PATH"
+        echo "[proxy] ✓ PROXYCHAINS_SOCKS5_HOST=${NODE_IP} (accessible from worker nodes)"
+        echo "[proxy] ✓ PROXYCHAINS_SOCKS5_PORT=${TUNNEL_PORT}"
+    else
+        # LD_PRELOAD approach (Jureca, Juwels)
+        # Ray workers inherit proxy via LD_PRELOAD environment variable
+        export LD_PRELOAD="$PROXYCHAINS_LIB"
+        echo "[proxy] ✓ LD_PRELOAD set to $PROXYCHAINS_LIB"
+        echo "[proxy] ✓ PROXYCHAINS_CONF_FILE=$CFG_PATH"
+        echo "[proxy] ✓ PROXYCHAINS_SOCKS5_HOST=${NODE_IP} (accessible from worker nodes)"
+        echo "[proxy] ✓ PROXYCHAINS_SOCKS5_PORT=${TUNNEL_PORT}"
+    fi
 
     # ============================================================================
     # Daytona/aiohttp timeout and retry settings
@@ -452,11 +477,20 @@ PCEOF
 
     echo "[proxy] ✓ Daytona timeout settings configured"
 
-    # Test proxy connectivity via LD_PRELOAD
-    if curl -s --connect-timeout 10 https://huggingface.co -o /dev/null 2>/dev/null; then
-        echo "[proxy] ✓ Proxy connectivity test passed (huggingface.co reachable via LD_PRELOAD)"
+    # Test proxy connectivity
+    echo "[proxy] Testing proxy connectivity..."
+    if [[ "$PROXYCHAINS_MODE" == "binary" ]]; then
+        if "$PROXYCHAINS_BIN" -f "$CFG_PATH" curl -s --connect-timeout 10 https://huggingface.co -o /dev/null; then
+            echo "[proxy] ✓ Proxy connectivity test passed (huggingface.co reachable via wrapped binary)"
+        else
+            echo "[proxy] ⚠ Proxy connectivity test failed (may still work for Daytona)"
+        fi
     else
-        echo "[proxy] ⚠ Proxy connectivity test failed (may still work for Daytona)"
+        if curl -s --connect-timeout 10 https://huggingface.co -o /dev/null 2>/dev/null; then
+            echo "[proxy] ✓ Proxy connectivity test passed (huggingface.co reachable via LD_PRELOAD)"
+        else
+            echo "[proxy] ⚠ Proxy connectivity test failed (may still work for Daytona)"
+        fi
     fi
 
     # Test that tunnel is accessible from this node's IP (for worker node access)
@@ -466,7 +500,11 @@ PCEOF
         echo "[proxy] ⚠ Tunnel not accessible at ${NODE_IP}:${TUNNEL_PORT} (workers may fail)"
     fi
 
-    echo "[proxy] ✓ Proxy setup complete (using LD_PRELOAD for Ray worker inheritance)"
+    if [[ "$PROXYCHAINS_MODE" == "binary" ]]; then
+        echo "[proxy] ✓ Proxy setup complete (using wrapped binary for Ray workers)"
+    else
+        echo "[proxy] ✓ Proxy setup complete (using LD_PRELOAD for Ray worker inheritance)"
+    fi
 fi
 '''
 
