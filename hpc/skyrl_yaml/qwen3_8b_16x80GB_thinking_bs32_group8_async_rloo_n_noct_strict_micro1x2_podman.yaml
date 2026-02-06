@@ -1,15 +1,11 @@
 # SkyRL Configuration: Qwen3 8B on 16x80GB GPUs (RLOO-N + Strict JSON + Podman-HPC + Smaller Batch)
 # Based on: qwen3_8b_16x80GB_thinking_bs64_group8_async_rloo_n_noct_strict_micro2x4_podman.yaml
 #
-# SMALLER BATCH VARIANT: Reduced batch size to 32 (from 64) to reduce memory pressure
-# from concurrent trials on the node. Useful when podman containers compete for node resources.
-#
-# Key changes from bs64 variant:
-#   - train_batch_size: 32 (was 64)
-#   - policy_mini_batch_size: 32 (was 64)
-#   - eval_batch_size: 32 (was 64)
-#   - n_concurrent_trials: 32 (was 64)
-#   - num_parallel_generation_workers: 48 (was 96)
+# SMALLER BATCH + CONVERGENCE VARIANT:
+#   - train_batch_size: 32 (reduced from 64) for memory pressure
+#   - update_epochs_per_batch: 2 (was 1) for more gradient steps
+#   - micro_train_batch_size_per_gpu: 1 (was 2) to reduce OOM risk
+#   - micro_forward_batch_size_per_gpu: 2 (was 4) to reduce OOM risk
 #
 # PODMAN-HPC VARIANT: Uses Harbor's native podman_hpc backend instead of Daytona.
 # Designed for NERSC Perlmutter and other HPC clusters with podman-hpc.
@@ -130,7 +126,10 @@ trainer:
 
   # Training loop settings
   epochs: 10
-  update_epochs_per_batch: 1
+  # ==========================================================================
+  # CONVERGENCE: 2 update epochs per batch (was 1) for more gradient steps
+  # ==========================================================================
+  update_epochs_per_batch: 2
 
   # ==========================================================================
   # REDUCED BATCH SIZES: 32 (was 64) to reduce node memory pressure
@@ -139,9 +138,11 @@ trainer:
   policy_mini_batch_size: 32
   eval_batch_size: 32
 
-  # Micro batch sizes (unchanged - these are per-GPU)
-  micro_forward_batch_size_per_gpu: 4
-  micro_train_batch_size_per_gpu: 2
+  # ==========================================================================
+  # REDUCED MICRO BATCH: 1x2 (was 2x4) to reduce OOM risk
+  # ==========================================================================
+  micro_forward_batch_size_per_gpu: 2
+  micro_train_batch_size_per_gpu: 1
 
   max_prompt_length: 999999
 
