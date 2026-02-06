@@ -110,6 +110,9 @@ class RayClusterConfig:
     object_store_memory: Optional[int] = None  # Ray object store (plasma) size
     # Disable CPU binding for srun commands (needed for Frontier/Cray systems)
     disable_cpu_bind: bool = False
+    # Enable proxychains for Ray workers (needed for JSC/Jupiter to access Daytona)
+    # When True, LD_PRELOAD is preserved so Ray workers can make proxied external calls
+    use_proxychains: bool = False
 
 
 @dataclass
@@ -151,6 +154,10 @@ class RayCluster:
         # Compute Ray memory limit from SLURM allocation (prevents OOM from over-detection)
         ray_memory = compute_ray_memory_from_slurm()
 
+        # Enable proxychains if the HPC cluster has it configured (e.g., JSC/Jupiter)
+        # This allows Ray workers to make proxied external calls (e.g., Daytona API)
+        use_proxychains = bool(getattr(hpc, "proxychains_preload", ""))
+
         ray_config = RayClusterConfig(
             num_nodes=num_nodes,
             gpus_per_node=hpc.gpus_per_node,
@@ -160,6 +167,7 @@ class RayCluster:
             memory_per_node=ray_memory,
             object_store_memory=DEFAULT_OBJECT_STORE_MEMORY_BYTES,
             disable_cpu_bind=getattr(hpc, "disable_cpu_bind", False),
+            use_proxychains=use_proxychains,
         )
         return cls.from_slurm(ray_config)
 
@@ -420,10 +428,17 @@ class RayCluster:
             cmd.append(f"--object-store-memory={self.config.object_store_memory}")
 
         # Build the bash command with environment variables
-        # CRITICAL: Unset LD_PRELOAD and PROXYCHAINS_CONF_FILE to prevent proxychains from
-        # intercepting Ray's internal networking. Proxychains is only needed for external
-        # traffic (Daytona API), not for Ray cluster communication which uses internal IPs.
-        unset_proxychains = "unset LD_PRELOAD PROXYCHAINS_CONF_FILE 2>/dev/null; "
+        # When use_proxychains is True (JSC/Jupiter), preserve LD_PRELOAD so Ray workers
+        # can make proxied external calls (e.g., Daytona API). The proxychains config has
+        # localnet exclusions for internal IPs, so Ray cluster communication is not affected.
+        # When use_proxychains is False, unset LD_PRELOAD to avoid any interference.
+        if self.config.use_proxychains:
+            # Preserve proxychains for external API calls (Daytona, HuggingFace, etc.)
+            unset_proxychains = ""
+        else:
+            # Unset proxychains to prevent interference with Ray networking
+            unset_proxychains = "unset LD_PRELOAD PROXYCHAINS_CONF_FILE 2>/dev/null; "
+
         if self.config.ray_env_vars:
             bash_cmd = f"{unset_proxychains}env {self.config.ray_env_vars} {' '.join(cmd)}"
         else:
