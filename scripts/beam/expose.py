@@ -219,8 +219,15 @@ def start_pinggy_tunnel(config: PinggyConfig, dry_run: bool = False, secrets_pat
     # Pass through environment variables including any loaded secrets
     env = os.environ.copy()
 
+    # Mirror Pinggy's recommended auto-reconnect loop.
+    loop_cmd = (
+        "while true; do "
+        + " ".join(ssh_cmd)
+        + " ; sleep 10; done"
+    )
+
     proc = subprocess.Popen(
-        ssh_cmd,
+        ["bash", "-lc", loop_cmd],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=env,

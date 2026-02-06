@@ -9,9 +9,9 @@
 #   - collect_rollout_details: true (captures per-token logprobs during rollout)
 #   - use_tis: true with tis_imp_ratio_cap: 2.0
 #
-# All other settings preserved from autosnap variant:
-#   - micro_train_batch_size_per_gpu: 2
-#   - micro_forward_batch_size_per_gpu: 4
+# MICRO 1x2 VARIANT: Reduced micro batch sizes to lower memory pressure
+#   - micro_train_batch_size_per_gpu: 1 (was 2)
+#   - micro_forward_batch_size_per_gpu: 2 (was 4)
 #   - strict_json_parser: true
 #   - kl_loss_coef: 0.01 (10x KL penalty)
 #   - RLOO-N advantage estimator with error classification
@@ -19,7 +19,7 @@
 # Usage:
 #   python -m hpc.launch \
 #       --job_type rl \
-#       --rl_config qwen3_8b_16x80GB_thinking_bs64_group8_async_rloo_n_noct_strict_micro2x4_autosnap_tis.yaml \
+#       --rl_config qwen3_8b_16x80GB_thinking_bs64_group8_async_rloo_n_noct_strict_micro1x2_autosnap_tis.yaml \
 #       --job_name qwen3_8b_agentic_async_rloo_n_strict_autosnap_tis \
 #       --train_data '["mlfoundations-dev/your-dataset"]' \
 #       --model_path Qwen/Qwen3-8B \
@@ -157,9 +157,9 @@ trainer:
   policy_mini_batch_size: 64
   eval_batch_size: 64
 
-  # Micro batch sizes (increased for better GPU utilization)
-  micro_forward_batch_size_per_gpu: 4
-  micro_train_batch_size_per_gpu: 2
+  # Micro batch sizes (reduced to lower memory pressure)
+  micro_forward_batch_size_per_gpu: 2
+  micro_train_batch_size_per_gpu: 1
 
   max_prompt_length: 999999
 
