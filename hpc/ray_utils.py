@@ -113,6 +113,10 @@ class RayClusterConfig:
     # Enable proxychains for Ray workers (needed for JSC/Jupiter to access Daytona)
     # When True, LD_PRELOAD is preserved so Ray workers can make proxied external calls
     use_proxychains: bool = False
+    # Path to proxychains4 binary for wrapped command approach (alternative to LD_PRELOAD)
+    # When set, wraps ray commands with: proxychains4 -f $PROXYCHAINS_CONF_FILE ray start ...
+    # This is more reliable on some systems (e.g., Jupiter ARM GH200 nodes)
+    proxychains_binary: str = ""
 
 
 @dataclass
@@ -156,7 +160,9 @@ class RayCluster:
 
         # Enable proxychains if the HPC cluster has it configured (e.g., JSC/Jupiter)
         # This allows Ray workers to make proxied external calls (e.g., Daytona API)
-        use_proxychains = bool(getattr(hpc, "proxychains_preload", ""))
+        # Prefer wrapped binary approach (proxychains_binary) over LD_PRELOAD (proxychains_preload)
+        proxychains_binary = getattr(hpc, "proxychains_binary", "")
+        use_proxychains = bool(proxychains_binary or getattr(hpc, "proxychains_preload", ""))
 
         ray_config = RayClusterConfig(
             num_nodes=num_nodes,
@@ -168,6 +174,7 @@ class RayCluster:
             object_store_memory=DEFAULT_OBJECT_STORE_MEMORY_BYTES,
             disable_cpu_bind=getattr(hpc, "disable_cpu_bind", False),
             use_proxychains=use_proxychains,
+            proxychains_binary=proxychains_binary,
         )
         return cls.from_slurm(ray_config)
 
@@ -427,22 +434,37 @@ class RayCluster:
         if self.config.object_store_memory is not None:
             cmd.append(f"--object-store-memory={self.config.object_store_memory}")
 
-        # Build the bash command with environment variables
-        # When use_proxychains is True (JSC/Jupiter), preserve LD_PRELOAD so Ray workers
-        # can make proxied external calls (e.g., Daytona API). The proxychains config has
-        # localnet exclusions for internal IPs, so Ray cluster communication is not affected.
-        # When use_proxychains is False, unset LD_PRELOAD to avoid any interference.
-        if self.config.use_proxychains:
-            # Preserve proxychains for external API calls (Daytona, HuggingFace, etc.)
-            unset_proxychains = ""
-        else:
-            # Unset proxychains to prevent interference with Ray networking
-            unset_proxychains = "unset LD_PRELOAD PROXYCHAINS_CONF_FILE 2>/dev/null; "
+        # Build the bash command with environment variables and optional proxychains wrapper
+        # Two proxychains modes are supported:
+        # 1. Wrapped binary approach (preferred): proxychains4 -f <config> ray start ...
+        #    More reliable on some systems (e.g., Jupiter ARM GH200 nodes)
+        # 2. LD_PRELOAD approach: preserve LD_PRELOAD env var for Ray workers
+        #    Requires localnet exclusions in proxychains config to not proxy Ray traffic
 
-        if self.config.ray_env_vars:
-            bash_cmd = f"{unset_proxychains}env {self.config.ray_env_vars} {' '.join(cmd)}"
+        if self.config.proxychains_binary:
+            # Wrapped binary approach: unset LD_PRELOAD (avoid double-proxying) and wrap ray command
+            # Uses $PROXYCHAINS_CONF_FILE env var (set by SSH tunnel setup script)
+            unset_proxychains = "unset LD_PRELOAD 2>/dev/null; "
+            ray_cmd_str = ' '.join(cmd)
+            proxychains_wrap = f'{self.config.proxychains_binary} -f "$PROXYCHAINS_CONF_FILE" '
+            if self.config.ray_env_vars:
+                bash_cmd = f"{unset_proxychains}env {self.config.ray_env_vars} {proxychains_wrap}{ray_cmd_str}"
+            else:
+                bash_cmd = f"{unset_proxychains}{proxychains_wrap}{ray_cmd_str}"
+        elif self.config.use_proxychains:
+            # LD_PRELOAD approach: preserve proxychains env vars for external API calls
+            # The proxychains config should have localnet exclusions for internal IPs
+            if self.config.ray_env_vars:
+                bash_cmd = f"env {self.config.ray_env_vars} {' '.join(cmd)}"
+            else:
+                bash_cmd = ' '.join(cmd)
         else:
-            bash_cmd = f"{unset_proxychains}{' '.join(cmd)}"
+            # No proxychains: unset env vars to prevent interference with Ray networking
+            unset_proxychains = "unset LD_PRELOAD PROXYCHAINS_CONF_FILE 2>/dev/null; "
+            if self.config.ray_env_vars:
+                bash_cmd = f"{unset_proxychains}env {self.config.ray_env_vars} {' '.join(cmd)}"
+            else:
+                bash_cmd = f"{unset_proxychains}{' '.join(cmd)}"
 
         srun_cmd = [
             "srun",

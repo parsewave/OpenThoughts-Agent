@@ -65,6 +65,9 @@ class HPC(BaseModel):
     proxy_host: str = ""
     proxy_port: int = 0
     proxychains_preload: str = ""
+    # Path to proxychains4 binary for wrapped command approach (alternative to LD_PRELOAD)
+    # Use this when LD_PRELOAD doesn't work reliably (e.g., Jupiter with ARM GH200 nodes)
+    proxychains_binary: str = ""
 
     # Pre-run shell commands (cluster-specific setup)
     # These run at the start of the batch script before any other setup
@@ -553,7 +556,23 @@ echo "[proxy] PROXYCHAINS_CONF_FILE=$PROXYCHAINS_CONF_FILE"
 export SOCKS_PROXY_URL="socks5h://$PROXY_HOST:$PROXY_PORT"
 echo "[proxy] SOCKS_PROXY_URL=$SOCKS_PROXY_URL"'''
 
-        if self.proxychains_preload:
+        if self.proxychains_binary:
+            # Wrapped binary approach (preferred for Jupiter ARM GH200 nodes)
+            script += f'''
+
+# Proxychains binary for wrapped command approach
+export PROXYCHAINS_BINARY="{self.proxychains_binary}"
+echo "[proxy] PROXYCHAINS_BINARY=$PROXYCHAINS_BINARY"
+
+# Test proxychains with the config (using wrapped binary)
+echo "[proxy] Testing proxychains connectivity..."
+if "{self.proxychains_binary}" -f "$PROXYCHAINS_CONF" curl -s --connect-timeout 10 https://huggingface.co -o /dev/null; then
+    echo "[proxy] ✓ Proxychains test passed - external connectivity works"
+else
+    echo "[proxy] ⚠ Proxychains test failed (may still work for applications)"
+fi'''
+        elif self.proxychains_preload:
+            # LD_PRELOAD approach (fallback)
             script += f'''
 
 # Proxychains library for LD_PRELOAD
@@ -663,6 +682,8 @@ jupiter = HPC(
     training_launcher="accelerate",
     # SSH tunnel for internet access (shared proxy 10.14.0.53 not reachable from Jupiter network)
     needs_ssh_tunnel=True,
+    # Use wrapped binary approach for proxychains (LD_PRELOAD doesn't work reliably on ARM GH200)
+    proxychains_binary="/e/scratch/jureap59/feuer1/proxychains-ng-aarch64/bin/proxychains4",
     # JSC-specific setup (disable core dumps to save disk space)
     pre_run_commands=["ulimit -c 0"],
     # Job scaling
