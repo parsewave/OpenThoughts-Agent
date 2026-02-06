@@ -58,6 +58,7 @@ trainer:
 # Generator (vLLM inference)
 generator:
   backend: vllm
+  enforce_eager: false
   timeout_multiplier: 2.0
   num_inference_engines: null
   inference_engine_tensor_parallel_size: 1
