@@ -402,3 +402,4 @@ train/hpc/dotenv/secret.env
 # Claude
 CLAUDE.md
 development_progress.md
+todo
