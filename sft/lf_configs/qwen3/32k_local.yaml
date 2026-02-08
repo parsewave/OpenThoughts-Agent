@@ -37,7 +37,7 @@ plot_loss: true
 output_dir: /root/output
 push_to_hub: true
 hub_strategy: "end"
-hub_model_id: parsewave/openthoughts-qwen3-8b-lora
+hub_model_id: loukwave/openthoughts-qwen3-8b-lora
 hub_token: ${HF_TOKEN}
 
 ### train
