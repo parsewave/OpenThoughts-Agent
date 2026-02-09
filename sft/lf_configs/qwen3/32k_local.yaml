@@ -25,6 +25,12 @@ dataloader_pin_memory: true
 dataloader_num_workers: 4
 dataset: open-thoughts/OpenThoughts-Agent-v1-SFT
 dataset_dir: ONLINE
+formatting: sharegpt
+messages: conversations
+role_tag: role
+content_tag: content
+user_tag: user
+assistant_tag: assistant
 
 ### output
 logging_steps: 5
@@ -41,9 +47,9 @@ hub_model_id: loukwave/openthoughts-qwen3-8b-lora
 
 ### train
 per_device_train_batch_size: 4
-gradient_accumulation_steps: 16
+gradient_accumulation_steps: 2
 learning_rate: 4.0e-5
-num_train_epochs: 7.0
+num_train_epochs: 1.0
 max_grad_norm: 1.0e-4
 adam_beta2: 0.98
 lr_scheduler_type: cosine
